@@ -22,13 +22,13 @@ router = APIRouter(tags=["login"])
 
 
 @router.post("/login/access-token")
-def login_access_token(
+async def login_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = crud.authenticate(
+    user = await crud.authenticate(
         session=session, email=form_data.username, password=form_data.password
     )
     if not user:

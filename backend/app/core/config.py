@@ -50,23 +50,34 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
-    POSTGRES_DB: str = ""
+    MARIADB_SERVER: str  # Or MYSQL_SERVER if you prefer
+    MARIADB_PORT: int = 3306  # Default MySQL/MariaDB port
+    MARIADB_USER: str
+    MARIADB_PASSWORD: str = ""
+    MARIADB_DB: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+    def SQLALCHEMY_DATABASE_URI(self) -> AnyUrl: # NEW: Use AnyUrl or construct as string
+        # Option 1: Construct as string directly (often simpler for different schemes)
+        # This avoids the need for a specific DSN type like PostgresDsn
+        return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB}"
+        # OR if using aiomysql:
+        # return f"mysql+aiomysql://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB}"
+
+        # Option 2: Use Pydantic's AnyUrl (if validation is desired)
+        # from pydantic import AnyUrl
+        # return AnyUrl.build(
+        #     scheme="mariadb+asyncmy", # Or "mysql+aiomysql"
+        #     username=self.MARIADB_USER,
+        #     password=self.MARIADB_PASSWORD,
+        #     host=self.MARIADB_SERVER,
+        #     port=self.MARIADB_PORT,
+        #     path=f"/{self.MARIADB_DB}",
+        # )
+        # Note: AnyUrl.build might require correct path formatting, string construction is often more reliable for custom schemes.
+
+    # --- END NEW MariaDB/MySQL Settings ---
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -108,7 +119,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        self._check_default_secret("MARIADB_PASSWORD", self.MARIADB_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
