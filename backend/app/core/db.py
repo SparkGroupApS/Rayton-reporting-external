@@ -3,6 +3,7 @@ from sqlmodel import SQLModel # Keep if defining models here or importing them
 from sqlmodel.ext.asyncio.session import AsyncSession # Import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker # Import async engine and sessionmaker
 from app.core.config import settings
+from collections.abc import AsyncGenerator
 
 # Create the async engine
 # Use the URI from your updated config.py
@@ -48,10 +49,10 @@ async def init_db() -> None:
                 await session.commit() # Use await
                 await session.refresh(user) # Use await if needed
 
-# Optional: A helper function to get the async session for dependency injection
-async def get_async_session() -> AsyncSession:
+# NEW: Correctly type the async generator function
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]: # Use AsyncGenerator[TypeYielded, SendType]
     async with AsyncSessionLocal() as session:
-        yield session
+        yield session # Yield the session provided by the inner dependency
 
 # Remember to update your Alembic configuration (alembic.ini or alembic/env.py)
 # to use the async engine if you are using migrations.

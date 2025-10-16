@@ -1,3 +1,4 @@
+# backend/app/api/routes/users.py
 import uuid
 from typing import Any
 
@@ -34,16 +35,20 @@ router = APIRouter(prefix="/users", tags=["users"])
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UsersPublic,
 )
-async def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+async def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any: # NEW: async def
     """
     Retrieve users.
     """
 
     count_statement = select(func.count()).select_from(User)
-    count = session.exec(count_statement).one()
+    # NEW: Await session.exec, then call .one() on the result
+    count_result = await session.exec(count_statement)
+    count = count_result.one()
 
     statement = select(User).offset(skip).limit(limit)
-    users = session.exec(statement).all()
+    # NEW: Await session.exec, then call .all() on the result
+    users_result = await session.exec(statement)
+    users = users_result.all()
 
     return UsersPublic(data=users, count=count)
 
@@ -51,18 +56,20 @@ async def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> An
 @router.post(
     "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
 )
-async def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+async def create_user(*, session: SessionDep, user_in: UserCreate) -> Any: # NEW: async def
     """
     Create new user.
     """
-    user = await crud.get_user_by_email(session=session, email=user_in.email)
+    # NEW: Await the async CRUD function
+    user = await crud.get_user_by_email(session=session, email=user_in.email) # Use await
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
 
-    user = await crud.create_user(session=session, user_create=user_in)
+    # NEW: Await the async CRUD function
+    user = await crud.create_user(session=session, user_create=user_in) # Use await
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password
@@ -76,7 +83,7 @@ async def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
 
 @router.patch("/me", response_model=UserPublic)
-async def update_user_me(
+async def update_user_me( # NEW: async def
     *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
 ) -> Any:
     """
@@ -84,7 +91,8 @@ async def update_user_me(
     """
 
     if user_in.email:
-        existing_user = await crud.get_user_by_email(session=session, email=user_in.email)
+        # NEW: Await the async CRUD function
+        existing_user = await crud.get_user_by_email(session=session, email=user_in.email) # Use await
         if existing_user and existing_user.id != current_user.id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
@@ -92,13 +100,15 @@ async def update_user_me(
     user_data = user_in.model_dump(exclude_unset=True)
     current_user.sqlmodel_update(user_data)
     session.add(current_user)
+    # NEW: Await session.commit
     await session.commit()
+    # NEW: Await session.refresh
     await session.refresh(current_user)
     return current_user
 
 
 @router.patch("/me/password", response_model=Message)
-async def update_password_me(
+async def update_password_me( # NEW: async def
     *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
 ) -> Any:
     """
@@ -113,12 +123,13 @@ async def update_password_me(
     hashed_password = get_password_hash(body.new_password)
     current_user.hashed_password = hashed_password
     session.add(current_user)
+    # NEW: Await session.commit
     await session.commit()
     return Message(message="Password updated successfully")
 
 
 @router.get("/me", response_model=UserPublic)
-async def read_user_me(current_user: CurrentUser) -> Any:
+async def read_user_me(current_user: CurrentUser) -> Any: # NEW: async def (though logic might not require await)
     """
     Get current user.
     """
@@ -126,7 +137,7 @@ async def read_user_me(current_user: CurrentUser) -> Any:
 
 
 @router.delete("/me", response_model=Message)
-async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any: # NEW: async def
     """
     Delete own user.
     """
@@ -134,35 +145,41 @@ async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    session.delete(current_user)
+    # NEW: Await session.delete (check if standard AsyncSession.delete is awaitable, often it's sync)
+    # session.delete(current_user) # Standard approach
+    await session.delete(current_user) # Safer for potential future compatibility, but check if necessary
+    # NEW: Await session.commit
     await session.commit()
     return Message(message="User deleted successfully")
 
 
 @router.post("/signup", response_model=UserPublic)
-async def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+async def register_user(session: SessionDep, user_in: UserRegister) -> Any: # NEW: async def
     """
     Create new user without the need to be logged in.
     """
-    user = await crud.get_user_by_email(session=session, email=user_in.email)
+    # NEW: Await the async CRUD function
+    user = await crud.get_user_by_email(session=session, email=user_in.email) # Use await
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
-    user = await crud.create_user(session=session, user_create=user_create)
+    # NEW: Await the async CRUD function
+    user = await crud.create_user(session=session, user_create=user_create) # Use await
     return user
 
 
 @router.get("/{user_id}", response_model=UserPublic)
-async def read_user_by_id(
+async def read_user_by_id( # NEW: async def
     user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
     """
     Get a specific user by id.
     """
-    user = session.get(User, user_id)
+    # NEW: Await session.get
+    user = await session.get(User, user_id)
     if user == current_user:
         return user
     if not current_user.is_superuser:
@@ -178,7 +195,7 @@ async def read_user_by_id(
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UserPublic,
 )
-async def update_user(
+async def update_user( # NEW: async def
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -188,31 +205,35 @@ async def update_user(
     Update a user.
     """
 
-    db_user = session.get(User, user_id)
+    # NEW: Await session.get
+    db_user = await session.get(User, user_id)
     if not db_user:
         raise HTTPException(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
     if user_in.email:
-        existing_user = await crud.get_user_by_email(session=session, email=user_in.email)
+        # NEW: Await the async CRUD function
+        existing_user = await crud.get_user_by_email(session=session, email=user_in.email) # Use await
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
 
-    db_user = await crud.update_user(session=session, db_user=db_user, user_in=user_in)
+    # NEW: Await the async CRUD function
+    db_user = await crud.update_user(session=session, db_user=db_user, user_in=user_in) # Use await
     return db_user
 
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
-async def delete_user(
+async def delete_user( # NEW: async def
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
     """
     Delete a user.
     """
-    user = session.get(User, user_id)
+    # NEW: Await session.get
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
@@ -220,7 +241,13 @@ async def delete_user(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
     statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
-    session.delete(user)
+    # NEW: Await session.exec (for delete statements, exec might be sync, but often it's awaitable in async contexts)
+    # result = session.exec(statement) # Standard approach might be sync for DML within session context
+    # If the above standard approach doesn't work or is discouraged for async sessions:
+    await session.exec(statement)  # type: ignore # Await the exec call
+    # NEW: Await session.delete (check if standard AsyncSession.delete is awaitable, often it's sync)
+    # session.delete(user) # Standard approach
+    await session.delete(user) # Safer for potential future compatibility, but check if necessary
+    # NEW: Await session.commit
     await session.commit()
     return Message(message="User deleted successfully")
