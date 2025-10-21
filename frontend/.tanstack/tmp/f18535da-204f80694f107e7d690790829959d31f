@@ -1,0 +1,60 @@
+// src/routes/tenant.tsx
+import { Container, Heading } from "@chakra-ui/react";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"; // Import Outlet
+import { z } from 'zod';
+
+// Import the new components
+import AddTenant from "@/components/Admin/AddTenant"; // Adjust path
+import TenantsTable from "@/components/Admin/TenantsTable"; // Adjust path
+
+// Import Auth check and User type
+import { isLoggedIn } from "@/hooks/useAuth"; // Adjust path
+import { queryClient } from "@/main"; // Assuming queryClient is exported from main.tsx or similar
+import { UserPublic } from "@/client"; // Adjust path
+
+// Search schema for pagination (used by TenantsTable)
+const tenantsSearchSchema = z.object({
+  page: z.number().int().positive().catch(1),
+});
+
+// Route Definition
+export const Route = createFileRoute('/_layout/tenant')({ 
+  component: TenantsPage,
+  validateSearch: (search) => tenantsSearchSchema.parse(search), // Validate search params for children
+  // Add authentication/authorization check
+  beforeLoad: async () => {
+    if (!isLoggedIn()) {
+      throw redirect({ to: "/login" });
+    }
+    // Fetch or get user data from cache
+    const user = queryClient.getQueryData<UserPublic>(["currentUser"]); 
+    // This assumes currentUser is already fetched and cached by a parent layout or hook
+    if (!user?.is_superuser) {
+      // Redirect non-superusers away
+       throw redirect({ to: "/" }); // Redirect to dashboard or show an error
+    }
+  },
+});
+
+// Main Page Component
+function TenantsPage() {
+  return (
+    <Container maxW="full">
+      <Heading size="lg" pt={12}>
+        Tenant Management
+      </Heading>
+
+      {/* Render the Add Tenant button/modal */}
+      <AddTenant />
+
+      {/* Render the Tenants Table */}
+      <TenantsTable />
+      
+      {/* Outlet might be needed if you add sub-routes later, but not strictly necessary now */}
+      {/* <Outlet /> */} 
+    </Container>
+  );
+}
+
+// Default export might not be needed
+// export default TenantsPage;

@@ -124,10 +124,15 @@ export const ItemPublicSchema = {
             type: 'string',
             format: 'uuid',
             title: 'Owner Id'
+        },
+        tenant_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Tenant Id'
         }
     },
     type: 'object',
-    required: ['title', 'id', 'owner_id'],
+    required: ['title', 'id', 'owner_id', 'tenant_id'],
     title: 'ItemPublic'
 } as const;
 
@@ -186,6 +191,7 @@ export const MessageSchema = {
     properties: {
         message: {
             type: 'string',
+            maxLength: 255,
             title: 'Message'
         }
     },
@@ -198,6 +204,7 @@ export const NewPasswordSchema = {
     properties: {
         token: {
             type: 'string',
+            maxLength: 1024,
             title: 'Token'
         },
         new_password: {
@@ -212,10 +219,11 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
-export const PrivateUserCreateSchema = {
+export const PrivateUserCreateInputSchema = {
     properties: {
         email: {
             type: 'string',
+            format: 'email',
             title: 'Email'
         },
         password: {
@@ -223,24 +231,132 @@ export const PrivateUserCreateSchema = {
             title: 'Password'
         },
         full_name: {
-            type: 'string',
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Full Name'
-        },
-        is_verified: {
-            type: 'boolean',
-            title: 'Is Verified',
-            default: false
         }
     },
     type: 'object',
-    required: ['email', 'password', 'full_name'],
-    title: 'PrivateUserCreate'
+    required: ['email', 'password'],
+    title: 'PrivateUserCreateInput'
+} as const;
+
+export const TenantCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 1024
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'TenantCreate'
+} as const;
+
+export const TenantPublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 1024
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        }
+    },
+    type: 'object',
+    required: ['name', 'id'],
+    title: 'TenantPublic'
+} as const;
+
+export const TenantUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 1024
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    title: 'TenantUpdate'
+} as const;
+
+export const TenantsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/TenantPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'TenantsPublic'
 } as const;
 
 export const TokenSchema = {
     properties: {
         access_token: {
             type: 'string',
+            maxLength: 1024,
             title: 'Access Token'
         },
         token_type: {
@@ -309,10 +425,15 @@ export const UserCreateSchema = {
             maxLength: 40,
             minLength: 8,
             title: 'Password'
+        },
+        tenant_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Tenant Id'
         }
     },
     type: 'object',
-    required: ['email', 'password'],
+    required: ['email', 'password', 'tenant_id'],
     title: 'UserCreate'
 } as const;
 
@@ -350,43 +471,16 @@ export const UserPublicSchema = {
             type: 'string',
             format: 'uuid',
             title: 'Id'
+        },
+        tenant_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Tenant Id'
         }
     },
     type: 'object',
-    required: ['email', 'id'],
+    required: ['email', 'id', 'tenant_id'],
     title: 'UserPublic'
-} as const;
-
-export const UserRegisterSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Email'
-        },
-        password: {
-            type: 'string',
-            maxLength: 40,
-            minLength: 8,
-            title: 'Password'
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        }
-    },
-    type: 'object',
-    required: ['email', 'password'],
-    title: 'UserRegister'
 } as const;
 
 export const UserUpdateSchema = {
@@ -438,6 +532,18 @@ export const UserUpdateSchema = {
                 }
             ],
             title: 'Password'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
         }
     },
     type: 'object',

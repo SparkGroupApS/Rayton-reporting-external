@@ -1,16 +1,17 @@
 import { Box, Flex, Icon, Text } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
-import { FiBriefcase, FiHome, FiSettings, FiUsers } from "react-icons/fi"
+import { FiBriefcase, FiHome, FiSettings, FiUsers } from "react-icons/fi";
+import { FaBuilding } from "react-icons/fa"; 
 import type { IconType } from "react-icons/lib"
 
 import type { UserPublic } from "@/client"
 
-const items = [
-  { icon: FiHome, title: "Dashboard", path: "/" },
-  { icon: FiBriefcase, title: "Items", path: "/items" },
-  { icon: FiSettings, title: "User Settings", path: "/settings" },
-]
+// const items = [
+//   { icon: FiHome, title: "Dashboard", path: "/" },
+//   { icon: FiBriefcase, title: "Items", path: "/items" },
+//   { icon: FiSettings, title: "User Settings", path: "/settings" },
+// ]
 
 interface SidebarItemsProps {
   onClose?: () => void
@@ -26,18 +27,32 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
 
+  // Define the base items
+  const baseItems: Item[] = [
+    { icon: FiHome, title: "Dashboard", path: "/" },
+    { icon: FiBriefcase, title: "Items", path: "/items" },
+    { icon: FiSettings, title: "User Settings", path: "/settings" },
+  ];
+
+  // Conditionally add admin/tenant items
   const finalItems: Item[] = currentUser?.is_superuser
-    ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
-    : items
+    ? [
+        ...baseItems,
+        { icon: FiUsers, title: "Admin", path: "/admin" }, // Keep Admin link
+        //{ icon: FaBuilding, title: "Tenants", path: "/admin/tenants/" },
+        { icon: FaBuilding, title: "Tenants", path: "/tenant" }, // Should work now
+      ]
+    : baseItems; // Non-superusers only see base items
 
   const listItems = finalItems.map(({ icon, title, path }) => (
+    // Rest of the component remains the same...
     <RouterLink key={title} to={path} onClick={onClose}>
       <Flex
         gap={4}
         px={4}
         py={2}
         _hover={{
-          background: "gray.subtle",
+          background: "gray.subtle", // Or your theme's hover color
         }}
         alignItems="center"
         fontSize="sm"
@@ -46,7 +61,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         <Text ml={2}>{title}</Text>
       </Flex>
     </RouterLink>
-  ))
+  ));
 
   return (
     <>
@@ -55,7 +70,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       </Text>
       <Box>{listItems}</Box>
     </>
-  )
-}
+  );
+};
 
 export default SidebarItems

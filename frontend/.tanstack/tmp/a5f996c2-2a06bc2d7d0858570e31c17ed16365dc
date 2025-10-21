@@ -1,0 +1,173 @@
+import {
+    Badge, // Import Badge if needed for future status display
+    Container,
+    Flex,
+    Heading,
+    Table, // Use Chakra Table
+    Button, // Use Chakra Button
+    Spinner, // For loading state
+    Text // For messages
+} from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query"; // Keep useQuery
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'; // Import Link, useNavigate
+import { z } from "zod"; // Import Zod for search schema
+
+// Import tenant hooks
+import { useTenants, useDeleteTenant } from '../../../../hooks/useTenantQueries'; // Adjust path
+// Import pagination components (assuming path is correct)
+import {
+  PaginationItems,
+  PaginationNextTrigger,
+  PaginationPrevTrigger,
+  PaginationRoot,
+} from "@/components/ui/pagination.tsx";
+// Import ApiError for type checking
+import { ApiError } from "../../../../client";
+
+// --- Pagination and Search Params ---
+const tenantsSearchSchema = z.object({
+  page: z.number().int().positive().catch(1), // Page number, default 1
+});
+
+const PER_PAGE = 10; // Or your desired page size
+
+// --- Query Options Function ---
+function getTenantsQueryOptions({ page }: { page: number }) {
+  const queryParams = {
+    skip: (page - 1) * PER_PAGE,
+    limit: PER_PAGE,
+  };
+  return {
+    queryKey: ["tenants", { page }], // Use query key consistent with useTenants hook update
+    // queryFn is handled by useTenants hook, no need to redefine here
+    // params: queryParams // Pass params if useTenants needs them explicitly
+  };
+}
+
+// --- Route Definition ---
+// Ensure path matches your routing setup, likely /tenants based on previous errors
+export const Route = createFileRoute('/_layout/_admin/tenants/')({ // Correct path
+  component: TenantListPage,
+  validateSearch: (search) => tenantsSearchSchema.parse(search), // Validate page param
+});
+
+// --- Component ---
+function TenantListPage() {
+  const navigate = useNavigate();
+  const { page } = Route.useSearch(); // Get page from URL search params
+
+  // Fetch tenants using the hook with pagination params
+  const { data: tenantsData, isLoading, isPlaceholderData, error } = useTenants({
+      skip: (page - 1) * PER_PAGE,
+      limit: PER_PAGE,
+  });
+
+  const deleteTenantMutation = useDeleteTenant();
+
+  // Handle page changes
+  const setPage = (newPage: number) => {
+    navigate({ search: (prev) => ({ ...prev, page: newPage }), replace: true });
+  };
+
+  // Handle delete confirmation and mutation call
+  const handleDelete = (tenantId: string, tenantName: string) => {
+    if (window.confirm(`Are you sure you want to delete tenant "${tenantName}"? This is irreversible and might affect users.`)) {
+        deleteTenantMutation.mutate(tenantId);
+    }
+  };
+
+  // Loading and Error States
+  if (isLoading) {
+      return <Container py={8} centerContent><Spinner /> Loading tenants...</Container>;
+  }
+  if (error) {
+      return <Container py={8}><Text color="red.500">Error loading tenants: {error.message}</Text></Container>;
+  }
+
+  const tenants = tenantsData?.data ?? [];
+  const count = tenantsData?.count ?? 0;
+
+  return (
+    <Container maxW="full" py={8}>
+      <Flex justify="space-between" align="center" mb={6}>
+        <Heading size="lg">Tenant Management</Heading>
+        <Button 
+          onClick={() => navigate({ to: '/admin/tenants/create' })}
+          colorScheme="teal"
+        >
+          Create New Tenant
+        </Button>
+      </Flex>
+
+      {/* Display mutation errors */}
+      {deleteTenantMutation.isError && (
+          <Text color="red.500" mb={4}>
+              Error deleting tenant:
+              {(deleteTenantMutation.error instanceof ApiError &&
+                typeof deleteTenantMutation.error.body === 'object' &&
+                deleteTenantMutation.error.body !== null &&
+                'detail' in deleteTenantMutation.error.body)
+                ? String(deleteTenantMutation.error.body.detail)
+                : deleteTenantMutation.error?.message
+              }
+          </Text>
+      )}
+
+      {/* Tenants Table using Chakra UI Table */}
+      <Table.Root variant="simple" size={{ base: "sm", md: "md" }}>
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Name</Table.ColumnHeader>
+            <Table.ColumnHeader>Description</Table.ColumnHeader>
+            <Table.ColumnHeader>ID</Table.ColumnHeader>
+            <Table.ColumnHeader>Actions</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {tenants.map((tenant) => (
+            <Table.Row key={tenant.id} opacity={isPlaceholderData ? 0.5 : 1}>
+              <Table.Cell fontWeight="medium">{tenant.name}</Table.Cell>
+              <Table.Cell color={!tenant.description ? "gray.500" : "inherit"} maxW="lg" truncate>
+                  {tenant.description || "N/A"}
+              </Table.Cell>
+              <Table.Cell fontFamily="monospace" fontSize="xs">{tenant.id}</Table.Cell>
+              <Table.Cell>
+                <Flex gap={2}>
+                    {/* Link to Edit page */}
+                    <Button variant="outline" size="sm" as={Link} to={`/tenants/${tenant.id}/edit`}> {/* Correct path */}
+                        Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      colorScheme="red"
+                      size="sm"
+                      onClick={() => handleDelete(tenant.id, tenant.name)}
+                      loading={deleteTenantMutation.isPending && deleteTenantMutation.variables === tenant.id}
+                    >
+                      Delete
+                    </Button>
+                </Flex>
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+
+      {/* Pagination Controls */}
+      <Flex justifyContent="flex-end" mt={4}>
+        <PaginationRoot
+          count={count}
+          pageSize={PER_PAGE}
+          page={page}
+          onPageChange={({ page: newPage }) => setPage(newPage)}
+        >
+          <Flex>
+            <PaginationPrevTrigger />
+            <PaginationItems />
+            <PaginationNextTrigger />
+          </Flex>
+        </PaginationRoot>
+      </Flex>
+    </Container>
+  );
+}

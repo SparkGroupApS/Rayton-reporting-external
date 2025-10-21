@@ -4,6 +4,41 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 
+# 1. NEW TENANT MODELS
+# ##############################################################################
+
+# Shared properties for a Tenant
+class TenantBase(SQLModel):
+    name: str = Field(unique=True, index=True, max_length=255)
+    description: str | None = Field(default=None, max_length=1024)
+
+# Properties to return via API
+class TenantPublic(TenantBase):
+    id: uuid.UUID
+
+# Database model for Tenant
+class Tenant(TenantBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    
+    # A tenant has many users
+    users: list["User"] = Relationship(back_populates="tenant")
+    # A tenant has many items (through its users, but a direct link is cleaner)
+    items: list["Item"] = Relationship(back_populates="tenant")
+
+class TenantsPublic(SQLModel):
+    data: list[TenantPublic]
+    count: int
+
+# Properties to receive on tenant creation
+class TenantCreate(TenantBase):
+    pass
+
+# Properties to receive on tenant update (optional)
+class TenantUpdate(TenantBase):
+    name: str | None = Field(default=None, max_length=255) # Allow updating name
+    description: str | None = Field(default=None, max_length=1024)
+# ##############################################################################
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -15,6 +50,7 @@ class UserBase(SQLModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
+    tenant_id: uuid.UUID
 
 
 class UserRegister(SQLModel):
@@ -27,7 +63,7 @@ class UserRegister(SQLModel):
 class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     password: str | None = Field(default=None, min_length=8, max_length=40)
-
+    tenant_id: uuid.UUID | None = Field(default=None)
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
@@ -42,13 +78,23 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    hashed_password: str
+    hashed_password: str = Field(max_length=255) 
+    
+    # --- MODIFICATION START ---
+    # Add the foreign key to the Tenant table
+    tenant_id: uuid.UUID = Field(foreign_key="tenant.id", nullable=False)
+    
+    # Add the relationship link
+    tenant: Tenant | None = Relationship(back_populates="users")
+    # --- MODIFICATION END ---
+    
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
+    tenant_id: uuid.UUID  # <-- ADD THIS LINE
 
 
 class UsersPublic(SQLModel):
@@ -75,8 +121,22 @@ class ItemUpdate(ItemBase):
 # Database model, database table inferred from class name
 class Item(ItemBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    
+    # --- MODIFICATION START ---
+    # Add the foreign key to the Tenant table
+    # This creates data isolation at the DB level
+    tenant_id: uuid.UUID = Field(foreign_key="tenant.id", nullable=False)
+    
+    # Add the relationship link
+    tenant: Tenant | None = Relationship(back_populates="items")
+    # --- MODIFICATION END ---
+    
     owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+        foreign_key="user.id", nullable=False
+        # We remove ondelete="CASCADE" from here.
+        # Deleting a user should be handled by logic, not a cascade
+        # Or, if you keep it, ensure deleting a user doesn't break tenant items.
+        # For now, let's remove it to be safe.
     )
     owner: User | None = Relationship(back_populates="items")
 
@@ -85,6 +145,7 @@ class Item(ItemBase, table=True):
 class ItemPublic(ItemBase):
     id: uuid.UUID
     owner_id: uuid.UUID
+    tenant_id: uuid.UUID  # <-- ADD THIS LINE
 
 
 class ItemsPublic(SQLModel):
@@ -94,12 +155,12 @@ class ItemsPublic(SQLModel):
 
 # Generic message
 class Message(SQLModel):
-    message: str
+    message: str = Field(max_length=255)
 
 
 # JSON payload containing access token
 class Token(SQLModel):
-    access_token: str
+    access_token: str = Field(max_length=1024)
     token_type: str = "bearer"
 
 
@@ -109,5 +170,5 @@ class TokenPayload(SQLModel):
 
 
 class NewPassword(SQLModel):
-    token: str
+    token: str = Field(max_length=1024)
     new_password: str = Field(min_length=8, max_length=40)
