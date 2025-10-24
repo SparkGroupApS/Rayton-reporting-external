@@ -3,7 +3,64 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class DashboardService {
+    /**
+     * Read Dashboard Data
+     * Retrieve dashboard data for the current user's tenant.
+     * Superusers can use tenant_id_override to view other tenants.
+     * @param data The data for the request.
+     * @param data.tenantIdOverride Admin override to view a specific tenant's dashboard
+     * @returns DashboardData Successful Response
+     * @throws ApiError
+     */
+    public static readDashboardData(data: DashboardReadDashboardDataData = {}): CancelablePromise<DashboardReadDashboardDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/',
+            query: {
+                tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class HistoricalDataService {
+    /**
+     * Read Historical Details
+     * Fetch raw historical DATA values for multiple DATA_IDs by PLANT_ID,
+     * grouped by series, including labels from TEXT_LIST.
+     * Scoped to user's tenant unless overridden.
+     * @param data The data for the request.
+     * @param data.dataIds List of DATA_IDs to fetch
+     * @param data.plantId PLANT_ID to fetch data for
+     * @param data.start Start timestamp (ISO format, optional)
+     * @param data.end End timestamp (ISO format, optional)
+     * @param data.tenantIdOverride Admin override for tenant ID
+     * @returns HistoricalDataGroupedResponse Successful Response
+     * @throws ApiError
+     */
+    public static readHistoricalDetails(data: HistoricalDataReadHistoricalDetailsData): CancelablePromise<HistoricalDataReadHistoricalDetailsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/historical-data/details',
+            query: {
+                data_ids: data.dataIds,
+                plant_id: data.plantId,
+                start: data.start,
+                end: data.end,
+                tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class ItemsService {
     /**
@@ -287,7 +344,7 @@ export class TenantsService {
     
     /**
      * Read Tenant By Id
-     * Get a specific tenant by ID (Superuser only).
+     * Get a specific tenant by ID. Allows users to get their own tenant.
      * @param data The data for the request.
      * @param data.tenantId
      * @returns TenantPublic Successful Response

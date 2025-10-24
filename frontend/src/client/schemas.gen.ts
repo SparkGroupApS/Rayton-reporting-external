@@ -55,6 +55,55 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const DashboardCardDataSchema = {
+    properties: {
+        total_users: {
+            type: 'integer',
+            title: 'Total Users'
+        },
+        total_items: {
+            type: 'integer',
+            title: 'Total Items'
+        },
+        active_users: {
+            type: 'integer',
+            title: 'Active Users'
+        },
+        inactive_items: {
+            type: 'integer',
+            title: 'Inactive Items'
+        }
+    },
+    type: 'object',
+    required: ['total_users', 'total_items', 'active_users', 'inactive_items'],
+    title: 'DashboardCardData'
+} as const;
+
+export const DashboardDataSchema = {
+    properties: {
+        cards: {
+            '$ref': '#/components/schemas/DashboardCardData'
+        },
+        revenue: {
+            items: {
+                '$ref': '#/components/schemas/RevenueData'
+            },
+            type: 'array',
+            title: 'Revenue'
+        },
+        items: {
+            items: {
+                '$ref': '#/components/schemas/ItemPublic'
+            },
+            type: 'array',
+            title: 'Items'
+        }
+    },
+    type: 'object',
+    required: ['cards', 'revenue', 'items'],
+    title: 'DashboardData'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -67,6 +116,21 @@ export const HTTPValidationErrorSchema = {
     },
     type: 'object',
     title: 'HTTPValidationError'
+} as const;
+
+export const HistoricalDataGroupedResponseSchema = {
+    properties: {
+        series: {
+            items: {
+                '$ref': '#/components/schemas/TimeSeriesData'
+            },
+            type: 'array',
+            title: 'Series'
+        }
+    },
+    type: 'object',
+    required: ['series'],
+    title: 'HistoricalDataGroupedResponse'
 } as const;
 
 export const ItemCreateSchema = {
@@ -247,6 +311,22 @@ export const PrivateUserCreateInputSchema = {
     title: 'PrivateUserCreateInput'
 } as const;
 
+export const RevenueDataSchema = {
+    properties: {
+        month: {
+            type: 'string',
+            title: 'Month'
+        },
+        revenue: {
+            type: 'integer',
+            title: 'Revenue'
+        }
+    },
+    type: 'object',
+    required: ['month', 'revenue'],
+    title: 'RevenueData'
+} as const;
+
 export const TenantCreateSchema = {
     properties: {
         name: {
@@ -352,6 +432,55 @@ export const TenantsPublicSchema = {
     title: 'TenantsPublic'
 } as const;
 
+export const TimeSeriesDataSchema = {
+    properties: {
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        data: {
+            items: {
+                '$ref': '#/components/schemas/TimeSeriesPoint'
+            },
+            type: 'array',
+            title: 'Data'
+        }
+    },
+    type: 'object',
+    required: ['data_id', 'name', 'data'],
+    title: 'TimeSeriesData'
+} as const;
+
+export const TimeSeriesPointSchema = {
+    properties: {
+        x: {
+            type: 'integer',
+            title: 'X'
+        },
+        y: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Y'
+        }
+    },
+    type: 'object',
+    required: ['x', 'y'],
+    title: 'TimeSeriesPoint'
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {
@@ -420,6 +549,18 @@ export const UserCreateSchema = {
             ],
             title: 'Full Name'
         },
+        role: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Role'
+        },
         password: {
             type: 'string',
             maxLength: 40,
@@ -467,6 +608,12 @@ export const UserPublicSchema = {
             ],
             title: 'Full Name'
         },
+        role: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Role',
+            default: 'client'
+        },
         id: {
             type: 'string',
             format: 'uuid',
@@ -498,28 +645,6 @@ export const UserUpdateSchema = {
             ],
             title: 'Email'
         },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        },
         password: {
             anyOf: [
                 {
@@ -533,17 +658,51 @@ export const UserUpdateSchema = {
             ],
             title: 'Password'
         },
-        tenant_id: {
+        full_name: {
             anyOf: [
                 {
                     type: 'string',
-                    format: 'uuid'
+                    maxLength: 255
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Tenant Id'
+            title: 'Full Name'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        },
+        is_superuser: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Superuser'
+        },
+        role: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Role'
         }
     },
     type: 'object',

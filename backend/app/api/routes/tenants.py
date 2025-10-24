@@ -18,12 +18,12 @@ from app.models import (
 # All tenant operations require superuser privileges
 router = APIRouter(
     prefix="/tenants", 
-    tags=["tenants"], 
-    dependencies=[Depends(get_current_active_superuser)]
+    tags=["tenants"]
+    #dependencies=[Depends(get_current_active_superuser)]
 )
 
 
-@router.post("/", response_model=TenantPublic, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TenantPublic, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_active_superuser)])
 async def create_tenant(
     *, session: SessionDep, tenant_in: TenantCreate
 ) -> Any:
@@ -35,7 +35,7 @@ async def create_tenant(
     return tenant
 
 
-@router.get("/", response_model=TenantsPublic)
+@router.get("/", response_model=TenantsPublic, dependencies=[Depends(get_current_active_superuser)])
 async def read_tenants(
     session: SessionDep, skip: int = 0, limit: int = 100
 ) -> Any:
@@ -46,20 +46,31 @@ async def read_tenants(
     return TenantsPublic(data=tenants, count=count)
 
 
+# GET /{tenant_id} - NO superuser dependency here, but add logic inside
 @router.get("/{tenant_id}", response_model=TenantPublic)
 async def read_tenant_by_id(
-    tenant_id: uuid.UUID, session: SessionDep
+    tenant_id: uuid.UUID, 
+    session: SessionDep,
+    current_user: CurrentUser # Inject current user
 ) -> Any:
-    """
-    Get a specific tenant by ID (Superuser only).
-    """
+    """ Get a specific tenant by ID. Allows users to get their own tenant. """
     tenant = await crud.get_tenant_by_id(session=session, tenant_id=tenant_id)
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+        
+    # --- ADD PERMISSION CHECK ---
+    # Allow if user is superuser OR if the requested tenant_id matches the user's tenant_id
+    if not current_user.is_superuser and tenant.id != current_user.tenant_id:
+         raise HTTPException(
+             status_code=status.HTTP_403_FORBIDDEN, 
+             detail="Not enough permissions to view this tenant"
+        )
+    # --- END PERMISSION CHECK ---
+        
     return tenant
 
-
-@router.put("/{tenant_id}", response_model=TenantPublic)
+# ADD dependency here
+@router.put("/{tenant_id}", response_model=TenantPublic, dependencies=[Depends(get_current_active_superuser)])
 async def update_tenant(
     *,
     session: SessionDep,
@@ -79,7 +90,7 @@ async def update_tenant(
     return tenant
 
 
-@router.delete("/{tenant_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{tenant_id}", status_code=status.HTTP_200_OK, dependencies=[Depends(get_current_active_superuser)])
 async def delete_tenant(
     tenant_id: uuid.UUID, session: SessionDep
 ) -> Message:

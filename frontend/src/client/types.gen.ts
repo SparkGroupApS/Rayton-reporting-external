@@ -9,6 +9,23 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type DashboardCardData = {
+    total_users: number;
+    total_items: number;
+    active_users: number;
+    inactive_items: number;
+};
+
+export type DashboardData = {
+    cards: DashboardCardData;
+    revenue: Array<RevenueData>;
+    items: Array<ItemPublic>;
+};
+
+export type HistoricalDataGroupedResponse = {
+    series: Array<TimeSeriesData>;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -51,6 +68,11 @@ export type PrivateUserCreateInput = {
     full_name?: (string | null);
 };
 
+export type RevenueData = {
+    month: string;
+    revenue: number;
+};
+
 export type TenantCreate = {
     name: string;
     description?: (string | null);
@@ -72,6 +94,17 @@ export type TenantUpdate = {
     description?: (string | null);
 };
 
+export type TimeSeriesData = {
+    data_id: number;
+    name: string;
+    data: Array<TimeSeriesPoint>;
+};
+
+export type TimeSeriesPoint = {
+    x: number;
+    y: (number | null);
+};
+
 export type Token = {
     access_token: string;
     token_type?: string;
@@ -87,6 +120,7 @@ export type UserCreate = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: (string | null);
     password: string;
     tenant_id: string;
 };
@@ -96,6 +130,7 @@ export type UserPublic = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: string;
     id: string;
     tenant_id: string;
 };
@@ -107,11 +142,11 @@ export type UsersPublic = {
 
 export type UserUpdate = {
     email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
     password?: (string | null);
-    tenant_id?: (string | null);
+    full_name?: (string | null);
+    is_active?: (boolean | null);
+    is_superuser?: (boolean | null);
+    role?: (string | null);
 };
 
 export type UserUpdateMe = {
@@ -124,6 +159,40 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type DashboardReadDashboardDataData = {
+    /**
+     * Admin override to view a specific tenant's dashboard
+     */
+    tenantIdOverride?: (string | null);
+};
+
+export type DashboardReadDashboardDataResponse = (DashboardData);
+
+export type HistoricalDataReadHistoricalDetailsData = {
+    /**
+     * List of DATA_IDs to fetch
+     */
+    dataIds: Array<(number)>;
+    /**
+     * End timestamp (ISO format, optional)
+     */
+    end?: (string | null);
+    /**
+     * PLANT_ID to fetch data for
+     */
+    plantId: number;
+    /**
+     * Start timestamp (ISO format, optional)
+     */
+    start?: (string | null);
+    /**
+     * Admin override for tenant ID
+     */
+    tenantIdOverride?: (string | null);
+};
+
+export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
 
 export type ItemsReadItemsData = {
     /**

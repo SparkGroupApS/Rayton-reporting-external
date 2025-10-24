@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { 
     TenantsService, 
     TenantPublic, 
@@ -11,6 +11,9 @@ import {
 
 type TenantListParams = Parameters<typeof TenantsService.readTenants>[0]; 
 
+// Define the type for extra useQuery options, omitting ones set internally
+type UseTenantsQueryOptions = Omit<UseQueryOptions<TenantsPublic, ApiError>, 'queryKey' | 'queryFn'>;
+
 const tenantKeys = {
   all: ["tenants"] as const,
   // Ensure list key includes pagination params
@@ -19,11 +22,25 @@ const tenantKeys = {
 };
 
 // Hook to fetch a list of tenants (accepts pagination params)
-export const useTenants = (params: TenantListParams = {}) => { // Use the defined type
+// export const useTenants = (params: TenantListParams = {}) => { // Use the defined type
+//   return useQuery<TenantsPublic, ApiError>({
+//     queryKey: tenantKeys.list(params), // Use params in queryKey
+//     queryFn: () => TenantsService.readTenants(params), // Pass params to API call
+//     placeholderData: (prevData) => prevData, // Add placeholderData for smoother pagination
+//   });
+// };
+// Update the hook signature to accept options
+export const useTenants = (
+    params: TenantListParams = {}, 
+    options: UseTenantsQueryOptions = {} // Add second argument for options
+) => {
   return useQuery<TenantsPublic, ApiError>({
-    queryKey: tenantKeys.list(params), // Use params in queryKey
-    queryFn: () => TenantsService.readTenants(params), // Pass params to API call
-    placeholderData: (prevData) => prevData, // Add placeholderData for smoother pagination
+    // Spread the passed options here
+    ...options, 
+    // Keep internal queryKey and queryFn
+    queryKey: tenantKeys.list(params), 
+    queryFn: () => TenantsService.readTenants(params), 
+    placeholderData: (prevData) => prevData, 
   });
 };
 
@@ -32,6 +49,7 @@ export const useTenant = (tenantId: string | null) => {
   // Type inference works for parameters here too
   const queryParams = { tenantId: tenantId! }; 
   return useQuery<TenantPublic, ApiError>({
+    
     queryKey: tenantKeys.detail(tenantId!), 
     queryFn: () => TenantsService.readTenantById(queryParams), 
     enabled: !!tenantId, 

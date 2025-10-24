@@ -33,13 +33,20 @@ async def get_tenant_by_id(*, session: AsyncSession, tenant_id: uuid.UUID) -> Te
 async def create_user(
     *, session: AsyncSession, user_create: UserCreate, tenant_id: uuid.UUID # Added tenant_id
 ) -> User:
-    """Creates a user, ensuring they are assigned to a tenant."""
+    """Creates a user, assigns tenant, and handles optional role."""
+    # Prepare update dictionary, including hashed password and tenant_id
+    update_data = {
+        "hashed_password": get_password_hash(user_create.password),
+        "tenant_id": tenant_id
+    }
+    # If a role is provided in UserCreate, include it in the update data
+    # Otherwise, the default 'client' from UserBase will be used
+    if user_create.role is not None:
+        update_data["role"] = user_create.role
+        
     db_obj = User.model_validate(
         user_create, 
-        update={
-            "hashed_password": get_password_hash(user_create.password),
-            "tenant_id": tenant_id  # Assign tenant_id
-        }
+        update=update_data
     )
     session.add(db_obj)
     await session.commit() 
@@ -49,17 +56,23 @@ async def create_user(
 # update_user: Typically, tenant_id should NOT be updatable via standard user updates.
 # If you need to move a user between tenants, create a specific admin function.
 async def update_user(*, session: AsyncSession, db_user: User, user_in: UserUpdate) -> Any:
+    """Updates a user, allowing role changes."""
     user_data = user_in.model_dump(exclude_unset=True)
     extra_data = {}
-    if "password" in user_data:
-        password = user_data["password"]
+    if "password" in user_data and user_data["password"]: # Check if password is not None/empty
+        password = user_data.pop("password") # Remove password before main update
         hashed_password = get_password_hash(password)
         extra_data["hashed_password"] = hashed_password
     
     # Ensure tenant_id is not accidentally changed
-    #user_data.pop("tenant_id", None) 
+    user_data.pop("tenant_id", None) 
+    
+    # Update standard fields (email, full_name, is_active, is_superuser, role)
+    db_user.sqlmodel_update(user_data) 
+    # Update extra data like hashed_password if needed
+    if extra_data:
+        db_user.sqlmodel_update(extra_data) 
 
-    db_user.sqlmodel_update(user_data, update=extra_data)
     session.add(db_user)
     await session.commit() 
     await session.refresh(db_user) 
