@@ -15,6 +15,10 @@ import sqlalchemy as sa
 class TenantBase(SQLModel):
     name: str = Field(unique=True, index=True, max_length=255)
     description: str | None = Field(default=None, max_length=1024)
+    # --- ADD plant_id to base ---
+    # This assumes plant_id is managed in your external DB, so make it optional here.
+    # We'll store it directly in the Tenant table for easy lookup.
+    plant_id: Optional[int] = Field(default=None, index=True) # Add index for faster lookups
 
 # Properties to return via API
 class TenantPublic(TenantBase):
@@ -35,12 +39,15 @@ class TenantsPublic(SQLModel):
 
 # Properties to receive on tenant creation
 class TenantCreate(TenantBase):
+    # `plant_id` can be optionally set during creation
     pass
 
 # Properties to receive on tenant update (optional)
-class TenantUpdate(TenantBase):
-    name: str | None = Field(default=None, max_length=255) # Allow updating name
+class TenantUpdate(SQLModel): # Change inheritance to SQLModel for partial updates
+    name: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=1024)
+    # --- ADD optional plant_id update ---
+    plant_id: Optional[int] = Field(default=None)
 # ##############################################################################
 
 # Shared properties

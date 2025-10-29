@@ -33,7 +33,7 @@ function SchedulePage() {
 
     // --- This logic is copied from your index.tsx ---
     // TODO: This hardcoded plantId should eventually be dynamic
-    const [plantId, setPlantId] = useState<number | null>(2500);
+    //const [plantId, setPlantId] = useState<number | null>(2500);
     const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
     const isPrivilegedUser = currentUser?.is_superuser || currentUser?.role === 'admin' || currentUser?.role === 'manager';
     const { data: tenantsData, isLoading: isLoadingTenants } = useTenants({}, { enabled: !!isPrivilegedUser });
@@ -79,18 +79,10 @@ function SchedulePage() {
                     />
                 </HStack>
 
-                {/* Render the table, passing the correct props */}
-                {plantId && selectedTenant ? (
-                    <ScheduleControlTable
-                        plantId={plantId}
-                        tenantDb={selectedTenant} // tenantDb is the selectedTenant UUID
-                        date={selectedDate}
-                    />
-                ) : (
-                    <Flex justify="center" align="center" h="200px">
-                        <Spinner />
-                    </Flex>
-                )}
+                <ScheduleControlTable
+                    tenantId={selectedTenant} // Pass the tenant UUID
+                    date={selectedDate}
+                />
             </Box>
         </Container>
     );

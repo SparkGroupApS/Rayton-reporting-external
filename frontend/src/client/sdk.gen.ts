@@ -301,11 +301,9 @@ export class PrivateService {
 export class ScheduleService {
     /**
      * Read Schedule
-     * Get schedule rows for a specific plant and date.
      * @param data The data for the request.
-     * @param data.plantId
-     * @param data.tenantDb
-     * @param data.date The date to fetch schedule for, in YYYY-MM-DD format
+     * @param data.tenantId Tenant ID to fetch schedule for
+     * @param data.date Date (YYYY-MM-DD)
      * @returns ScheduleRow Successful Response
      * @throws ApiError
      */
@@ -314,8 +312,7 @@ export class ScheduleService {
             method: 'GET',
             url: '/api/v1/schedule/',
             query: {
-                plant_id: data.plantId,
-                tenant_db: data.tenantDb,
+                tenant_id: data.tenantId,
                 date: data.date
             },
             errors: {
@@ -326,12 +323,10 @@ export class ScheduleService {
     
     /**
      * Bulk Update Schedule
-     * Update existing schedule rows, insert new ones, and delete removed ones
-     * for a specific plant and date.
+     * Replace schedule for a specific tenant and date (delete-then-insert).
      * @param data The data for the request.
-     * @param data.plantId
-     * @param data.tenantDb
      * @param data.date
+     * @param data.tenantId Tenant ID to update schedule for
      * @param data.requestBody
      * @returns ScheduleRow Successful Response
      * @throws ApiError
@@ -341,9 +336,8 @@ export class ScheduleService {
             method: 'PUT',
             url: '/api/v1/schedule/bulk',
             query: {
-                plant_id: data.plantId,
-                tenant_db: data.tenantDb,
-                date: data.date
+                date: data.date,
+                tenant_id: data.tenantId
             },
             body: data.requestBody,
             mediaType: 'application/json',

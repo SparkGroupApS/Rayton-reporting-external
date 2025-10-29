@@ -19,9 +19,10 @@ import { useGetSchedule, useBulkUpdateSchedule } from '@/hooks/useScheduleQuerie
 import { type ScheduleRow, ApiError } from '@/client';
 
 interface ScheduleControlTableProps {
-  plantId: number;
-  tenantDb: string;
-  date: string;
+    // plantId: number; // REMOVE
+    // tenantDb: string; // REMOVE
+    tenantId: string; // <-- ADD tenantId (UUID string)
+    date: string;
 }
 
 // Interface for the data we actually render
@@ -44,16 +45,16 @@ const createNewScheduleRowTemplate = (): Omit<ScheduleRow, 'id' | 'updated_at' |
   source: 0,
 });
 
-const ScheduleControlTable = ({ plantId, tenantDb, date }: ScheduleControlTableProps) => {
-  // --- Server State (from React Query) ---
-  const {
-    data: serverData,
-    isLoading: loadingSchedule,
-    error
-  } = useGetSchedule({ plantId, tenantDb, date });
+const ScheduleControlTable = ({ tenantId, date }: ScheduleControlTableProps) => { // <-- Use tenantId
+    const {
+        data: serverData,
+        isLoading: loadingSchedule,
+        error
+    // --- CHANGE: Pass tenantId to hooks ---
+    } = useGetSchedule({ tenantId, date });
 
-  // --- Mutation Hook ---
-  const { mutate: bulkUpdateSchedule, isPending: isSaving } = useBulkUpdateSchedule({ plantId, tenantDb, date });
+    const { mutate: bulkUpdateSchedule, isPending: isSaving }
+       = useBulkUpdateSchedule({ tenantId, date });
 
 
   // --- LOCAL STATE (Source of Truth) ---

@@ -92,11 +92,13 @@ export type ScheduleRow = {
 export type TenantCreate = {
     name: string;
     description?: (string | null);
+    plant_id?: (number | null);
 };
 
 export type TenantPublic = {
     name: string;
     description?: (string | null);
+    plant_id?: (number | null);
     id: string;
 };
 
@@ -108,6 +110,7 @@ export type TenantsPublic = {
 export type TenantUpdate = {
     name?: (string | null);
     description?: (string | null);
+    plant_id?: (number | null);
 };
 
 export type TimeSeriesData = {
@@ -284,20 +287,24 @@ export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
 
 export type ScheduleReadScheduleData = {
     /**
-     * The date to fetch schedule for, in YYYY-MM-DD format
+     * Date (YYYY-MM-DD)
      */
     date: string;
-    plantId: number;
-    tenantDb: string;
+    /**
+     * Tenant ID to fetch schedule for
+     */
+    tenantId: string;
 };
 
 export type ScheduleReadScheduleResponse = (Array<ScheduleRow>);
 
 export type ScheduleBulkUpdateScheduleData = {
     date: string;
-    plantId: number;
     requestBody: Array<ScheduleRow>;
-    tenantDb: string;
+    /**
+     * Tenant ID to update schedule for
+     */
+    tenantId: string;
 };
 
 export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);

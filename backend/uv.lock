@@ -56,6 +56,7 @@ dependencies = [
     { name = "email-validator" },
     { name = "emails" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "fastapi-mqtt" },
     { name = "httpx" },
     { name = "jinja2" },
     { name = "passlib", extra = ["bcrypt"] },
@@ -86,6 +87,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.1.0.post1,<3.0.0.0" },
     { name = "emails", specifier = ">=0.6,<1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.114.2,<1.0.0" },
+    { name = "fastapi-mqtt", specifier = ">=2.2.0" },
     { name = "httpx", specifier = ">=0.25.1,<1.0.0" },
     { name = "jinja2", specifier = ">=3.1.4,<4.0.0" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4,<2.0.0" },
@@ -494,12 +496,34 @@ standard = [
 ]
 
 [[package]]
+name = "fastapi-mqtt"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gmqtt" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/fd/2eb9400ac35f1cad795d76688e801e43f1a48c2bf869ee856bac16a1b921/fastapi_mqtt-2.2.0.tar.gz", hash = "sha256:68308fe47c068b4d2146b3eb10aa198fa08d827aa3dc3d081dd5821e53090b2b", size = 9572, upload-time = "2024-05-22T08:59:07.231Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/6e/01ee90c935f0eb52e69eac18baf7f8ef14f926d9cc2c04b52df1cba07b17/fastapi_mqtt-2.2.0-py3-none-any.whl", hash = "sha256:1bb5e5cca39457c72d9cd0e36b56817923f49ee1a9605fe8dbad36d5ce450c36", size = 9288, upload-time = "2024-05-22T08:59:04.621Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.16.1"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9d/db/3ef5bb276dae18d6ec2124224403d1d67bccdbefc17af4cc8f553e341ab1/filelock-3.16.1.tar.gz", hash = "sha256:c249fbfcd5db47e5e2d6d62198e565475ee65e4831e2561c8e313fa7eb961435", size = 18037, upload-time = "2024-09-17T19:02:01.779Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b9/f8/feced7779d755758a52d1f6635d990b8d98dc0a29fa568bbe0625f18fdf3/filelock-3.16.1-py3-none-any.whl", hash = "sha256:2082e5703d51fbf98ea75855d9d5527e33d8ff23099bec374a134febee6946b0", size = 16163, upload-time = "2024-09-17T19:02:00.268Z" },
+]
+
+[[package]]
+name = "gmqtt"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/70/73ec54da16079da319b035af48b908204f9629ecd1187720d11799ac35d8/gmqtt-0.7.0.tar.gz", hash = "sha256:bedfec7bac26b6b4ce1f0c4c32cff3d663526a54c882d323d41560fc3b9b44a2", size = 27663, upload-time = "2024-11-22T13:13:48.679Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/2f/63922e256799a74b0e1fb1c12e98dc435edf1ddaa7e31eaadc60cbd16593/gmqtt-0.7.0-py3-none-any.whl", hash = "sha256:3e5571a20e9c115d83d600caa228b06f716087653e241035e29cec73277b52cc", size = 30688, upload-time = "2024-11-22T13:13:46.479Z" },
 ]
 
 [[package]]

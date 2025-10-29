@@ -415,6 +415,17 @@ export const TenantCreateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         }
     },
     type: 'object',
@@ -440,6 +451,17 @@ export const TenantPublicSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         },
         id: {
             type: 'string',
@@ -477,6 +499,17 @@ export const TenantUpdateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         }
     },
     type: 'object',
