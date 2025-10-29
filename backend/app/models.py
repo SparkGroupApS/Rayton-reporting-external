@@ -270,24 +270,47 @@ class PlcDataRealtime(SQLModel, table=True, metadata=external_metadata):
     DATA: Optional[float] = Field(default=None)
     STATUS: Optional[int] = Field(default=None)
 
+# class Schedule(SQLModel, table=True, metadata=external_metadata):
+#     __tablename__ = "SCHEDULE"
+
+#     ID: Optional[int] = Field(default=None, primary_key=True, unique=True, sa_column_kwargs={"name": "ID"}) # unique=True based on key
+#     PLANT_ID: Optional[int] = Field(default=None, index=True) # Part of unique key
+#     DATE: Optional[datetime.date] = Field(default=None, index=True) # Part of unique key
+#     REC_NO: Optional[int] = Field(default=None, index=True) # Part of unique key
+#     START_TIME: Optional[datetime.time] = Field(default=None)
+#     END_TIME: Optional[datetime.time] = Field(default=None)
+#     CHARGE_ENABLE: Optional[bool] = Field(default=None) # TINYINT(1) maps to bool
+#     CHARGE_FROM_GRID: Optional[bool] = Field(default=None)
+#     DISCHARGE_ENABLE: Optional[bool] = Field(default=None)
+#     ALLOW_TO_SELL: Optional[bool] = Field(default=None)
+#     CHARGE_POWER: Optional[float] = Field(default=None) # DOUBLE maps to float
+#     CHARGE_LIMIT: Optional[float] = Field(default=None)
+#     DISCHARGE_POWER: Optional[float] = Field(default=None)
+#     SOURCE: Optional[int] = Field(default=None)
+#     UPDATED_AT: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
+
 class Schedule(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "SCHEDULE"
 
-    ID: Optional[int] = Field(default=None, primary_key=True, unique=True, sa_column_kwargs={"name": "ID"}) # unique=True based on key
-    PLANT_ID: Optional[int] = Field(default=None, index=True) # Part of unique key
-    DATE: Optional[datetime.date] = Field(default=None, index=True) # Part of unique key
-    REC_NO: Optional[int] = Field(default=None, index=True) # Part of unique key
-    START_TIME: Optional[datetime.time] = Field(default=None)
-    END_TIME: Optional[datetime.time] = Field(default=None)
-    CHARGE_ENABLE: Optional[bool] = Field(default=None) # TINYINT(1) maps to bool
-    CHARGE_FROM_GRID: Optional[bool] = Field(default=None)
-    DISCHARGE_ENABLE: Optional[bool] = Field(default=None)
-    ALLOW_TO_SELL: Optional[bool] = Field(default=None)
-    CHARGE_POWER: Optional[float] = Field(default=None) # DOUBLE maps to float
-    CHARGE_LIMIT: Optional[float] = Field(default=None)
-    DISCHARGE_POWER: Optional[float] = Field(default=None)
-    SOURCE: Optional[int] = Field(default=None)
-    UPDATED_AT: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
+    # Define columns using uppercase names to match your database exactly
+    # Ensure sa_column_kwargs={'name': 'ACTUAL_COLUMN_NAME'} if names differ strictly
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"name": "ID"})
+    PLANT_ID: Optional[int] = Field(default=None, index=True, sa_column_kwargs={"name": "PLANT_ID"})
+    DATE: Optional[datetime.date] = Field(default=None, index=True, sa_column_kwargs={"name": "DATE"})
+    REC_NO: Optional[int] = Field(default=None, index=True, sa_column_kwargs={"name": "REC_NO"})
+    START_TIME: Optional[datetime.time] = Field(default=None, sa_column_kwargs={"name": "START_TIME"})
+    END_TIME: Optional[datetime.time] = Field(default=None, sa_column_kwargs={"name": "END_TIME"})
+    CHARGE_ENABLE: Optional[bool] = Field(default=None, sa_column_kwargs={"name": "CHARGE_ENABLE"}) # TINYINT(1) maps to bool
+    CHARGE_FROM_GRID: Optional[bool] = Field(default=None, sa_column_kwargs={"name": "CHARGE_FROM_GRID"})
+    DISCHARGE_ENABLE: Optional[bool] = Field(default=None, sa_column_kwargs={"name": "DISCHARGE_ENABLE"})
+    ALLOW_TO_SELL: Optional[bool] = Field(default=None, sa_column_kwargs={"name": "ALLOW_TO_SELL"})
+    CHARGE_POWER: Optional[float] = Field(default=None, sa_column_kwargs={"name": "CHARGE_POWER"}) # DOUBLE maps to float
+    CHARGE_LIMIT: Optional[float] = Field(default=None, sa_column_kwargs={"name": "CHARGE_LIMIT"})
+    DISCHARGE_POWER: Optional[float] = Field(default=None, sa_column_kwargs={"name": "DISCHARGE_POWER"})
+    SOURCE: Optional[int] = Field(default=None, sa_column_kwargs={"name": "SOURCE"})
+    UPDATED_AT: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False, sa_column_kwargs={"name": "UPDATED_AT"})
+
+
 
 class TextList(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "TEXT_LIST"
@@ -301,6 +324,74 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
     updated_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
 
+# --- ADD THESE MODELS ---
+# These are the API Schema Models for the Schedule table.
+# They bridge the (UPPER_CASE) DB fields to the (snake_case) frontend fields.
+
+# class ScheduleBase(SQLModel):
+#     # We define the API model with snake_case
+#     # We use Field(alias=...) to map to the UPPER_CASE DB columns
+#     rec_no: int = Field(alias="REC_NO")
+#     start_time: datetime.time = Field(alias="START_TIME")
+#     end_time: datetime.time = Field(alias="END_TIME")
+#     charge_enable: bool = Field(alias="CHARGE_ENABLE")
+#     charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
+#     discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
+#     allow_to_sell: bool = Field(alias="ALLOW_TO_SELL")
+#     charge_power: float = Field(alias="CHARGE_POWER")
+#     charge_limit: float = Field(alias="CHARGE_LIMIT")
+#     discharge_power: float = Field(alias="DISCHARGE_POWER")
+#     source: int = Field(alias="SOURCE")
+
+#     class Config:
+#         validate_by_name = True # Allows using both 'rec_no' and 'REC_NO'
+#         from_attributes = True # Allows reading data from the DB model
+
+# class ScheduleRow(ScheduleBase):
+#     # This is the public-facing model that matches your frontend
+#     # It's what will be imported as `ScheduleRow` in the client
+#     id: int = Field(alias="ID")
+#     updated_at: datetime.datetime = Field(alias="UPDATED_AT")
+    
+    # Base class defining the structure and aliases
+class ScheduleBase(SQLModel): # Consider inheriting from BaseModel if it's purely for API I/O
+    # Define fields using snake_case for API consistency
+    # Use Field(alias="UPPER_CASE_NAME") to map to DB column names
+    rec_no: int = Field(alias="REC_NO")
+    start_time: datetime.time = Field(alias="START_TIME")
+    end_time: Optional[datetime.time] = Field(alias="END_TIME") # Make Optional if DB allows NULL
+    charge_enable: bool = Field(alias="CHARGE_ENABLE")
+    charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
+    discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
+    allow_to_sell: bool = Field(alias="ALLOW_TO_SELL")
+    charge_power: float = Field(alias="CHARGE_POWER")
+    charge_limit: float = Field(alias="CHARGE_LIMIT")
+    discharge_power: float = Field(alias="DISCHARGE_POWER")
+    source: int = Field(alias="SOURCE")
+
+# Public model for API responses, including ID and timestamps
+# Ensure it's configured correctly for ORM mode (Pydantic v2 style)
+class ScheduleRow(ScheduleBase):
+    # Add fields for primary key and timestamp
+    id: int = Field(alias="ID") # Map 'id' field to 'ID' database column
+    updated_at: datetime.datetime = Field(alias="UPDATED_AT") # Map 'updated_at' to 'UPDATED_AT'
+
+    # Pydantic v2 configuration
+    # This tells Pydantic it's okay to create instances from ORM objects (like your Schedule SQLModel instance)
+    model_config = {
+        "from_attributes": True, # Equivalent to orm_mode=True in Pydantic v1
+        # "populate_by_name": True, # Optional: Allows input dicts to use field names OR aliases
+    }
+
+# If you need input models for creating/updating via API, define them here
+# class ScheduleCreate(ScheduleBase):
+#     pass # Add validation rules if needed beyond ScheduleBase
+
+# class ScheduleUpdate(ScheduleBase):
+#     pass # Fields are optional by default in Pydantic for update models, or use Optional[]
+
+    # We don't include PLANT_ID or DATE here as the frontend
+    # component doesn't seem to need them in the row itself.
 # --- Models for OPTIMIZED Detailed Historical Data ---
 
 class TimeSeriesPoint(BaseModel):

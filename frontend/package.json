@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host --port 5173",
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",
@@ -13,6 +13,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.27.0",
     "@emotion/react": "^11.14.0",
+    "@highcharts/dashboards": "^3.6.0",
     "@tanstack/react-query": "^5.90.2",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router": "^1.131.50",
@@ -25,7 +26,8 @@
     "react-dom": "^19.1.1",
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "7.62.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "recharts": "^3.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",

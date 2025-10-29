@@ -1,7 +1,7 @@
 import { Box, Flex, Icon, Text } from "@chakra-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink } from "@tanstack/react-router";
-import { FiBriefcase, FiHome, FiSettings, FiUsers } from "react-icons/fi";
+import { FiBriefcase, FiClock, FiHome, FiSettings, FiUsers } from "react-icons/fi";
 import { FaBuilding } from "react-icons/fa"; // Keep tenant icon
 // Import an icon for Admin Summary if you add it later
 // import { FiGrid } from "react-icons/fi"; 
@@ -30,6 +30,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
     { icon: FiHome, title: "Dashboard", path: "/" }, // Shows selected/own tenant data
     { icon: FiBriefcase, title: "Items", path: "/items" }, // Shows items for selected/own tenant
     { icon: FiSettings, title: "User Settings", path: "/settings" },
+    { icon: FiClock, title: "Schedule", path: "/schedule" },
   ];
 
   // Define items visible only to admins/managers

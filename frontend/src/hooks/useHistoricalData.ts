@@ -1,81 +1,57 @@
-import { useState, useEffect } from "react";
+// src/hooks/useHistoricalData.ts
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { 
+    HistoricalDataService, 
+    type ApiError, 
+    type HistoricalDataGroupedResponse 
+} from '@/client'; // Adjust path if needed
 
-//import { authFetch } from "../utils";
-//import type { HistoricalDataType } from "../types";
-//import { fetchHistoricalChartData } from "../fetchHistoricalChartData";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-export function useHistoricalData(module: any, currentPage: number, currentDate?: Date) {
-  const {
-    data: historicalData,
-    totalPages: fetchedTotalPages,
-    loading,
-  } = usePaginatedFetch<HistoricalDataType>(
-    `${API_BASE_URL}/api/historical_data/`,
-    module,
-    currentPage,
-    10,
-    currentDate
-  );
-
-  const [historicalChartData, setHistoricalChartData] = useState<
-    { timestamp: string; values: { [key: string]: number }; data_id: number; label?: string }[]
-  >([]);
-  const [selectedDataId, setSelectedDataId] = useState<number | null>(null);
-
-  // Fetch chart data when selectedDataId changes
-  useEffect(() => {
-    async function fetchChart() {
-      if (!selectedDataId || !module?.tenant_db) return;
-      const data = await fetchHistoricalChartData(
-        [selectedDataId],
-        module.tenant_db,
-        "1D", // Default time range
-        module.plant_id,
-        currentDate
-      );
-      setHistoricalChartData(data);
-    }
-    fetchChart();
-  }, [selectedDataId, module, currentDate]);
-
-  const handleGenerateHistoricalChart = async (payload: {
-    rawData: HistoricalDataType[];
-    selectedColumns: string[];
-    timeRange: string;
-  }) => {
-    if (!module || !module.tenant_db || payload.rawData.length === 0) {
-      console.error("[ERROR] Missing data selection or module details.");
-      return;
-    }
-
-    const dataIds = payload.rawData.map((row) => row.data_id);
-    const plantId = payload.rawData[0]?.plant_id || module.plant_id;
-
-    try {
-      const data = await fetchHistoricalChartData(
-        dataIds,
-        module.tenant_db,
-        payload.timeRange,
-        plantId,
-        currentDate
-      );
-      setHistoricalChartData(data);
-    } catch (error) {
-      console.error("[ERROR] Error fetching historical chart data:", error);
-    }
-    console.log("[DEBUG] Generating chart for IDs:", dataIds);
-
-  };
-
-  return {
-    historicalData,
-    totalPages: fetchedTotalPages,
-    loading,
-    historicalChartData,
-    selectedDataId,
-    setSelectedDataId,
-    handleGenerateHistoricalChart,
-  };
+// Define the type for the parameters needed by the hook/API
+interface FetchHistoricalDetailsParams {
+    plant_id: number | null;  // Allow null
+    data_ids: number[];
+    start?: string | null;
+    end?: string | null;
+    tenant_id_override?: string | null;
 }
+
+// Define the type for extra useQuery options
+type UseHistoricalDataQueryOptions = Omit<UseQueryOptions<HistoricalDataGroupedResponse, ApiError>,
+    'queryKey' | 'queryFn' // Only omit keys set internally
+>;
+
+/**
+ * Hook to fetch detailed historical data, grouped by series, for charting.
+ */
+const useHistoricalData = (
+    params: FetchHistoricalDetailsParams,
+    options: UseHistoricalDataQueryOptions = {}
+) => {
+    
+    // Determine if the query should be enabled
+    const enabled = (
+        options.enabled !== false && // Allow explicit disabling
+        !!params.plant_id && // Must have a plant_id
+        params.data_ids && params.data_ids.length > 0 // Must have data_ids
+    );
+
+    return useQuery<HistoricalDataGroupedResponse, ApiError>({
+        // Spread any additional options (like 'enabled' from the caller)
+        ...options,
+        
+        queryKey: ['historicalDataDetails', params], // Cache based on params
+        
+        queryFn: () => HistoricalDataService.readHistoricalDetails({
+            plantId: params.plant_id!, // '!' is safe here because 'enabled' checks it
+            dataIds: params.data_ids,
+            start: params.start || undefined,
+            end: params.end || undefined,
+            tenantIdOverride: params.tenant_id_override || undefined,
+        }),
+        
+        enabled: enabled, // Control when the query runs
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+};
+
+export default useHistoricalData;

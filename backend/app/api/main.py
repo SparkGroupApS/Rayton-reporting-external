@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import items, login, private, users, utils, tenants, dashboard, historical_data
+from app.api.routes import items, login, private, users, utils, tenants, dashboard, historical_data, schedule
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -11,6 +11,7 @@ api_router.include_router(items.router)
 api_router.include_router(tenants.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(historical_data.router)
+api_router.include_router(schedule.router)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

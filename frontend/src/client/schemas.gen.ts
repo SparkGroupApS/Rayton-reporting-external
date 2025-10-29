@@ -327,6 +327,76 @@ export const RevenueDataSchema = {
     title: 'RevenueData'
 } as const;
 
+export const ScheduleRowSchema = {
+    properties: {
+        rec_no: {
+            type: 'integer',
+            title: 'Rec No'
+        },
+        start_time: {
+            type: 'string',
+            format: 'time',
+            title: 'Start Time'
+        },
+        end_time: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'End Time'
+        },
+        charge_enable: {
+            type: 'boolean',
+            title: 'Charge Enable'
+        },
+        charge_from_grid: {
+            type: 'boolean',
+            title: 'Charge From Grid'
+        },
+        discharge_enable: {
+            type: 'boolean',
+            title: 'Discharge Enable'
+        },
+        allow_to_sell: {
+            type: 'boolean',
+            title: 'Allow To Sell'
+        },
+        charge_power: {
+            type: 'number',
+            title: 'Charge Power'
+        },
+        charge_limit: {
+            type: 'number',
+            title: 'Charge Limit'
+        },
+        discharge_power: {
+            type: 'number',
+            title: 'Discharge Power'
+        },
+        source: {
+            type: 'integer',
+            title: 'Source'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['rec_no', 'start_time', 'end_time', 'charge_enable', 'charge_from_grid', 'discharge_enable', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at'],
+    title: 'ScheduleRow'
+} as const;
+
 export const TenantCreateSchema = {
     properties: {
         name: {

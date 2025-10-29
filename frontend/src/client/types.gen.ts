@@ -73,6 +73,22 @@ export type RevenueData = {
     revenue: number;
 };
 
+export type ScheduleRow = {
+    rec_no: number;
+    start_time: string;
+    end_time: (string | null);
+    charge_enable: boolean;
+    charge_from_grid: boolean;
+    discharge_enable: boolean;
+    allow_to_sell: boolean;
+    charge_power: number;
+    charge_limit: number;
+    discharge_power: number;
+    source: number;
+    id: number;
+    updated_at: string;
+};
+
 export type TenantCreate = {
     name: string;
     description?: (string | null);
@@ -265,6 +281,26 @@ export type PrivateCreateUserWithNewTenantData = {
 };
 
 export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
+
+export type ScheduleReadScheduleData = {
+    /**
+     * The date to fetch schedule for, in YYYY-MM-DD format
+     */
+    date: string;
+    plantId: number;
+    tenantDb: string;
+};
+
+export type ScheduleReadScheduleResponse = (Array<ScheduleRow>);
+
+export type ScheduleBulkUpdateScheduleData = {
+    date: string;
+    plantId: number;
+    requestBody: Array<ScheduleRow>;
+    tenantDb: string;
+};
+
+export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);
 
 export type TenantsCreateTenantData = {
     requestBody: TenantCreate;
