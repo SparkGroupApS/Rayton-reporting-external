@@ -58,3 +58,25 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]: # Use Async
 # to use the async engine if you are using migrations.
 # This often involves setting target_metadata = SQLModel.metadata
 # and using the async engine in env.py.
+
+# --- Historical Data Database Connection ---
+
+# Ensure MARIADB_DB_DATA is defined in your settings (config.py and .env)
+if not settings.MARIADB_DB_DATA:
+    raise ValueError("MARIADB_DB_DATA setting is not configured in .env or config.py")
+    
+data_async_engine = create_async_engine(
+    str(settings.SQLALCHEMY_DATA_DATABASE_URI),
+    # echo=True, # Optional: for debugging SQL queries
+)
+
+data_AsyncSessionLocal = async_sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=data_async_engine,
+    class_=AsyncSession, # Use AsyncSession
+)
+
+async def get_data_async_session() -> AsyncGenerator[AsyncSession, None]: # Use AsyncGenerator[TypeYielded, SendType]
+    async with data_AsyncSessionLocal() as session:
+        yield session # Yield the session provided by the inner dependency

@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     MARIADB_USER: str
     MARIADB_PASSWORD: str = ""
     MARIADB_DB: str = ""
+    MARIADB_DB_DATA: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -76,6 +77,13 @@ class Settings(BaseSettings):
         #     path=f"/{self.MARIADB_DB}",
         # )
         # Note: AnyUrl.build might require correct path formatting, string construction is often more reliable for custom schemes.
+    
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATA_DATABASE_URI(self) -> AnyUrl: # NEW: Use AnyUrl or construct as string
+        # Option 1: Construct as string directly (often simpler for different schemes)
+        # This avoids the need for a specific DSN type like PostgresDsn
+        return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB_DATA}"
 
     # --- END NEW MariaDB/MySQL Settings ---
 

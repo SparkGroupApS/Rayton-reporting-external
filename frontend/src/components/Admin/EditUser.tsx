@@ -5,19 +5,24 @@ import {
   DialogTrigger,
   Flex,
   Input,
+  NativeSelect, // Import NativeSelect
   Text,
   VStack,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { Controller, type SubmitHandler, useForm } from "react-hook-form"
-import { FaExchangeAlt } from "react-icons/fa"
+} from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import { FaExchangeAlt } from "react-icons/fa";
+import React from 'react'; // Import React
 
-import { type UserPublic, UsersService, type UserUpdate } from "@/client"
-import type { ApiError } from "@/client/core/ApiError"
-import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
-import { Checkbox } from "../ui/checkbox"
+import { type UserPublic, UsersService, type UserUpdate, TenantPublic } from "@/client"; // Import TenantPublic
+import { useTenants } from "@/hooks/useTenantQueries"; // Import useTenants
+import type { ApiError } from "@/client/core/ApiError";
+import useCustomToast from "@/hooks/useCustomToast";
+import { emailPattern, handleError } from "@/utils";
+// Assuming Checkbox is compatible or using Chakra's v3 Checkbox directly
+import { Checkbox } from "../ui/checkbox"; // Check if this needs update to v3 Checkbox
+// Assuming Dialog components are compatible or using Chakra's v3 Dialog/Modal directly
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -25,21 +30,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
-import { Field } from "../ui/field"
+} from "../ui/dialog"; // Check if these need update to v3 Dialog/Modal
+// Use Chakra's v3 Field directly
+import { Field } from "@chakra-ui/react"; // Use Chakra's Field
 
 interface EditUserProps {
-  user: UserPublic
+  user: UserPublic;
 }
 
 interface UserUpdateForm extends UserUpdate {
-  confirm_password?: string
+  confirm_password?: string;
 }
 
 const EditUser = ({ user }: EditUserProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
+  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants();
+
   const {
     control,
     register,
@@ -50,38 +58,53 @@ const EditUser = ({ user }: EditUserProps) => {
   } = useForm<UserUpdateForm>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: user,
-  })
+    defaultValues: {
+        ...user,
+        password: "",
+        confirm_password: "",
+    },
+  });
 
   const mutation = useMutation({
-    mutationFn: (data: UserUpdateForm) =>
+    mutationFn: (data: UserUpdate) =>
       UsersService.updateUser({ userId: user.id, requestBody: data }),
-    onSuccess: () => {
-      showSuccessToast("User updated successfully.")
-      reset()
-      setIsOpen(false)
+    onSuccess: (updatedUser) => {
+      showSuccessToast("User updated successfully.");
+      queryClient.setQueryData(['users', { id: user.id }], updatedUser);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setIsOpen(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-    },
-  })
+  });
 
   const onSubmit: SubmitHandler<UserUpdateForm> = async (data) => {
-    if (data.password === "") {
-      data.password = undefined
+    const payload: UserUpdate = {
+        email: data.email,
+        full_name: data.full_name || null,
+        is_active: data.is_active,
+        is_superuser: data.is_superuser,
+        password: data.password === "" ? null : data.password,
+        tenant_id: data.tenant_id
+    };
+    mutation.mutate(payload);
+  };
+
+  const handleOpenChange = ({ open }: { open: boolean }) => {
+    setIsOpen(open);
+    if (open) {
+      reset({ ...user, password: "", confirm_password: "" });
     }
-    mutation.mutate(data)
-  }
+  };
+
 
   return (
     <DialogRoot
       size={{ base: "xs", md: "md" }}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
@@ -97,13 +120,39 @@ const EditUser = ({ user }: EditUserProps) => {
           <DialogBody>
             <Text mb={4}>Update the user details below.</Text>
             <VStack gap={4}>
-              <Field
-                required
-                invalid={!!errors.email}
-                errorText={errors.email?.message}
-                label="Email"
-              >
+
+              {/* --- Tenant Selection (v3 Field) --- */}
+              <Field.Root id="tenant-field" required invalid={!!errors.tenant_id} disabled={isLoadingTenants || !tenantsData}>
+                  <Field.Label>Tenant</Field.Label>
+                  <NativeSelect.Root maxWidth="full">
+                      <NativeSelect.Field
+                        id="tenant_id"
+                        placeholder={isLoadingTenants ? "Loading tenants..." : "Select Tenant"}
+                        {...register("tenant_id", {
+                            required: "Tenant is required"
+                        })}
+                      >
+                          {tenantsData?.data.map((tenant: TenantPublic) => (
+                              <option key={tenant.id} value={tenant.id}>
+                                  {tenant.name}
+                              </option>
+                          ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                  <Field.ErrorText>
+                      {errors.tenant_id && errors.tenant_id.message}
+                  </Field.ErrorText>
+                   {!isLoadingTenants && !tenantsData && (
+                      <Text color="red.500" fontSize="sm">Could not load tenants.</Text>
+                  )}
+              </Field.Root>
+
+              {/* --- Email (v3 Field) --- */}
+              <Field.Root id="email-field" required invalid={!!errors.email}>
+                <Field.Label>Email</Field.Label>
                 <Input
+                  id="email"
                   {...register("email", {
                     required: "Email is required",
                     pattern: emailPattern,
@@ -111,81 +160,93 @@ const EditUser = ({ user }: EditUserProps) => {
                   placeholder="Email"
                   type="email"
                 />
-              </Field>
+                 <Field.ErrorText>
+                    {errors.email && errors.email.message}
+                 </Field.ErrorText>
+              </Field.Root>
 
-              <Field
-                invalid={!!errors.full_name}
-                errorText={errors.full_name?.message}
-                label="Full Name"
-              >
+              {/* --- Full Name (v3 Field) --- */}
+              <Field.Root id="fullname-field" invalid={!!errors.full_name}>
+                <Field.Label>Full Name</Field.Label>
                 <Input
+                  id="full_name"
                   {...register("full_name")}
                   placeholder="Full name"
                   type="text"
                 />
-              </Field>
+                 <Field.ErrorText>
+                    {errors.full_name && errors.full_name.message}
+                 </Field.ErrorText>
+              </Field.Root>
 
-              <Field
-                invalid={!!errors.password}
-                errorText={errors.password?.message}
-                label="Set Password"
-              >
+              {/* --- Password (v3 Field) --- */}
+              <Field.Root id="password-field" invalid={!!errors.password}>
+                <Field.Label>Set New Password (Optional)</Field.Label>
                 <Input
+                  id="password"
                   {...register("password", {
                     minLength: {
                       value: 8,
                       message: "Password must be at least 8 characters",
                     },
                   })}
-                  placeholder="Password"
+                  placeholder="Leave blank to keep current password"
                   type="password"
                 />
-              </Field>
+                 <Field.ErrorText>
+                    {errors.password && errors.password.message}
+                 </Field.ErrorText>
+              </Field.Root>
 
-              <Field
-                invalid={!!errors.confirm_password}
-                errorText={errors.confirm_password?.message}
-                label="Confirm Password"
-              >
+              {/* --- Confirm Password (v3 Field) --- */}
+              <Field.Root id="confirm-password-field" invalid={!!errors.confirm_password}>
+                <Field.Label>Confirm New Password</Field.Label>
                 <Input
+                  id="confirm_password"
                   {...register("confirm_password", {
                     validate: (value) =>
-                      value === getValues().password ||
+                      getValues().password === "" || value === getValues().password ||
                       "The passwords do not match",
                   })}
-                  placeholder="Password"
+                  placeholder="Confirm if new password entered"
                   type="password"
+                  disabled={!getValues().password}
                 />
-              </Field>
+                 <Field.ErrorText>
+                    {errors.confirm_password && errors.confirm_password.message}
+                 </Field.ErrorText>
+              </Field.Root>
             </VStack>
 
             <Flex mt={4} direction="column" gap={4}>
+              {/* --- Checkboxes (using v3 Field.Root for consistency) --- */}
               <Controller
                 control={control}
                 name="is_superuser"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                  // Wrap Checkbox with Field.Root for label association and layout
+                  <Field.Root id={`superuser-${user.id}`} disabled={field.disabled}>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={({ checked }) => field.onChange(checked)}
                     >
                       Is superuser?
                     </Checkbox>
-                  </Field>
+                  </Field.Root>
                 )}
               />
               <Controller
                 control={control}
                 name="is_active"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                   <Field.Root id={`active-${user.id}`} disabled={field.disabled}>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={({ checked }) => field.onChange(checked)}
                     >
                       Is active?
                     </Checkbox>
-                  </Field>
+                   </Field.Root>
                 )}
               />
             </Flex>
@@ -197,19 +258,25 @@ const EditUser = ({ user }: EditUserProps) => {
                 variant="subtle"
                 colorPalette="gray"
                 disabled={isSubmitting}
+                onClick={() => handleOpenChange({ open: false })}
+                type="button"
               >
                 Cancel
               </Button>
             </DialogActionTrigger>
-            <Button variant="solid" type="submit" loading={isSubmitting}>
-              Save
+            <Button
+              variant="solid"
+              type="submit"
+              loading={isSubmitting}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
           <DialogCloseTrigger />
         </form>
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default EditUser
+export default EditUser;

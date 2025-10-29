@@ -3,15 +3,75 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class DashboardService {
+    /**
+     * Read Dashboard Data
+     * Retrieve dashboard data for the current user's tenant.
+     * Superusers can use tenant_id_override to view other tenants.
+     * @param data The data for the request.
+     * @param data.tenantIdOverride Admin override to view a specific tenant's dashboard
+     * @returns DashboardData Successful Response
+     * @throws ApiError
+     */
+    public static readDashboardData(data: DashboardReadDashboardDataData = {}): CancelablePromise<DashboardReadDashboardDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/',
+            query: {
+                tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class HistoricalDataService {
+    /**
+     * Read Historical Details
+     * Fetch raw historical DATA values for multiple DATA_IDs by PLANT_ID,
+     * grouped by series, including labels from TEXT_LIST.
+     * Scoped to user's tenant unless overridden.
+     * @param data The data for the request.
+     * @param data.dataIds List of DATA_IDs to fetch
+     * @param data.plantId PLANT_ID to fetch data for
+     * @param data.start Start timestamp (ISO format, optional)
+     * @param data.end End timestamp (ISO format, optional)
+     * @param data.tenantIdOverride Admin override for tenant ID
+     * @returns HistoricalDataGroupedResponse Successful Response
+     * @throws ApiError
+     */
+    public static readHistoricalDetails(data: HistoricalDataReadHistoricalDetailsData): CancelablePromise<HistoricalDataReadHistoricalDetailsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/historical-data/details',
+            query: {
+                data_ids: data.dataIds,
+                plant_id: data.plantId,
+                start: data.start,
+                end: data.end,
+                tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class ItemsService {
     /**
      * Read Items
-     * Retrieve items.
+     * Retrieve items. Regular users see items from their tenant.
+     * Superusers default to their own tenant but can override.
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
+     * @param data.tenantId Filter by specific tenant ID (Superuser only)
+     * @param data.allTenants Fetch items from all tenants (Superuser only)
      * @returns ItemsPublic Successful Response
      * @throws ApiError
      */
@@ -21,7 +81,9 @@ export class ItemsService {
             url: '/api/v1/items/',
             query: {
                 skip: data.skip,
-                limit: data.limit
+                limit: data.limit,
+                tenant_id: data.tenantId,
+                all_tenants: data.allTenants
             },
             errors: {
                 422: 'Validation Error'
@@ -31,7 +93,7 @@ export class ItemsService {
     
     /**
      * Create Item
-     * Create new item.
+     * Create new item, assigned to the current user and their tenant.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns ItemPublic Successful Response
@@ -51,7 +113,7 @@ export class ItemsService {
     
     /**
      * Read Item
-     * Get item by ID.
+     * Get item by ID, ensuring it belongs to the user's tenant (or user is superuser).
      * @param data The data for the request.
      * @param data.id
      * @returns ItemPublic Successful Response
@@ -72,7 +134,7 @@ export class ItemsService {
     
     /**
      * Update Item
-     * Update an item.
+     * Update an item, ensuring it belongs to the user's tenant (or user is superuser).
      * @param data The data for the request.
      * @param data.id
      * @param data.requestBody
@@ -96,7 +158,7 @@ export class ItemsService {
     
     /**
      * Delete Item
-     * Delete an item.
+     * Delete an item, ensuring it belongs to the user's tenant (or user is superuser).
      * @param data The data for the request.
      * @param data.id
      * @returns Message Successful Response
@@ -215,14 +277,15 @@ export class LoginService {
 
 export class PrivateService {
     /**
-     * Create User
-     * Create a new user.
+     * Create User With New Tenant
+     * Create a new user AND a new tenant for that user.
+     * Intended for specific setup scenarios.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
      * @throws ApiError
      */
-    public static createUser(data: PrivateCreateUserData): CancelablePromise<PrivateCreateUserResponse> {
+    public static createUserWithNewTenant(data: PrivateCreateUserWithNewTenantData): CancelablePromise<PrivateCreateUserWithNewTenantResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/private/users/',
@@ -235,20 +298,96 @@ export class PrivateService {
     }
 }
 
-export class UsersService {
+export class ScheduleService {
     /**
-     * Read Users
-     * Retrieve users.
+     * Read Schedule
+     * Get schedule rows for a specific plant and date.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @param data.tenantDb
+     * @param data.date The date to fetch schedule for, in YYYY-MM-DD format
+     * @returns ScheduleRow Successful Response
+     * @throws ApiError
+     */
+    public static readSchedule(data: ScheduleReadScheduleData): CancelablePromise<ScheduleReadScheduleResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/schedule/',
+            query: {
+                plant_id: data.plantId,
+                tenant_db: data.tenantDb,
+                date: data.date
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk Update Schedule
+     * Update existing schedule rows, insert new ones, and delete removed ones
+     * for a specific plant and date.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @param data.tenantDb
+     * @param data.date
+     * @param data.requestBody
+     * @returns ScheduleRow Successful Response
+     * @throws ApiError
+     */
+    public static bulkUpdateSchedule(data: ScheduleBulkUpdateScheduleData): CancelablePromise<ScheduleBulkUpdateScheduleResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/schedule/bulk',
+            query: {
+                plant_id: data.plantId,
+                tenant_db: data.tenantDb,
+                date: data.date
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class TenantsService {
+    /**
+     * Create Tenant
+     * Create new tenant (Superuser only).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns TenantPublic Successful Response
+     * @throws ApiError
+     */
+    public static createTenant(data: TenantsCreateTenantData): CancelablePromise<TenantsCreateTenantResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/tenants/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Tenants
+     * Retrieve tenants (Superuser only).
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
-     * @returns UsersPublic Successful Response
+     * @returns TenantsPublic Successful Response
      * @throws ApiError
      */
-    public static readUsers(data: UsersReadUsersData = {}): CancelablePromise<UsersReadUsersResponse> {
+    public static readTenants(data: TenantsReadTenantsData = {}): CancelablePromise<TenantsReadTenantsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/users/',
+            url: '/api/v1/tenants/',
             query: {
                 skip: data.skip,
                 limit: data.limit
@@ -260,8 +399,105 @@ export class UsersService {
     }
     
     /**
+     * Read Tenant By Id
+     * Get a specific tenant by ID. Allows users to get their own tenant.
+     * @param data The data for the request.
+     * @param data.tenantId
+     * @returns TenantPublic Successful Response
+     * @throws ApiError
+     */
+    public static readTenantById(data: TenantsReadTenantByIdData): CancelablePromise<TenantsReadTenantByIdResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/tenants/{tenant_id}',
+            path: {
+                tenant_id: data.tenantId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Tenant
+     * Update a tenant (Superuser only).
+     * @param data The data for the request.
+     * @param data.tenantId
+     * @param data.requestBody
+     * @returns TenantPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateTenant(data: TenantsUpdateTenantData): CancelablePromise<TenantsUpdateTenantResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/tenants/{tenant_id}',
+            path: {
+                tenant_id: data.tenantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Tenant
+     * Delete a tenant (Superuser only).
+     * WARNING: Does not currently handle associated users/items.
+     * @param data The data for the request.
+     * @param data.tenantId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteTenant(data: TenantsDeleteTenantData): CancelablePromise<TenantsDeleteTenantResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/tenants/{tenant_id}',
+            path: {
+                tenant_id: data.tenantId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class UsersService {
+    /**
+     * Read Users
+     * Retrieve users. Superusers default to their own tenant,
+     * but can specify a tenant_id or request all_tenants.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.tenantId Filter by specific tenant ID (Superuser only)
+     * @param data.allTenants Fetch users from all tenants (Superuser only)
+     * @returns UsersPublic Successful Response
+     * @throws ApiError
+     */
+    public static readUsers(data: UsersReadUsersData = {}): CancelablePromise<UsersReadUsersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                tenant_id: data.tenantId,
+                all_tenants: data.allTenants
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Create User
-     * Create new user.
+     * Create new user (by superuser). Requires tenant_id in the input.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -307,7 +543,7 @@ export class UsersService {
     
     /**
      * Update User Me
-     * Update own user.
+     * Update own user. (Tenant ID cannot be changed here).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -346,28 +582,8 @@ export class UsersService {
     }
     
     /**
-     * Register User
-     * Create new user without the need to be logged in.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns UserPublic Successful Response
-     * @throws ApiError
-     */
-    public static registerUser(data: UsersRegisterUserData): CancelablePromise<UsersRegisterUserResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/users/signup',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
      * Read User By Id
-     * Get a specific user by id.
+     * Get a specific user by id. Requires superuser or user in the same tenant.
      * @param data The data for the request.
      * @param data.userId
      * @returns UserPublic Successful Response
@@ -388,7 +604,7 @@ export class UsersService {
     
     /**
      * Update User
-     * Update a user.
+     * Update a user (by Superuser). Tenant ID is protected by crud.update_user.
      * @param data The data for the request.
      * @param data.userId
      * @param data.requestBody
@@ -412,7 +628,7 @@ export class UsersService {
     
     /**
      * Delete User
-     * Delete a user.
+     * Delete a user (by Superuser).
      * @param data The data for the request.
      * @param data.userId
      * @returns Message Successful Response

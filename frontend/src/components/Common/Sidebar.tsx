@@ -82,7 +82,9 @@ const Sidebar = () => {
         position="sticky"
         bg="bg.subtle"
         top={0}
-        minW="xs"
+        minW="3xs" // Change "xs" to "sm", "md", or a specific value like "250px", "16rem"
+        // Optionally add a fixed width:
+        // w="250px"
         h="100vh"
         p={4}
       >

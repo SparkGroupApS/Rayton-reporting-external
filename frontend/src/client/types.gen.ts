@@ -9,6 +9,23 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type DashboardCardData = {
+    total_users: number;
+    total_items: number;
+    active_users: number;
+    inactive_items: number;
+};
+
+export type DashboardData = {
+    cards: DashboardCardData;
+    revenue: Array<RevenueData>;
+    items: Array<ItemPublic>;
+};
+
+export type HistoricalDataGroupedResponse = {
+    series: Array<TimeSeriesData>;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -23,6 +40,7 @@ export type ItemPublic = {
     description?: (string | null);
     id: string;
     owner_id: string;
+    tenant_id: string;
 };
 
 export type ItemsPublic = {
@@ -44,11 +62,63 @@ export type NewPassword = {
     new_password: string;
 };
 
-export type PrivateUserCreate = {
+export type PrivateUserCreateInput = {
     email: string;
     password: string;
-    full_name: string;
-    is_verified?: boolean;
+    full_name?: (string | null);
+};
+
+export type RevenueData = {
+    month: string;
+    revenue: number;
+};
+
+export type ScheduleRow = {
+    rec_no: number;
+    start_time: string;
+    end_time: (string | null);
+    charge_enable: boolean;
+    charge_from_grid: boolean;
+    discharge_enable: boolean;
+    allow_to_sell: boolean;
+    charge_power: number;
+    charge_limit: number;
+    discharge_power: number;
+    source: number;
+    id: number;
+    updated_at: string;
+};
+
+export type TenantCreate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type TenantPublic = {
+    name: string;
+    description?: (string | null);
+    id: string;
+};
+
+export type TenantsPublic = {
+    data: Array<TenantPublic>;
+    count: number;
+};
+
+export type TenantUpdate = {
+    name?: (string | null);
+    description?: (string | null);
+};
+
+export type TimeSeriesData = {
+    data_id: number;
+    name: string;
+    data: Array<TimeSeriesPoint>;
+};
+
+export type TimeSeriesPoint = {
+    x: number;
+    y: (number | null);
 };
 
 export type Token = {
@@ -66,7 +136,9 @@ export type UserCreate = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: (string | null);
     password: string;
+    tenant_id: string;
 };
 
 export type UserPublic = {
@@ -74,13 +146,9 @@ export type UserPublic = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: string;
     id: string;
-};
-
-export type UserRegister = {
-    email: string;
-    password: string;
-    full_name?: (string | null);
+    tenant_id: string;
 };
 
 export type UsersPublic = {
@@ -90,10 +158,11 @@ export type UsersPublic = {
 
 export type UserUpdate = {
     email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
     password?: (string | null);
+    full_name?: (string | null);
+    is_active?: (boolean | null);
+    is_superuser?: (boolean | null);
+    role?: (string | null);
 };
 
 export type UserUpdateMe = {
@@ -107,9 +176,51 @@ export type ValidationError = {
     type: string;
 };
 
+export type DashboardReadDashboardDataData = {
+    /**
+     * Admin override to view a specific tenant's dashboard
+     */
+    tenantIdOverride?: (string | null);
+};
+
+export type DashboardReadDashboardDataResponse = (DashboardData);
+
+export type HistoricalDataReadHistoricalDetailsData = {
+    /**
+     * List of DATA_IDs to fetch
+     */
+    dataIds: Array<(number)>;
+    /**
+     * End timestamp (ISO format, optional)
+     */
+    end?: (string | null);
+    /**
+     * PLANT_ID to fetch data for
+     */
+    plantId: number;
+    /**
+     * Start timestamp (ISO format, optional)
+     */
+    start?: (string | null);
+    /**
+     * Admin override for tenant ID
+     */
+    tenantIdOverride?: (string | null);
+};
+
+export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
+
 export type ItemsReadItemsData = {
+    /**
+     * Fetch items from all tenants (Superuser only)
+     */
+    allTenants?: boolean;
     limit?: number;
     skip?: number;
+    /**
+     * Filter by specific tenant ID (Superuser only)
+     */
+    tenantId?: (string | null);
 };
 
 export type ItemsReadItemsResponse = (ItemsPublic);
@@ -165,15 +276,75 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
-export type PrivateCreateUserData = {
-    requestBody: PrivateUserCreate;
+export type PrivateCreateUserWithNewTenantData = {
+    requestBody: PrivateUserCreateInput;
 };
 
-export type PrivateCreateUserResponse = (UserPublic);
+export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
 
-export type UsersReadUsersData = {
+export type ScheduleReadScheduleData = {
+    /**
+     * The date to fetch schedule for, in YYYY-MM-DD format
+     */
+    date: string;
+    plantId: number;
+    tenantDb: string;
+};
+
+export type ScheduleReadScheduleResponse = (Array<ScheduleRow>);
+
+export type ScheduleBulkUpdateScheduleData = {
+    date: string;
+    plantId: number;
+    requestBody: Array<ScheduleRow>;
+    tenantDb: string;
+};
+
+export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);
+
+export type TenantsCreateTenantData = {
+    requestBody: TenantCreate;
+};
+
+export type TenantsCreateTenantResponse = (TenantPublic);
+
+export type TenantsReadTenantsData = {
     limit?: number;
     skip?: number;
+};
+
+export type TenantsReadTenantsResponse = (TenantsPublic);
+
+export type TenantsReadTenantByIdData = {
+    tenantId: string;
+};
+
+export type TenantsReadTenantByIdResponse = (TenantPublic);
+
+export type TenantsUpdateTenantData = {
+    requestBody: TenantUpdate;
+    tenantId: string;
+};
+
+export type TenantsUpdateTenantResponse = (TenantPublic);
+
+export type TenantsDeleteTenantData = {
+    tenantId: string;
+};
+
+export type TenantsDeleteTenantResponse = (Message);
+
+export type UsersReadUsersData = {
+    /**
+     * Fetch users from all tenants (Superuser only)
+     */
+    allTenants?: boolean;
+    limit?: number;
+    skip?: number;
+    /**
+     * Filter by specific tenant ID (Superuser only)
+     */
+    tenantId?: (string | null);
 };
 
 export type UsersReadUsersResponse = (UsersPublic);
@@ -199,12 +370,6 @@ export type UsersUpdatePasswordMeData = {
 };
 
 export type UsersUpdatePasswordMeResponse = (Message);
-
-export type UsersRegisterUserData = {
-    requestBody: UserRegister;
-};
-
-export type UsersRegisterUserResponse = (UserPublic);
 
 export type UsersReadUserByIdData = {
     userId: string;
