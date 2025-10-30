@@ -6,7 +6,8 @@ from collections.abc import (
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Request, Depends, HTTPException, status
+from fastapi_mqtt import FastMQTT # Or whatever type your mqtt client is
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -78,3 +79,18 @@ async def get_current_active_superuser(current_user: CurrentUser) -> User: # NEW
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+async def get_mqtt_client(request: Request) -> FastMQTT: # Adjust return type if known
+    """
+    Dependency to retrieve the MQTT client instance from the FastAPI app state.
+    """
+    # Access the mqtt client stored in the app state (see main.py setup)
+    # The key 'mqtt_client' should match the key used in main.py when setting app.state.mqtt_client
+    mqtt_client = request.app.state.mqtt_client
+    if mqtt_client is None:
+        # Handle the case where mqtt isn't initialized correctly
+        # from fastapi import HTTPException
+        # raise HTTPException(status_code=500, detail="MQTT client not initialized")
+        # Or return None and handle in the endpoint
+        pass
+    return mqtt_client

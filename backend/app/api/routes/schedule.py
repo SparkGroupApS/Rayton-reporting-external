@@ -3,18 +3,37 @@ import datetime
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import List, Dict
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession  # Import AsyncSession
+from pydantic import BaseModel # <-- 1. Import BaseModel for MQTT payload
 
 # Adjust these imports to match your project structure
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
 
 # Use the correct dependency for your external data session
 from app.core.db import get_data_async_session
-from app.models import Schedule, ScheduleRow, Tenant  # Import both models
+from app.models import Schedule, ScheduleRow, Tenant, ScheduleBase
+from fastapi_mqtt import FastMQTT 
+from app.core.mqtt import mqtt
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
+# --- Define the MQTT Payload Model (Optional, but good practice) ---
+# This uses the ScheduleBase model which has the aliases for UPPER_CASE
+class ScheduleMqttPayloadItem(ScheduleBase):
+    class Config:
+        # Ensure it uses aliases for JSON output (snake_case -> UPPER_CASE)
+        populate_by_name = True 
+
+class ScheduleMqttPayload(BaseModel):
+    plant_id: int
+    date: datetime.date
+    # We send the snake_case version, but if devices expect UPPER_CASE,
+    # we can add aliases here too or format it manually.
+    # Let's assume the device can consume the same snake_case JSON.
+    schedule: List[ScheduleRow] # Send the full ScheduleRow, which includes ID
+# --- END MQTT Payload Model ---
 
 # --- UPDATED Helper function ---
 async def get_plant_id_for_tenant(
@@ -42,81 +61,6 @@ async def get_plant_id_for_tenant(
 
 
 # --- End Helper ---
-
-# @router.get("/", response_model=List[ScheduleRow])
-# async def read_schedule(
-#     current_user: CurrentUser,
-#     tenant_id: uuid.UUID = Query(..., description="Tenant ID to fetch schedule for"),
-#     date: datetime.date = Query(..., description="Date (YYYY-MM-DD)"),
-#     # --- Inject BOTH sessions ---
-#     data_session: AsyncSession = Depends(get_data_async_session), # External data
-#     primary_session: SessionDep = Depends(), # Primary DB session (uses default dependency)
-# ):
-
-#     # Permission check
-#     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
-#          raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
-
-#     # Lookup plant_id using the primary session
-#     plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
-#     # Query schedule rows from the external data session
-#     # Query schedule using the data session and looked-up plant_id
-#     query = (
-#         select(Schedule)
-#         .where(Schedule.PLANT_ID == plant_id)
-#         .where(Schedule.DATE == date)
-#         .order_by(Schedule.REC_NO)
-#     )
-#     schedule_rows_db_result = await data_session.exec(query)
-#     db_rows: List[Schedule] = schedule_rows_db_result.all()
-
-#     api_schedule_rows: List[ScheduleRow] = []
-#     for db_row in db_rows: # Iterate through the ORM objects returned by the query
-#         try:
-#             # --- Explicitly Pass ORM Attributes Using Pydantic Field Names ---
-#             # Access ORM attributes by their actual names (UPPERCASE) and pass them
-#             # to the ScheduleRow constructor using the corresponding Pydantic field names (lowercase/snake_case).
-#             # Pydantic's alias definitions (alias="UPPERCASE_NAME") will handle the mapping internally.
-#             api_row = ScheduleRow(
-#                 # Map ORM attributes (UPPERCASE) to Pydantic model fields (snake_case)
-#                 # The left side is the Pydantic field name, the right side accesses the ORM attribute.
-#                 id=getattr(db_row, "ID"), # Maps to 'id' field in ScheduleRow (alias="ID")
-#                 plant_id=getattr(db_row, "PLANT_ID"), # Maps to 'plant_id' field (assuming alias="PLANT_ID" is added to ScheduleBase or ScheduleRow)
-#                 date=getattr(db_row, "DATE"), # Maps to 'date' field (assuming alias="DATE" is added)
-#                 rec_no=getattr(db_row, "REC_NO"), # Maps to 'rec_no' field (alias="REC_NO" in ScheduleBase)
-#                 start_time=getattr(db_row, "START_TIME"), # Maps to 'start_time' field (alias="START_TIME" in ScheduleBase)
-#                 end_time=getattr(db_row, "END_TIME"), # Maps to 'end_time' field (alias="END_TIME" in ScheduleBase) - Handles None correctly
-#                 charge_enable=getattr(db_row, "CHARGE_ENABLE"), # Maps to 'charge_enable' (alias="CHARGE_ENABLE")
-#                 charge_from_grid=getattr(db_row, "CHARGE_FROM_GRID"), # Maps to 'charge_from_grid' (alias="CHARGE_FROM_GRID")
-#                 discharge_enable=getattr(db_row, "DISCHARGE_ENABLE"), # Maps to 'discharge_enable' (alias="DISCHARGE_ENABLE")
-#                 allow_to_sell=getattr(db_row, "ALLOW_TO_SELL"), # Maps to 'allow_to_sell' (alias="ALLOW_TO_SELL")
-#                 charge_power=getattr(db_row, "CHARGE_POWER"), # Maps to 'charge_power' (alias="CHARGE_POWER")
-#                 charge_limit=getattr(db_row, "CHARGE_LIMIT"), # Maps to 'charge_limit' (alias="CHARGE_LIMIT")
-#                 discharge_power=getattr(db_row, "DISCHARGE_POWER"), # Maps to 'discharge_power' (alias="DISCHARGE_POWER")
-#                 source=getattr(db_row, "SOURCE"), # Maps to 'source' field (alias="SOURCE" in ScheduleBase)
-#                 updated_at=getattr(db_row, "UPDATED_AT") # Maps to 'updated_at' field (alias="UPDATED_AT")
-#                 # Add any other fields/columns your Schedule model/table has that need to be mapped
-#                 # Ensure corresponding aliases are defined in ScheduleRow or ScheduleBase
-#             )
-#             api_schedule_rows.append(api_row)
-#         except AttributeError as ae:
-#             # Handle case where an expected attribute is missing on the ORM object
-#             # This is an internal consistency error
-#             error_msg = f"Missing ORM attribute for row {getattr(db_row, 'ID', 'Unknown ID')}: {ae}"
-#             print(error_msg) # Log for debugging
-#             raise HTTPException(status_code=500, detail=f"Internal error: ORM model missing expected attribute. {error_msg}")
-#         except Exception as e:
-#             # Handle other potential errors during conversion (e.g., data type issues, validation errors within Pydantic)
-#             error_msg = f"Error converting DB row {getattr(db_row, 'ID', 'Unknown ID')} to ScheduleRow: {e}"
-#             print(error_msg) # Log for debugging
-#             # Optionally, log the specific db_row data for deeper inspection
-#             # print(f"Problematic row data: {vars(db_row)}")
-#             raise HTTPException(status_code=500, detail=f"Internal server error processing schedule data. {error_msg}")
-#         response_rows: List[ScheduleRow] = [
-#         ScheduleRow.model_validate_from_orm(db_row) for db_row in db_rows
-#     ]
-#     return response_rows # Return the list of correctly converted Pydantic models
-
 
 @router.get("/", response_model=list[ScheduleRow])
 async def read_schedule(
@@ -190,12 +134,11 @@ async def bulk_update_schedule(
     current_user: CurrentUser,date: datetime.date,
     schedule_rows_in: list[ScheduleRow],
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to update schedule for"),
-
-    # --- Inject BOTH sessions ---
     data_session: AsyncSession = Depends(get_data_async_session), # External data
+    mqtt_client: FastMQTT = Depends(get_mqtt_client) # Type hint if known
 ):
     """
-    Replace schedule for a specific tenant and date (delete-then-insert).
+    Update/insert/delete schedule rows AND publish the new schedule to MQTT.
     """
     # Permission check
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
@@ -206,38 +149,34 @@ async def bulk_update_schedule(
 
     rows_to_save = sort_schedule_rows_by_start_time(schedule_rows_in)
 
+    # --- 3. PUBLISH TO MQTT (After successful commit) ---
     try:
-        # Perform DB operations using the data_session
-        delete_stmt = (
-            delete(Schedule)
-            .where(Schedule.PLANT_ID == plant_id)
-            .where(Schedule.DATE == date)
+        # Create the MQTT payload
+        mqtt_payload = ScheduleMqttPayload(
+            plant_id=plant_id,
+            date=date,
+            schedule=rows_to_save # rows_to_save is the list of ScheduleRow objects
         )
-        await data_session.exec(delete_stmt)
-
-        newly_created_db_rows = []
-        for i, row_in in enumerate(rows_to_save):
-            # ... (prepare db_model_data, ensure PLANT_ID is set to looked-up plant_id) ...
-            db_model_data = row_in.model_dump(by_alias=True)
-            db_model_data.pop("ID", None)
-            db_model_data.pop("END_TIME", None)
-            db_model_data.pop("UPDATED_AT", None)
-            db_model_data["PLANT_ID"] = plant_id # Use looked-up plant_id
-            db_model_data["DATE"] = date
-            db_model_data["REC_NO"] = i + 1
-
-            new_db_row = Schedule(**db_model_data)
-            data_session.add(new_db_row)
-            newly_created_db_rows.append(new_db_row)
-
-        await data_session.commit()
-
-        # ... (refresh using data_session and return response) ...
-        response_rows: list[ScheduleRow] = []
-        for db_row in newly_created_db_rows:
-            await data_session.refresh(db_row)
-            response_rows.append(ScheduleRow.model_validate_from_orm(db_row))
-        return response_rows
+        
+        # Define the topic. Use the plant_id for specific device targeting.
+        topic = f"schedule/update/{plant_id}"
+        
+        # Publish the payload as a JSON string
+        # Use the injected mqtt_client (which should be the FastMQTT instance)
+        # Check fastapi-mqtt docs for the exact publish method signature.
+        # It's often something like: await mqtt_client.publish(topic, payload, qos=...)
+        print(f"Publishing to MQTT topic: {topic}")
+        # Example publish call (adjust based on fastapi-mqtt version/docs):
+        await mqtt_client.publish(
+            topic, mqtt_payload.model_dump_json(), qos=0
+        )  # QoS 1 = at least once
+        
+    except Exception as e:
+        # Log the error, but don't fail the HTTP request
+        # The DB save was successful, which is the most important part
+        print(f"CRITICAL: Failed to publish schedule to MQTT for plant {plant_id}: {e}")
+    # --- END PUBLISH ---
+        return rows_to_save
 
     except Exception as e:
         await data_session.rollback()

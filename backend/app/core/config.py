@@ -1,12 +1,14 @@
 import secrets
 import warnings
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Optional, Union
+from ssl import SSLContext
 
 from pydantic import (
     AnyUrl,
     BeforeValidator,
     EmailStr,
     HttpUrl,
+    BaseModel,
     computed_field,
     model_validator,
 )
@@ -20,7 +22,6 @@ def parse_cors(v: Any) -> list[str] | str:
     elif isinstance(v, list | str):
         return v
     raise ValueError(v)
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -56,12 +57,24 @@ class Settings(BaseSettings):
     MARIADB_DB: str = ""
     MARIADB_DB_DATA: str = ""
 
-    # --- ADD MQTT SETTINGS ---
-    MQTT_HOST: str = "localhost"
+    # --- NEW: MQTT Settings ---
+    # Load MQTT config from environment variables prefixed with MQTT_
+    # Example environment variables in .env:
+    # MQTT_BROKER=your.mqtt.broker.address.or.ip
+    # MQTT_PORT=1883
+    # MQTT_USERNAME=your_mqtt_user (if auth is needed)
+    # MQTT_PASSWORD=your_mqtt_password (if auth is needed)
+    # MQTT_CLIENT_ID=your_backend_client_id (optional, let it auto-generate if omitted)
+    MQTT_BROKER: str
     MQTT_PORT: int = 1883
-    MQTT_USER: str | None = None  # Optional auth
-    MQTT_PASSWORD: str | None = None  # Optional auth
-    # --- END MQTT SETTINGS ---
+    MQTT_USERNAME: Optional[str] = None
+    MQTT_PASSWORD: Optional[str] = None
+    MQTT_CLIENT_ID: Optional[str] = None
+
+    # Property to create the MQTTConfig object
+
+
+    # --- END NEW: MQTT Settings ---
 
     @computed_field  # type: ignore[prop-decorator]
     @property

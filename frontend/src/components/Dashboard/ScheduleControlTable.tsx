@@ -76,9 +76,9 @@ const ScheduleControlTable = ({
   const [newRow, setNewRow] = useState(createNewScheduleRowTemplate())
   const [isNewRowStartTimeInvalid, setIsNewRowStartTimeInvalid] =
     useState(false)
-  // --- Helper: Convert time string to minutes ---
+// --- Helper: Convert time string to minutes ---
   // Returns -1 for invalid/null time
-  const timeToMinutes = (t: string | null | undefined): number => {
+  const timeToMinutes = useCallback((t: string | null | undefined): number => {
     if (!t) return -1
     try {
       const [h, m] = t.split(":").map(Number)
@@ -87,7 +87,7 @@ const ScheduleControlTable = ({
     } catch (_e) {
       return -1
     }
-  }
+  }, []) // <-- Add useCallback with an empty dependency array
 
   // --- Helper: Sort localData by start_time ---
   const sortScheduleRows = useCallback(
@@ -105,8 +105,13 @@ const ScheduleControlTable = ({
       const invalidIds: number[] = []
       const startTimeCounts = new Map<string, number[]>() // Map: startTime -> array of row IDs
 
+      // --- FIX: Only validate "active" rows ---
+      const rowsToValidate = rows.filter(
+        (row) => row.rec_no === 1 || row.start_time !== "00:00:00",
+      )
+
       // First pass: Collect all IDs for each start time
-      for (const row of rows) {
+      for (const row of rowsToValidate) { // <-- Use the new filtered list
         const time = row.start_time
         const rowId = row.id // Get the ID
 
@@ -127,7 +132,7 @@ const ScheduleControlTable = ({
           // --- FIX: Exclude the first record if the duplicate is "00:00:00" ---
           if (time === "00:00:00") {
             // Find the ID of the actual first record (rec_no 1)
-            const firstRecordId = rows.find((r) => r.rec_no === 1)?.id
+            const firstRecordId = rowsToValidate.find((r) => r.rec_no === 1)?.id
             // Add all IDs *except* the first record's ID
             ids.forEach((id) => {
               if (id !== firstRecordId) {
