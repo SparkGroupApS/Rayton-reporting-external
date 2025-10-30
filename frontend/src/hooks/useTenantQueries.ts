@@ -73,7 +73,11 @@ export const useCreateTenant = () => {
     mutationFn: (tenantData) =>
       TenantsService.createTenant({ requestBody: tenantData }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantKeys.list({}) })
+      //queryClient.invalidateQueries({ queryKey: tenantKeys.list({}) })
+      // --- FIX: Invalidate the root 'tenants' key ---
+      // This will refetch all lists (tenantKeys.list(...))
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all }); // Was tenantKeys.list({})
+      // --- END FIX ---
     },
   })
 }
