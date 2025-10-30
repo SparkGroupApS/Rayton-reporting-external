@@ -14,7 +14,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
-from fastapi_mqtt import FastMQTT, MQTTConfig # <-- Import the real config
+from fastapi_mqtt import FastMQTT, MQTTConfig  # <-- Import the real config
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -23,6 +23,7 @@ def parse_cors(v: Any) -> list[str] | str:
     elif isinstance(v, list | str):
         return v
     raise ValueError(v)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -58,38 +59,31 @@ class Settings(BaseSettings):
     MARIADB_DB: str = ""
     MARIADB_DB_DATA: str = ""
 
-    # --- NEW: MQTT Settings ---
-     # --- MQTT Settings Fields ---
-    MQTT_BROKER: str # Environment variable: MQTT_BROKER
-    MQTT_PORT: int = 1883 # Environment variable: MQTT_PORT
-    MQTT_USERNAME: Optional[str] = None # Environment variable: MQTT_USERNAME
-    MQTT_PASSWORD: Optional[str] = None # Environment variable: MQTT_PASSWORD
-    MQTT_CLIENT_ID: Optional[str] = None # Environment variable: MQTT_CLIENT_ID
-    # Add other MQTT setting fields if needed (e.g., MQTT_KEEPALIVE, MQTT_TLS, etc.)
-    # --- END MQTT Settings Fields ---
+    # MQTT Settings
+    MQTT_BROKER: str
+    MQTT_PORT: int = 1883
+    MQTT_USERNAME: Optional[str] = None
+    MQTT_PASSWORD: Optional[str] = None
+    MQTT_CLIENT_ID: Optional[str] = None
+    MQTT_KEEPALIVE: int = 60
+    MQTT_VERSION: int = 4  # Add this as a configurable setting
 
-     # --- Property to create the MQTTConfig object ---
+    # --- Property to create the MQTTConfig object ---
     @property
     def mqtt_config(self) -> MQTTConfig:
         """Constructs the MQTTConfig object from individual settings."""
         return MQTTConfig(
-            # Map settings fields to MQTTConfig model fields correctly
-            # OLD/Wrong (causing the NameError):
-            # host = MQTT_BROKER, # <-- ERROR: MQTT_BROKER is not defined in this scope
-
-            # NEW/Correct: Access the setting value via 'self'
-            host=self.MQTT_BROKER,      # <-- KEY FIX: Use 'self.' to access the instance attribute
-
+            host=self.MQTT_BROKER,
             port=self.MQTT_PORT,
             username=self.MQTT_USERNAME,
             password=self.MQTT_PASSWORD,
             client_id=self.MQTT_CLIENT_ID,
-            # Map other settings as needed (keepalive, clean_session, ssl, etc.)
-            keepalive=60, # Or self.MQTT_KEEPALIVE if you have that setting
-            clean_session=True, # Or self.MQTT_CLEAN_SESSION if you have that setting
-            ssl=False, # Or self.MQTT_TLS if you have that setting
-            # Add other mapped settings...
+            keepalive=60,
+            clean_session=True,
+            ssl=False,
+            version=4,  # ← ADD THIS! MQTTv3.1.1 (your test_mqtt.py uses version=4)
         )
+
     # --- END Property ---
 
     # --- END NEW: MQTT Settings ---
@@ -117,7 +111,6 @@ class Settings(BaseSettings):
         # )
         # Note: AnyUrl.build might require correct path formatting, string construction is often more reliable for custom schemes.
 
-    
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATA_DATABASE_URI(

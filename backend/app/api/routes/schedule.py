@@ -132,11 +132,12 @@ async def read_schedule(
 @router.put("/bulk", response_model=list[ScheduleRow])
 async def bulk_update_schedule(
     primary_session: SessionDep,
-    current_user: CurrentUser,date: datetime.date,
+    current_user: CurrentUser,
+    date: datetime.date,
     schedule_rows_in: list[ScheduleRow],
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to update schedule for"),
-    data_session: AsyncSession = Depends(get_data_async_session), # External data
-    mqtt_client: FastMQTT = Depends(get_mqtt_client) # Type hint if known
+    data_session: AsyncSession = Depends(get_data_async_session),
+    mqtt_client: FastMQTT = Depends(get_mqtt_client)
 ):
     """
     Update/insert/delete schedule rows AND publish the new schedule to MQTT.
@@ -166,23 +167,23 @@ async def bulk_update_schedule(
         # Use the injected mqtt_client (which should be the FastMQTT instance)
         # Check fastapi-mqtt docs for the exact publish method signature.
         # It's often something like: await mqtt_client.publish(topic, payload, qos=...)
+        #logger.info(f"Publishing to MQTT topic: {topic}")
         print(f"Publishing to MQTT topic: {topic}")
         # Example publish call (adjust based on fastapi-mqtt version/docs):
-        await mqtt_client.publish(
-            topic, mqtt_payload.model_dump_json(), qos=0
-        )  # QoS 1 = at least once
+        mqtt_client.publish(
+            topic, 
+            mqtt_payload.model_dump_json(), 
+            qos=0 # Changed to QoS 1 for at-least-once delivery
+        )
+
+        #logger.info(f"✅ Published schedule to MQTT for plant {plant_id}")
         
     except Exception as e:
-        # Log the error, but don't fail the HTTP request
-        # The DB save was successful, which is the most important part
+         #logger.error(f"⚠️ Failed to publish schedule to MQTT for plant {plant_id}: {e}")
+        # Don't fail the request if MQTT publish fails
         print(f"CRITICAL: Failed to publish schedule to MQTT for plant {plant_id}: {e}")
-    # --- END PUBLISH ---
-        return rows_to_save
 
-    except Exception as e:
-        await data_session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error during bulk update: {e}")
-
+    return rows_to_save
 
 # --- Helper function to sort rows by start time ---
 def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRow]:

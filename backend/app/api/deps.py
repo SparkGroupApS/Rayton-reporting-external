@@ -80,17 +80,17 @@ async def get_current_active_superuser(current_user: CurrentUser) -> User: # NEW
         )
     return current_user
 
-async def get_mqtt_client(request: Request) -> FastMQTT: # Adjust return type if known
-    """
-    Dependency to retrieve the MQTT client instance from the FastAPI app state.
-    """
-    # Access the mqtt client stored in the app state (see main.py setup)
-    # The key 'mqtt_client' should match the key used in main.py when setting app.state.mqtt_client
+def get_mqtt_client(request: Request) -> FastMQTT:
+    """Dependency to get MQTT client from app state"""
     mqtt_client = request.app.state.mqtt_client
+    
     if mqtt_client is None:
-        # Handle the case where mqtt isn't initialized correctly
-        # from fastapi import HTTPException
-        # raise HTTPException(status_code=500, detail="MQTT client not initialized")
-        # Or return None and handle in the endpoint
-        pass
+        raise HTTPException(
+            status_code=503, 
+            detail="MQTT service unavailable"
+        )
+    
     return mqtt_client
+
+# Type alias for dependency injection
+MQTTClient = Annotated[FastMQTT, Depends(get_mqtt_client)]
