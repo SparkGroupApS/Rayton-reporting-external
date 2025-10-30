@@ -36,9 +36,9 @@ class Settings(BaseSettings):
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -56,9 +56,18 @@ class Settings(BaseSettings):
     MARIADB_DB: str = ""
     MARIADB_DB_DATA: str = ""
 
+    # --- ADD MQTT SETTINGS ---
+    MQTT_HOST: str = "localhost"
+    MQTT_PORT: int = 1883
+    MQTT_USER: str | None = None  # Optional auth
+    MQTT_PASSWORD: str | None = None  # Optional auth
+    # --- END MQTT SETTINGS ---
+
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> AnyUrl: # NEW: Use AnyUrl or construct as string
+    def SQLALCHEMY_DATABASE_URI(
+        self,
+    ) -> AnyUrl:  # NEW: Use AnyUrl or construct as string
         # Option 1: Construct as string directly (often simpler for different schemes)
         # This avoids the need for a specific DSN type like PostgresDsn
         return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB}"
@@ -79,7 +88,9 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATA_DATABASE_URI(self) -> AnyUrl: # NEW: Use AnyUrl or construct as string
+    def SQLALCHEMY_DATA_DATABASE_URI(
+        self,
+    ) -> AnyUrl:  # NEW: Use AnyUrl or construct as string
         # Option 1: Construct as string directly (often simpler for different schemes)
         # This avoids the need for a specific DSN type like PostgresDsn
         return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB_DATA}"
