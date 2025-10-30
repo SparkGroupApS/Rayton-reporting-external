@@ -15,7 +15,8 @@ from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
 from app.core.db import get_data_async_session
 from app.models import Schedule, ScheduleRow, Tenant, ScheduleBase
 from fastapi_mqtt import FastMQTT 
-from app.core.mqtt import mqtt
+#from app.core.mqtt import mqtt
+from app.mqtt_handlers import mqtt
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 

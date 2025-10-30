@@ -8,8 +8,9 @@ from fastapi_mqtt import FastMQTT, MQTTConfig  # Import MQTT
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.core.mqtt import mqtt_config  # Import the MQTTConfig instance
-from app.core.mqtt import mqtt
+#from app.core.mqtt import mqtt_config  # Import the MQTTConfig instance
+from app.mqtt_handlers import mqtt
+# from app.core.mqtt import mqtt
 # Import the MQTTConfig model if needed for type hints (optional but good practice)
 # from app.core.mqtt import MQTTConfig
 from app.core.db import init_db, async_engine
@@ -29,13 +30,13 @@ logger = logging.getLogger(__name__)
 #     # ... other settings as dict items ...
 # }
 
-# NEW WAY (correct):
-# Get the MQTTConfig instance from settings
-mqtt_config: 'MQTTConfig' = mqtt_config # Type hint is optional but helpful
+# # NEW WAY (correct):
+# # Get the MQTTConfig instance from settings
+# mqtt_config: 'MQTTConfig' = mqtt_config # Type hint is optional but helpful
 
-# Initialize the FastMQTT instance with the Pydantic model instance
-mqtt = FastMQTT(config=mqtt_config) # This should now work correctly
-# --- END MQTT Configuration ---
+# # Initialize the FastMQTT instance with the Pydantic model instance
+# mqtt = FastMQTT(config=mqtt_config) # This should now work correctly
+# # --- END MQTT Configuration ---
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -44,37 +45,38 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Code executed during startup
-    logger.info("Initializing database...")
-    await init_db()  # <--- Ensure this calls the ASYNC init_db and uses 'await'
-    logger.info("Database initialization attempted.")
+    # --- Startup ---
+    logger.info("Starting up application...")
+    try:
+        logger.info("Initializing database...")
+        await init_db() # Ensure init_db is async and awaited
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        # Decide if this should prevent startup
 
     # --- Initialize MQTT ---
     logger.info("Initializing MQTT...")
     try:
         # Initialize the MQTT client with the FastAPI app
-        await mqtt.init_app(app)  # Use await if init_app is async
-        logger.info("MQTT initialized successfully.")
-        # Store the mqtt instance in app.state for dependency injection
-        # You might store `mqtt` itself or `mqtt.client` depending on what you need to call
-        app.state.mqtt_client = mqtt  # Store the FastMQTT instance
-        # OR if you need the underlying paho/asyncio client:
-        # app.state.mqtt_client = mqtt.client # Check fastapi-mqtt docs for the correct attribute
+        # Use the imported 'mqtt' instance (which is a FastMQTT object)
+        # The 'init_app' method registers internal startup/shutdown handlers
+        mqtt.init_app(app) # Call WITHOUT 'await' - it configures, doesn't return an awaitable
+        logger.info("MQTT initialized successfully (handlers registered).")
+        # Store the mqtt instance in app.state if other parts need it via DI
+        # app.state.mqtt_client = mqtt # Example
     except Exception as e:
         logger.error(f"Failed to initialize MQTT: {e}")
-        # Depending on requirements, you might want to stop startup here
-        # raise e # Re-raise to prevent app startup if MQTT is critical
+        # Decide if this should prevent startup if MQTT is critical
 
     logger.info("Application startup complete.")
-
-    yield  # Application runs
-    # Code executed during shutdown
-    logger.info("Disconnecting from MQTT broker...")
-    #await mqtt.disconnect()  # <-- Add disconnect
-
-    logger.info("Shutting down...")
-    await async_engine.dispose()  # Optionally dispose the engine on shutdown
-    logger.info("Database engine disposed.")
+    yield # Application runs
+    # --- Shutdown ---
+    logger.info("Shutting down application...")
+    # Perform any necessary cleanup
+    # FastMQTT's internal shutdown handler (registered by init_app) should handle MQTT disconnection
+    await async_engine.dispose() # Dispose DB engine if needed
+    logger.info("Application shutdown complete.")
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
