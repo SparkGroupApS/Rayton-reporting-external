@@ -7,7 +7,6 @@ from pydantic import (
     BeforeValidator,
     EmailStr,
     HttpUrl,
-    PostgresDsn,
     computed_field,
     model_validator,
 )
@@ -77,7 +76,7 @@ class Settings(BaseSettings):
         #     path=f"/{self.MARIADB_DB}",
         # )
         # Note: AnyUrl.build might require correct path formatting, string construction is often more reliable for custom schemes.
-    
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATA_DATABASE_URI(self) -> AnyUrl: # NEW: Use AnyUrl or construct as string

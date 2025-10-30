@@ -1,12 +1,22 @@
 import uuid
 from typing import Any
 
-from sqlmodel.ext.asyncio.session import AsyncSession # NEW: Import AsyncSession
-from sqlmodel import select, func, col 
-import uuid
+from sqlmodel import col, func, select
+from sqlmodel.ext.asyncio.session import AsyncSession  # NEW: Import AsyncSession
+
 from app.core.security import get_password_hash, verify_password
+
 # Import Tenant models as well
-from app.models import Item, ItemCreate, User, UserCreate, UserUpdate, Tenant, TenantCreate, TenantUpdate
+from app.models import (
+    Item,
+    ItemCreate,
+    Tenant,
+    TenantCreate,
+    TenantUpdate,
+    User,
+    UserCreate,
+    UserUpdate,
+)
 
 
 # ==================
@@ -43,14 +53,14 @@ async def create_user(
     # Otherwise, the default 'client' from UserBase will be used
     if user_create.role is not None:
         update_data["role"] = user_create.role
-        
+
     db_obj = User.model_validate(
-        user_create, 
+        user_create,
         update=update_data
     )
     session.add(db_obj)
-    await session.commit() 
-    await session.refresh(db_obj) 
+    await session.commit()
+    await session.refresh(db_obj)
     return db_obj
 
 # update_user: Typically, tenant_id should NOT be updatable via standard user updates.
@@ -63,26 +73,26 @@ async def update_user(*, session: AsyncSession, db_user: User, user_in: UserUpda
         password = user_data.pop("password") # Remove password before main update
         hashed_password = get_password_hash(password)
         extra_data["hashed_password"] = hashed_password
-    
+
     # Ensure tenant_id is not accidentally changed
-    user_data.pop("tenant_id", None) 
-    
+    user_data.pop("tenant_id", None)
+
     # Update standard fields (email, full_name, is_active, is_superuser, role)
-    db_user.sqlmodel_update(user_data) 
+    db_user.sqlmodel_update(user_data)
     # Update extra data like hashed_password if needed
     if extra_data:
-        db_user.sqlmodel_update(extra_data) 
+        db_user.sqlmodel_update(extra_data)
 
     session.add(db_user)
-    await session.commit() 
-    await session.refresh(db_user) 
+    await session.commit()
+    await session.refresh(db_user)
     return db_user
 
 # get_user_by_email: Does NOT filter by tenant initially for authentication purposes.
 async def get_user_by_email(*, session: AsyncSession, email: str) -> User | None:
     statement = select(User).where(col(User.email) == email) # Use col() for clarity
-    result = await session.exec(statement) 
-    session_user = result.first() 
+    result = await session.exec(statement)
+    session_user = result.first()
     return session_user
 
 # authenticate: No changes needed, relies on get_user_by_email.
@@ -105,15 +115,15 @@ async def create_item(
 ) -> Item:
     """Creates an item, ensuring it's assigned to the owner's tenant."""
     db_item = Item.model_validate(
-        item_in, 
+        item_in,
         update={
             "owner_id": owner_id,
             "tenant_id": tenant_id # Assign tenant_id
         }
     )
     session.add(db_item)
-    await session.commit() 
-    await session.refresh(db_item) 
+    await session.commit()
+    await session.refresh(db_item)
     return db_item
 
 async def get_item_by_id(

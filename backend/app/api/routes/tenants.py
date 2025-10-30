@@ -4,20 +4,20 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app import crud
-from app.api.deps import SessionDep, get_current_active_superuser, CurrentUser
+from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
+
 # Import all necessary Tenant models
 from app.models import (
-    Tenant, 
-    TenantCreate, 
-    TenantPublic, 
-    TenantsPublic, 
+    Message,  # For delete response
+    TenantCreate,
+    TenantPublic,
+    TenantsPublic,
     TenantUpdate,
-    Message # For delete response
 )
 
 # All tenant operations require superuser privileges
 router = APIRouter(
-    prefix="/tenants", 
+    prefix="/tenants",
     tags=["tenants"]
     #dependencies=[Depends(get_current_active_superuser)]
 )
@@ -49,7 +49,7 @@ async def read_tenants(
 # GET /{tenant_id} - NO superuser dependency here, but add logic inside
 @router.get("/{tenant_id}", response_model=TenantPublic)
 async def read_tenant_by_id(
-    tenant_id: uuid.UUID, 
+    tenant_id: uuid.UUID,
     session: SessionDep,
     current_user: CurrentUser # Inject current user
 ) -> Any:
@@ -57,16 +57,16 @@ async def read_tenant_by_id(
     tenant = await crud.get_tenant_by_id(session=session, tenant_id=tenant_id)
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
-        
+
     # --- ADD PERMISSION CHECK ---
     # Allow if user is superuser OR if the requested tenant_id matches the user's tenant_id
     if not current_user.is_superuser and tenant.id != current_user.tenant_id:
          raise HTTPException(
-             status_code=status.HTTP_403_FORBIDDEN, 
+             status_code=status.HTTP_403_FORBIDDEN,
              detail="Not enough permissions to view this tenant"
         )
     # --- END PERMISSION CHECK ---
-        
+
     return tenant
 
 # ADD dependency here
@@ -83,9 +83,9 @@ async def update_tenant(
     db_tenant = await crud.get_tenant_by_id(session=session, tenant_id=tenant_id)
     if not db_tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
-        
+
     # Optional: Check if the new name conflicts with another tenant if name is being updated
-        
+
     tenant = await crud.update_tenant(session=session, db_tenant=db_tenant, tenant_in=tenant_in)
     return tenant
 
@@ -105,7 +105,7 @@ async def delete_tenant(
     # --- IMPORTANT ---
     # Add logic here BEFORE deleting the tenant:
     # 1. Find all users belonging to this tenant.
-    # 2. Decide what to do: 
+    # 2. Decide what to do:
     #    - Delete these users (and their items via cascade)?
     #    - Reassign them to a default/archive tenant?
     #    - Prevent deletion if tenant is not empty?

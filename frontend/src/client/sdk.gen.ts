@@ -32,15 +32,13 @@ export class DashboardService {
 export class HistoricalDataService {
     /**
      * Read Historical Details
-     * Fetch raw historical DATA values for multiple DATA_IDs by PLANT_ID,
-     * grouped by series, including labels from TEXT_LIST.
-     * Scoped to user's tenant unless overridden.
+     * Fetch historical DATA values for a specific Tenant ID and date range,
+     * grouped by series. Looks up Plant ID internally.
      * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
      * @param data.dataIds List of DATA_IDs to fetch
-     * @param data.plantId PLANT_ID to fetch data for
-     * @param data.start Start timestamp (ISO format, optional)
-     * @param data.end End timestamp (ISO format, optional)
-     * @param data.tenantIdOverride Admin override for tenant ID
+     * @param data.start Start timestamp
+     * @param data.end End timestamp
      * @returns HistoricalDataGroupedResponse Successful Response
      * @throws ApiError
      */
@@ -49,11 +47,10 @@ export class HistoricalDataService {
             method: 'GET',
             url: '/api/v1/historical-data/details',
             query: {
+                tenant_id: data.tenantId,
                 data_ids: data.dataIds,
-                plant_id: data.plantId,
                 start: data.start,
-                end: data.end,
-                tenant_id_override: data.tenantIdOverride
+                end: data.end
             },
             errors: {
                 422: 'Validation Error'

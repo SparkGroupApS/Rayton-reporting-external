@@ -7,16 +7,15 @@ import {
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiLock, FiMail } from "react-icons/fi"
 
-import { 
-  type Body_login_login_access_token as AccessToken, 
-  LoginService, 
-  ApiError // <-- ADD THIS
-} from "@/client";
+import {
+  type Body_login_login_access_token as AccessToken,
+  ApiError, // <-- ADD THIS
+} from "@/client"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth";
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import Logo from "/assets/images/fastapi-logo.svg"
 import { emailPattern, passwordRules } from "../utils"
 
@@ -33,7 +32,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   // REMOVE error, resetError from here
-  const { loginMutation } = useAuth();
+  const { loginMutation } = useAuth()
   //const { loginMutation, error, resetError } = useAuth()
   const {
     register,
@@ -55,10 +54,10 @@ function Login() {
 
     try {
       await loginMutation.mutateAsync(data)
-    } catch (e) { 
-        // This catch might handle errors thrown *before* the API call
-        // API errors are handled by loginMutation.onError in useAuth
-        console.error("Error during login mutation setup:", e);
+    } catch (e) {
+      // This catch might handle errors thrown *before* the API call
+      // API errors are handled by loginMutation.onError in useAuth
+      console.error("Error during login mutation setup:", e)
     }
   }
 
@@ -82,21 +81,24 @@ function Login() {
         mb={4}
       />
       {loginMutation.error && (
-          <Text color="red.500" fontSize="sm" textAlign="center">
-              {/* Safely access error details */}
-              {(loginMutation.error instanceof ApiError && 
-                typeof loginMutation.error.body === 'object' && 
-                loginMutation.error.body !== null && 
-                'detail' in loginMutation.error.body) 
-                ? String(loginMutation.error.body.detail) 
-                : loginMutation.error.message}
-          </Text>
+        <Text color="red.500" fontSize="sm" textAlign="center">
+          {/* Safely access error details */}
+          {loginMutation.error instanceof ApiError &&
+          typeof loginMutation.error.body === "object" &&
+          loginMutation.error.body !== null &&
+          "detail" in loginMutation.error.body
+            ? String(loginMutation.error.body.detail)
+            : loginMutation.error.message}
+        </Text>
       )}
 
       <Field
         invalid={!!errors.username}
         // Update errorText to check mutation error OR form error
-        errorText={errors.username?.message /* || (loginMutation.error ? "Login failed" : undefined) */}
+        errorText={
+          errors.username
+            ?.message /* || (loginMutation.error ? "Login failed" : undefined) */
+        }
       >
         <InputGroup w="100%" startElement={<FiMail />}>
           <Input

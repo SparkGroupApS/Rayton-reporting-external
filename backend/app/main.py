@@ -1,15 +1,17 @@
 # app/main.py
+import logging
+from contextlib import asynccontextmanager  # Import asynccontextmanager
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager # Import asynccontextmanager
 
 from app.api.main import api_router
 from app.core.config import settings
+
 # Import your init_db function from db.py
-from app.core.db import init_db, async_engine # Import async_engine for shutdown too
-import logging
+from app.core.db import async_engine, init_db  # Import async_engine for shutdown too
 
 logger = logging.getLogger(__name__)
 

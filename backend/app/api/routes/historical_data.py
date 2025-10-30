@@ -2,24 +2,27 @@
 
 import datetime
 import uuid
-from typing import List, Optional, Dict, Any # Add Dict
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlmodel import select, func, col, and_
-#from sqlalchemy.orm import Query as SQLAlchemyQuery # For potential group_by usage
+from typing import Any  # Add Dict
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlmodel import and_, col, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+#from sqlalchemy.orm import Query as SQLAlchemyQuery # For potential group_by usage
 # --- Import Dependencies ---
-from app.api.deps import CurrentUser, SessionDep # <-- Add SessionDep
+from app.api.deps import CurrentUser, SessionDep  # <-- Add SessionDep
+
 # --- Import Sessions ---
 from app.core.db import get_data_async_session
-from sqlmodel.ext.asyncio.session import AsyncSession
+
 # --- Import Models ---
 from app.models import (
-    PlcDataHistorical,
     HistoricalDataGroupedResponse,
+    PlcDataHistorical,
+    Tenant,  # <-- Import Tenant model for lookup
+    TextList,
     TimeSeriesData,
     TimeSeriesPoint,
-    TextList,
-    Tenant # <-- Import Tenant model for lookup
 )
 
 # --- Import or copy the helper function ---
@@ -56,9 +59,9 @@ async def read_historical_details(
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to fetch data for"),
     # plant_id: int = Query(..., description="PLANT_ID to fetch data for"), # REMOVE
     # --- END CHANGE ---
-    data_ids: List[int] = Query(..., description="List of DATA_IDs to fetch"),
-    start: Optional[datetime.datetime] = Query(None, description="Start timestamp"),
-    end: Optional[datetime.datetime] = Query(None, description="End timestamp"),
+    data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
+    start: datetime.datetime | None = Query(None, description="Start timestamp"),
+    end: datetime.datetime | None = Query(None, description="End timestamp"),
     # tenant_id_override: uuid.UUID | None = Query(None, description="Admin override...") # Can likely remove this now
 ) -> Any:
     """
@@ -91,7 +94,7 @@ async def read_historical_details(
     rows = results.all()
 
     # 5. Process and Group Results (No change needed here)
-    grouped_data: Dict[int, TimeSeriesData] = {}
+    grouped_data: dict[int, TimeSeriesData] = {}
     for row in rows:
         # ... (processing logic remains the same) ...
         d_id, ts, d, tl1, tl2, tid = row

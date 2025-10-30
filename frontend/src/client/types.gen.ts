@@ -166,6 +166,7 @@ export type UserUpdate = {
     is_active?: (boolean | null);
     is_superuser?: (boolean | null);
     role?: (string | null);
+    tenant_id?: (string | null);
 };
 
 export type UserUpdateMe = {
@@ -194,21 +195,17 @@ export type HistoricalDataReadHistoricalDetailsData = {
      */
     dataIds: Array<(number)>;
     /**
-     * End timestamp (ISO format, optional)
+     * End timestamp
      */
     end?: (string | null);
     /**
-     * PLANT_ID to fetch data for
-     */
-    plantId: number;
-    /**
-     * Start timestamp (ISO format, optional)
+     * Start timestamp
      */
     start?: (string | null);
     /**
-     * Admin override for tenant ID
+     * Tenant ID to fetch data for
      */
-    tenantIdOverride?: (string | null);
+    tenantId: string;
 };
 
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);

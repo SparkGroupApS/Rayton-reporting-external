@@ -2,30 +2,26 @@ import {
   Button,
   DialogActionTrigger,
   DialogTitle,
+  Field, // Use Chakra's Field system
   Flex,
   Input,
   NativeSelect, // Import NativeSelect
   Text,
   VStack,
-  Textarea, // Import Textarea if used elsewhere, not needed for this component now
-  Heading, // Import Heading if needed
-  Container, // Import Container if needed
-  Field, // Use Chakra's Field system
-} from "@chakra-ui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Controller, type SubmitHandler, useForm } from "react-hook-form";
-import { FaPlus } from "react-icons/fa";
-import React from 'react'; // Import React
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
+import { Controller, type SubmitHandler, useForm } from "react-hook-form"
+import { FaPlus } from "react-icons/fa"
 
 // Import Tenant models and the hook to fetch tenants
-import { type UserCreate, UsersService, TenantPublic } from "@/client";
-import { useTenants } from "@/hooks/useTenantQueries"; // Adjust path if needed
-import type { ApiError } from "@/client/core/ApiError";
-import useCustomToast from "@/hooks/useCustomToast";
-import { emailPattern, handleError } from "@/utils";
+import { type TenantPublic, type UserCreate, UsersService } from "@/client"
+import type { ApiError } from "@/client/core/ApiError"
+import useCustomToast from "@/hooks/useCustomToast"
+import { useTenants } from "@/hooks/useTenantQueries" // Adjust path if needed
+import { emailPattern, handleError } from "@/utils"
 // Assuming Checkbox is compatible or imported correctly from Chakra v3
-import { Checkbox } from "../ui/checkbox"; // Check path and v3 compatibility
+import { Checkbox } from "../ui/checkbox" // Check path and v3 compatibility
 // Assuming Dialog components are compatible or imported correctly from Chakra v3
 import {
   DialogBody,
@@ -35,19 +31,19 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTrigger,
-} from "../ui/dialog"; // Check paths and v3 compatibility
+} from "../ui/dialog" // Check paths and v3 compatibility
 
 // Update form interface to include tenant_id
-interface UserCreateForm extends Omit<UserCreate, 'tenant_id'> {
-  confirm_password: string;
-  tenant_id: string; // Add tenant_id as string (UUID)
+interface UserCreateForm extends Omit<UserCreate, "tenant_id"> {
+  confirm_password: string
+  tenant_id: string // Add tenant_id as string (UUID)
 }
 
 const AddUser = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const { showSuccessToast } = useCustomToast();
-  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants();
+  const [isOpen, setIsOpen] = useState(false)
+  const queryClient = useQueryClient()
+  const { showSuccessToast } = useCustomToast()
+  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants()
 
   const {
     control,
@@ -68,42 +64,42 @@ const AddUser = () => {
       is_active: true,
       tenant_id: "",
     },
-  });
+  })
 
   const mutation = useMutation({
     mutationFn: (data: UserCreate) =>
       UsersService.createUser({ requestBody: data }),
     onSuccess: () => {
-      showSuccessToast("User created successfully.");
-      reset();
-      setIsOpen(false);
+      showSuccessToast("User created successfully.")
+      reset()
+      setIsOpen(false)
     },
     onError: (err: ApiError) => {
-      handleError(err);
+      handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] })
     },
-  });
+  })
 
   const onSubmit: SubmitHandler<UserCreateForm> = (data) => {
     const userCreateData: UserCreate = {
-        email: data.email,
-        password: data.password,
-        full_name: data.full_name || null,
-        is_active: data.is_active,
-        is_superuser: data.is_superuser,
-        tenant_id: data.tenant_id,
-    };
-    mutation.mutate(userCreateData);
-  };
+      email: data.email,
+      password: data.password,
+      full_name: data.full_name || null,
+      is_active: data.is_active,
+      is_superuser: data.is_superuser,
+      tenant_id: data.tenant_id,
+    }
+    mutation.mutate(userCreateData)
+  }
 
   const handleOpenChange = ({ open }: { open: boolean }) => {
-    setIsOpen(open);
+    setIsOpen(open)
     if (!open) {
-      reset();
+      reset()
     }
-  };
+  }
 
   return (
     <DialogRoot
@@ -128,7 +124,6 @@ const AddUser = () => {
               Fill in the form below to add a new user to the system.
             </Text>
             <VStack gap={4}>
-
               {/* === Tenant Selection (v3 Field + NativeSelect) === */}
               <Field.Root
                 id="tenant-field"
@@ -140,7 +135,11 @@ const AddUser = () => {
                 <NativeSelect.Root maxWidth="full">
                   <NativeSelect.Field
                     id="tenant_id"
-                    placeholder={isLoadingTenants ? "Loading tenants..." : "Select a tenant"}
+                    placeholder={
+                      isLoadingTenants
+                        ? "Loading tenants..."
+                        : "Select a tenant"
+                    }
                     {...register("tenant_id", {
                       required: "Tenant selection is required",
                     })}
@@ -153,11 +152,11 @@ const AddUser = () => {
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
-                <Field.ErrorText>
-                  {errors.tenant_id && errors.tenant_id.message}
-                </Field.ErrorText>
+                <Field.ErrorText>{errors.tenant_id?.message}</Field.ErrorText>
                 {!isLoadingTenants && !tenantsData && (
-                    <Text color="red.500" fontSize="sm">Could not load tenants.</Text>
+                  <Text color="red.500" fontSize="sm">
+                    Could not load tenants.
+                  </Text>
                 )}
               </Field.Root>
 
@@ -173,9 +172,7 @@ const AddUser = () => {
                   placeholder="Email"
                   type="email"
                 />
-                 <Field.ErrorText>
-                    {errors.email && errors.email.message}
-                 </Field.ErrorText>
+                <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
               </Field.Root>
 
               {/* === Full Name (v3 Field) === */}
@@ -187,13 +184,15 @@ const AddUser = () => {
                   placeholder="Full name"
                   type="text"
                 />
-                 <Field.ErrorText>
-                    {errors.full_name && errors.full_name.message}
-                 </Field.ErrorText>
+                <Field.ErrorText>{errors.full_name?.message}</Field.ErrorText>
               </Field.Root>
 
               {/* === Password (v3 Field) === */}
-              <Field.Root id="password-field" required invalid={!!errors.password}>
+              <Field.Root
+                id="password-field"
+                required
+                invalid={!!errors.password}
+              >
                 <Field.Label>Set Password</Field.Label>
                 <Input
                   id="password"
@@ -207,13 +206,15 @@ const AddUser = () => {
                   placeholder="Password"
                   type="password"
                 />
-                 <Field.ErrorText>
-                    {errors.password && errors.password.message}
-                 </Field.ErrorText>
+                <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
               </Field.Root>
 
               {/* === Confirm Password (v3 Field) === */}
-              <Field.Root id="confirm-password-field" required invalid={!!errors.confirm_password}>
+              <Field.Root
+                id="confirm-password-field"
+                required
+                invalid={!!errors.confirm_password}
+              >
                 <Field.Label>Confirm Password</Field.Label>
                 <Input
                   id="confirm_password"
@@ -226,15 +227,15 @@ const AddUser = () => {
                   placeholder="Password"
                   type="password"
                 />
-                 <Field.ErrorText>
-                    {errors.confirm_password && errors.confirm_password.message}
-                 </Field.ErrorText>
+                <Field.ErrorText>
+                  {errors.confirm_password?.message}
+                </Field.ErrorText>
               </Field.Root>
             </VStack>
 
             <Flex mt={4} direction="column" gap={4}>
               {/* === Checkboxes (using v3 Field.Root for consistency) === */}
-               <Controller
+              <Controller
                 control={control}
                 name="is_superuser"
                 render={({ field }) => (
@@ -272,7 +273,7 @@ const AddUser = () => {
                 colorPalette="gray"
                 disabled={isSubmitting}
                 type="button" // Ensure it doesn't submit
-                onClick={() => handleOpenChange({open: false})} // Close dialog on cancel
+                onClick={() => handleOpenChange({ open: false })} // Close dialog on cancel
               >
                 Cancel
               </Button>
@@ -280,7 +281,9 @@ const AddUser = () => {
             <Button
               variant="solid"
               type="submit"
-              disabled={!isValid || isLoadingTenants || !tenantsData || isSubmitting}
+              disabled={
+                !isValid || isLoadingTenants || !tenantsData || isSubmitting
+              }
               loading={isSubmitting}
             >
               Save User
@@ -290,7 +293,7 @@ const AddUser = () => {
         <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  );
-};
+  )
+}
 
-export default AddUser;
+export default AddUser

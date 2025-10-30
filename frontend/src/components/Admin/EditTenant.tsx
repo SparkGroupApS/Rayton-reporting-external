@@ -1,4 +1,4 @@
-// src/components/Admin/AddTenant.tsx
+// src/components/Admin/EditTenant.tsx
 import {
   Button,
   DialogActionTrigger,
@@ -6,16 +6,16 @@ import {
   Field,
   Input,
   Text,
-  Textarea,
+  Textarea, // Import Textarea
   VStack,
 } from "@chakra-ui/react"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FaPlus } from "react-icons/fa"
+import { FaExchangeAlt } from "react-icons/fa" // Using EditUser's icon
 
-import { ApiError, type TenantCreate } from "@/client"
+import { ApiError, type TenantPublic, type TenantUpdate } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
-import { useCreateTenant } from "@/hooks/useTenantQueries"
+import { useUpdateTenant } from "@/hooks/useTenantQueries"
 import { handleError } from "@/utils"
 import {
   DialogBody,
@@ -25,20 +25,23 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTrigger,
-} from "../ui/dialog" // Adjust path if needed
+} from "../ui/dialog"
 
-// Form data type
+interface EditTenantProps {
+  tenant: TenantPublic
+}
+
+// Form data type from AddTenant
 type TenantFormData = {
   name: string
   description?: string | null
   plant_id?: number | null
 }
 
-const AddTenant = () => {
+const EditTenant = ({ tenant }: EditTenantProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const { showSuccessToast } = useCustomToast()
-  // Use the hook from useTenantQueries.ts
-  const createTenantMutation = useCreateTenant()
+  const updateTenantMutation = useUpdateTenant()
 
   const {
     register,
@@ -47,33 +50,44 @@ const AddTenant = () => {
     formState: { errors, isValid, isSubmitting },
   } = useForm<TenantFormData>({
     mode: "onBlur",
-    defaultValues: { name: "", description: "", plant_id: undefined },
+    defaultValues: {
+      name: tenant.name,
+      description: tenant.description,
+      plant_id: tenant.plant_id,
+    },
   })
 
   const onSubmit: SubmitHandler<TenantFormData> = (data) => {
-    const tenantData: TenantCreate = {
+    const tenantUpdateData: TenantUpdate = {
       name: data.name,
       description: data.description === "" ? null : data.description,
       plant_id: data.plant_id ? Number(data.plant_id) : null,
     }
 
-    // The useCreateTenant hook already handles invalidation on success
-    createTenantMutation.mutate(tenantData, {
-      onSuccess: () => {
-        showSuccessToast("Tenant created successfully.")
-        reset()
-        setIsOpen(false)
+    updateTenantMutation.mutate(
+      { tenantId: tenant.id, tenantData: tenantUpdateData },
+      {
+        onSuccess: () => {
+          showSuccessToast("Tenant updated successfully.")
+          setIsOpen(false)
+          // Invalidation is handled by the hook
+        },
+        onError: (err: ApiError) => {
+          handleError(err)
+        },
       },
-      onError: (err: ApiError) => {
-        handleError(err)
-      },
-    })
+    )
   }
 
   const handleOpenChange = ({ open }: { open: boolean }) => {
     setIsOpen(open)
-    if (!open) {
-      reset({ name: "", description: "", plant_id: undefined })
+    if (open) {
+      // Reset form to tenant's current values when modal opens
+      reset({
+        name: tenant.name,
+        description: tenant.description,
+        plant_id: tenant.plant_id,
+      })
     }
   }
 
@@ -85,20 +99,24 @@ const AddTenant = () => {
       onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
-        <Button value="add-tenant" colorScheme="teal">
-          <FaPlus fontSize="16px" />
-          Add Tenant
+        <Button variant="ghost" size="sm">
+          <FaExchangeAlt fontSize="16px" />
+          Edit Tenant
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Add Tenant</DialogTitle>
+            <DialogTitle>Edit Tenant</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>Fill in the form below to add a new tenant.</Text>
+            <Text mb={4}>Update the tenant details below.</Text>
             <VStack gap={4}>
-              <Field.Root id="tenant-name-add" required invalid={!!errors.name}>
+              <Field.Root
+                id="tenant-name-edit"
+                required
+                invalid={!!errors.name}
+              >
                 <Field.Label>Tenant Name</Field.Label>
                 <Input
                   id="name"
@@ -111,7 +129,7 @@ const AddTenant = () => {
                 <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
               </Field.Root>
 
-              <Field.Root id="tenant-desc-add" invalid={!!errors.description}>
+              <Field.Root id="tenant-desc-edit" invalid={!!errors.description}>
                 <Field.Label>Description (Optional)</Field.Label>
                 <Textarea
                   id="description"
@@ -123,7 +141,7 @@ const AddTenant = () => {
                 <Field.ErrorText>{errors.description?.message}</Field.ErrorText>
               </Field.Root>
 
-              <Field.Root id="plant-id-add" invalid={!!errors.plant_id}>
+              <Field.Root id="plant-id-edit" invalid={!!errors.plant_id}>
                 <Field.Label>Plant ID (Optional)</Field.Label>
                 <Input
                   id="plant_id"
@@ -138,15 +156,15 @@ const AddTenant = () => {
               </Field.Root>
             </VStack>
 
-            {createTenantMutation.isError && (
+            {updateTenantMutation.isError && (
               <Text color="red.500" fontSize="sm" mt={2}>
                 Error:
-                {createTenantMutation.error instanceof ApiError &&
-                typeof createTenantMutation.error.body === "object" &&
-                createTenantMutation.error.body !== null &&
-                "detail" in createTenantMutation.error.body
-                  ? String(createTenantMutation.error.body.detail)
-                  : createTenantMutation.error?.message}
+                {updateTenantMutation.error instanceof ApiError &&
+                typeof updateTenantMutation.error.body === "object" &&
+                updateTenantMutation.error.body !== null &&
+                "detail" in updateTenantMutation.error.body
+                  ? String(updateTenantMutation.error.body.detail)
+                  : updateTenantMutation.error?.message}
               </Text>
             )}
           </DialogBody>
@@ -157,8 +175,8 @@ const AddTenant = () => {
                 variant="subtle"
                 colorPalette="gray"
                 disabled={isSubmitting}
-                type="button"
                 onClick={() => handleOpenChange({ open: false })}
+                type="button"
               >
                 Cancel
               </Button>
@@ -170,14 +188,14 @@ const AddTenant = () => {
               disabled={!isValid || isSubmitting}
               loading={isSubmitting}
             >
-              Save Tenant
+              Save Changes
             </Button>
           </DialogFooter>
+          <DialogCloseTrigger />
         </form>
-        <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
   )
 }
 
-export default AddTenant
+export default EditTenant

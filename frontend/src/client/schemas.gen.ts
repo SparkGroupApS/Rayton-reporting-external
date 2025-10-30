@@ -662,7 +662,8 @@ export const UserCreateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Role'
+            title: 'Role',
+            default: 'client'
         },
         password: {
             type: 'string',
@@ -806,6 +807,18 @@ export const UserUpdateSchema = {
                 }
             ],
             title: 'Role'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
         }
     },
     type: 'object',

@@ -1,7 +1,9 @@
 # app/api/deps.py
-from collections.abc import AsyncGenerator # NEW: Use AsyncGenerator for async dependencies
+import uuid  # NEW: Import uuid module
+from collections.abc import (
+    AsyncGenerator,  # NEW: Use AsyncGenerator for async dependencies
+)
 from typing import Annotated
-import uuid # NEW: Import uuid module
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -10,13 +12,13 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 
 # Remove: from sqlmodel import Session # OLD: Remove sync Session import
-from sqlmodel.ext.asyncio.session import AsyncSession # NEW: Import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession  # NEW: Import AsyncSession
 
 from app.core import security
 from app.core.config import settings
-# Remove: from app.core.db import engine # OLD: Remove engine import
-from app.core.db import get_async_session # NEW: Import your async session generator
 
+# Remove: from app.core.db import engine # OLD: Remove engine import
+from app.core.db import get_async_session  # NEW: Import your async session generator
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(

@@ -1,17 +1,17 @@
 # In: app/api/routers/schedule.py (NEW FILE)
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Dict
 import datetime
 import uuid
 
-# Adjust these imports to match your project structure
-from app.api.deps import SessionDep, CurrentUser
-from app.models import Schedule, ScheduleRow, Tenant  # Import both models
-from sqlmodel import select, delete
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession  # Import AsyncSession
+
+# Adjust these imports to match your project structure
+from app.api.deps import CurrentUser, SessionDep
 
 # Use the correct dependency for your external data session
 from app.core.db import get_data_async_session
+from app.models import Schedule, ScheduleRow, Tenant  # Import both models
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
@@ -118,7 +118,7 @@ async def get_plant_id_for_tenant(
 #     return response_rows # Return the list of correctly converted Pydantic models
 
 
-@router.get("/", response_model=List[ScheduleRow])
+@router.get("/", response_model=list[ScheduleRow])
 async def read_schedule(
     current_user: CurrentUser,
     primary_session: SessionDep,
@@ -141,10 +141,10 @@ async def read_schedule(
         .order_by(Schedule.REC_NO)
     )
     schedule_rows_db_result = await data_session.exec(query)
-    db_rows: List[Schedule] = schedule_rows_db_result.all()
+    db_rows: list[Schedule] = schedule_rows_db_result.all()
 
     # --- FIX: Explicit Manual Conversion ---
-    response_rows: List[ScheduleRow] = []
+    response_rows: list[ScheduleRow] = []
     for db_row in db_rows:
         try:
             # Create a dictionary mapping Pydantic field names (snake_case)
@@ -184,13 +184,13 @@ async def read_schedule(
 
 
 # --- NEW: Bulk Update Endpoint ---
-@router.put("/bulk", response_model=List[ScheduleRow])
+@router.put("/bulk", response_model=list[ScheduleRow])
 async def bulk_update_schedule(
-    primary_session: SessionDep, 
+    primary_session: SessionDep,
     current_user: CurrentUser,date: datetime.date,
-    schedule_rows_in: List[ScheduleRow],
+    schedule_rows_in: list[ScheduleRow],
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to update schedule for"),
-    
+
     # --- Inject BOTH sessions ---
     data_session: AsyncSession = Depends(get_data_async_session), # External data
 ):
@@ -233,7 +233,7 @@ async def bulk_update_schedule(
         await data_session.commit()
 
         # ... (refresh using data_session and return response) ...
-        response_rows: List[ScheduleRow] = []
+        response_rows: list[ScheduleRow] = []
         for db_row in newly_created_db_rows:
             await data_session.refresh(db_row)
             response_rows.append(ScheduleRow.model_validate_from_orm(db_row))
@@ -245,7 +245,7 @@ async def bulk_update_schedule(
 
 
 # --- Helper function to sort rows by start time ---
-def sort_schedule_rows_by_start_time(rows: List[ScheduleRow]) -> List[ScheduleRow]:
+def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRow]:
     def time_key(row: ScheduleRow):
         try:
             return datetime.time.fromisoformat(row.start_time)
