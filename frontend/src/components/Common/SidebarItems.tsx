@@ -34,9 +34,9 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   // Define items always visible to clients (and admins/managers)
   const clientItems: Item[] = [
     { icon: FiHome, title: "Dashboard", path: "/" }, // Shows selected/own tenant data
-    { icon: FiBriefcase, title: "Items", path: "/items" }, // Shows items for selected/own tenant
+    // { icon: FiBriefcase, title: "Items", path: "/items" }, // Shows items for selected/own tenant
     { icon: FiSettings, title: "User Settings", path: "/settings" },
-    { icon: FiClock, title: "Schedule", path: "/schedule" },
+    // { icon: FiClock, title: "Schedule", path: "/schedule" },
   ]
 
   // Define items visible only to admins/managers
