@@ -283,7 +283,6 @@ class PlcDataRealtime(SQLModel, table=True, metadata=external_metadata):
 #     DATE: Optional[datetime.date] = Field(default=None, index=True) # Part of unique key
 #     REC_NO: Optional[int] = Field(default=None, index=True) # Part of unique key
 #     START_TIME: Optional[datetime.time] = Field(default=None)
-#     END_TIME: Optional[datetime.time] = Field(default=None)
 #     CHARGE_ENABLE: Optional[bool] = Field(default=None) # TINYINT(1) maps to bool
 #     CHARGE_FROM_GRID: Optional[bool] = Field(default=None)
 #     DISCHARGE_ENABLE: Optional[bool] = Field(default=None)
@@ -304,7 +303,6 @@ class Schedule(SQLModel, table=True, metadata=external_metadata):
     DATE: datetime.date | None = Field(default=None, index=True, sa_column_kwargs={"name": "DATE"})
     REC_NO: int | None = Field(default=None, index=True, sa_column_kwargs={"name": "REC_NO"})
     START_TIME: datetime.time | None = Field(default=None, sa_column_kwargs={"name": "START_TIME"})
-    END_TIME: datetime.time | None = Field(default=None, sa_column_kwargs={"name": "END_TIME"})
     CHARGE_ENABLE: bool | None = Field(default=None, sa_column_kwargs={"name": "CHARGE_ENABLE"}) # TINYINT(1) maps to bool
     CHARGE_FROM_GRID: bool | None = Field(default=None, sa_column_kwargs={"name": "CHARGE_FROM_GRID"})
     DISCHARGE_ENABLE: bool | None = Field(default=None, sa_column_kwargs={"name": "DISCHARGE_ENABLE"})
@@ -314,6 +312,7 @@ class Schedule(SQLModel, table=True, metadata=external_metadata):
     DISCHARGE_POWER: float | None = Field(default=None, sa_column_kwargs={"name": "DISCHARGE_POWER"})
     SOURCE: int | None = Field(default=None, sa_column_kwargs={"name": "SOURCE"})
     UPDATED_AT: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False, sa_column_kwargs={"name": "UPDATED_AT"})
+    UPDATED_BY: str | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100)
 
 
 
@@ -338,7 +337,6 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
 #     # We use Field(alias=...) to map to the UPPER_CASE DB columns
 #     rec_no: int = Field(alias="REC_NO")
 #     start_time: datetime.time = Field(alias="START_TIME")
-#     end_time: datetime.time = Field(alias="END_TIME")
 #     charge_enable: bool = Field(alias="CHARGE_ENABLE")
 #     charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
 #     discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
@@ -364,7 +362,6 @@ class ScheduleBase(SQLModel): # Consider inheriting from BaseModel if it's purel
     # Use Field(alias="UPPER_CASE_NAME") to map to DB column names
     rec_no: int = Field(alias="REC_NO")
     start_time: datetime.time = Field(alias="START_TIME")
-    end_time: datetime.time | None = Field(alias="END_TIME") # Make Optional if DB allows NULL
     charge_enable: bool = Field(alias="CHARGE_ENABLE")
     charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
     discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
@@ -380,6 +377,7 @@ class ScheduleRow(ScheduleBase):
     # Add fields for primary key and timestamp
     id: int = Field(alias="ID") # Map 'id' field to 'ID' database column
     updated_at: datetime.datetime = Field(alias="UPDATED_AT") # Map 'updated_at' to 'UPDATED_AT'
+    updated_by: str = Field(alias="UPDATED_BY") 
 
     # Pydantic v2 configuration
     # This tells Pydantic it's okay to create instances from ORM objects (like your Schedule SQLModel instance)

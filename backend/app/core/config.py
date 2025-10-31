@@ -52,12 +52,17 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
-    MARIADB_SERVER: str  # Or MYSQL_SERVER if you prefer
-    MARIADB_PORT: int = 3306  # Default MySQL/MariaDB port
-    MARIADB_USER: str
-    MARIADB_PASSWORD: str = ""
-    MARIADB_DB: str = ""
-    MARIADB_DB_DATA: str = ""
+    SITE_MARIADB_SERVER: str  # Or MYSQL_SERVER if you prefer
+    SITE_MARIADB_PORT: int = 3306  # Default MySQL/MariaDB port
+    SITE_MARIADB_USER: str
+    SITE_MARIADB_PASSWORD: str = ""
+    SITE_MARIADB_DB: str = ""
+    
+    DATA_MARIADB_SERVER: str  # Or MYSQL_SERVER if you prefer
+    DATA_MARIADB_PORT: int = 3306  # Default MySQL/MariaDB port
+    DATA_MARIADB_USER: str
+    DATA_MARIADB_PASSWORD: str = ""
+    DATA_MARIADB_DB: str = ""
 
     # MQTT Settings
     MQTT_BROKER: str
@@ -95,7 +100,7 @@ class Settings(BaseSettings):
     ) -> AnyUrl:  # NEW: Use AnyUrl or construct as string
         # Option 1: Construct as string directly (often simpler for different schemes)
         # This avoids the need for a specific DSN type like PostgresDsn
-        return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB}"
+        return f"mariadb+asyncmy://{self.SITE_MARIADB_USER}:{self.SITE_MARIADB_PASSWORD}@{self.SITE_MARIADB_SERVER}:{self.SITE_MARIADB_PORT}/{self.SITE_MARIADB_DB}"
         # OR if using aiomysql:
         # return f"mysql+aiomysql://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB}"
 
@@ -118,7 +123,7 @@ class Settings(BaseSettings):
     ) -> AnyUrl:  # NEW: Use AnyUrl or construct as string
         # Option 1: Construct as string directly (often simpler for different schemes)
         # This avoids the need for a specific DSN type like PostgresDsn
-        return f"mariadb+asyncmy://{self.MARIADB_USER}:{self.MARIADB_PASSWORD}@{self.MARIADB_SERVER}:{self.MARIADB_PORT}/{self.MARIADB_DB_DATA}"
+        return f"mariadb+asyncmy://{self.DATA_MARIADB_USER}:{self.DATA_MARIADB_PASSWORD}@{self.DATA_MARIADB_SERVER}:{self.DATA_MARIADB_PORT}/{self.DATA_MARIADB_DB}"
 
     # --- END NEW MariaDB/MySQL Settings ---
 
@@ -162,7 +167,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("MARIADB_PASSWORD", self.MARIADB_PASSWORD)
+        self._check_default_secret("MARIADB_PASSWORD", self.SITE_MARIADB_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )

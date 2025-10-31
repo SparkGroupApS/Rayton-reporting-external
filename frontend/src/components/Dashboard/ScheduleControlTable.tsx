@@ -38,10 +38,9 @@ interface ScheduleDisplayRow extends ScheduleRow {
 // We'll calculate rec_no when adding
 const createNewScheduleRowTemplate = (): Omit<
   ScheduleRow,
-  "id" | "updated_at" | "rec_no"
+  "id" | "updated_at" | "rec_no" | "updated_by"
 > => ({
   start_time: "00:00:00",
-  end_time: null,
   charge_enable: false,
   charge_from_grid: false,
   discharge_enable: false,
@@ -315,7 +314,7 @@ const ScheduleControlTable = ({
       // --- END FIX ---
       id: -Date.now(), // Temporary unique negative ID
       updated_at: new Date().toISOString(),
-      end_time: null,
+      updated_by: '',
     }
 
     setLocalData((prev) => {
@@ -358,6 +357,7 @@ const ScheduleControlTable = ({
         rec_no: dataToSave.length + 1,
         updated_at: new Date().toISOString(),
         end_time: null,
+        updated_by: '',
       })
     }
 

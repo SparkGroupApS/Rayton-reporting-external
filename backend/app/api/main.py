@@ -5,6 +5,7 @@ from app.api.routes import (
     historical_data,
     items,
     login,
+    plants,
     private,
     schedule,
     tenants,
@@ -22,6 +23,7 @@ api_router.include_router(tenants.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(historical_data.router)
 api_router.include_router(schedule.router)
+api_router.include_router(plants.router) 
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

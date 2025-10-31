@@ -98,7 +98,6 @@ async def read_schedule(
                 "id": db_row.ID,
                 "rec_no": db_row.REC_NO,
                 "start_time": db_row.START_TIME,
-                "end_time": db_row.END_TIME, # Will be None if DB is NULL
                 "charge_enable": db_row.CHARGE_ENABLE,
                 "charge_from_grid": db_row.CHARGE_FROM_GRID,
                 "discharge_enable": db_row.DISCHARGE_ENABLE,
@@ -108,6 +107,7 @@ async def read_schedule(
                 "discharge_power": db_row.DISCHARGE_POWER,
                 "source": db_row.SOURCE,
                 "updated_at": db_row.UPDATED_AT,
+                "updated_by": db_row.UPDATED_BY
                 # Add any other necessary fields from ScheduleRow
             }
             # Validate the dictionary against the ScheduleRow model

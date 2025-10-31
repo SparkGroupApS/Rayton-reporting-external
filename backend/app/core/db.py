@@ -69,7 +69,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]: # Use Async
 # --- Historical Data Database Connection ---
 
 # Ensure MARIADB_DB_DATA is defined in your settings (config.py and .env)
-if not settings.MARIADB_DB_DATA:
+if not settings.DATA_MARIADB_DB:
     raise ValueError("MARIADB_DB_DATA setting is not configured in .env or config.py")
 
 data_async_engine = create_async_engine(

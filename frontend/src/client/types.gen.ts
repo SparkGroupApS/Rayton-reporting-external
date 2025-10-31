@@ -76,7 +76,6 @@ export type RevenueData = {
 export type ScheduleRow = {
     rec_no: number;
     start_time: string;
-    end_time: (string | null);
     charge_enable: boolean;
     charge_from_grid: boolean;
     discharge_enable: boolean;
@@ -87,6 +86,7 @@ export type ScheduleRow = {
     source: number;
     id: number;
     updated_at: string;
+    updated_by: string;
 };
 
 export type TenantCreate = {
@@ -193,7 +193,7 @@ export type HistoricalDataReadHistoricalDetailsData = {
     /**
      * List of DATA_IDs to fetch
      */
-    dataIds: Array<(number)>;
+    dataIds: Array<number>;
     /**
      * End timestamp
      */
@@ -275,6 +275,14 @@ export type LoginRecoverPasswordHtmlContentData = {
 };
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
+
+export type PlantsReadPlantByIdData = {
+    plantId: number;
+};
+
+export type PlantsReadPlantByIdResponse = (unknown);
+
+export type PlantsReadAllPlantsResponse = (unknown);
 
 export type PrivateCreateUserWithNewTenantData = {
     requestBody: PrivateUserCreateInput;
