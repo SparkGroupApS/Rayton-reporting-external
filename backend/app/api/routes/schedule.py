@@ -161,8 +161,8 @@ async def bulk_update_schedule(
         )
         
         # Define the topic. Use the plant_id for specific device targeting.
-        topic = f"schedule/update/{plant_id}"
-        
+        #topic = f"schedule/update/{plant_id}"
+        topic = f"cmd_server/rt2500"
         # Publish the payload as a JSON string
         # Use the injected mqtt_client (which should be the FastMQTT instance)
         # Check fastapi-mqtt docs for the exact publish method signature.
