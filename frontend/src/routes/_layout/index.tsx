@@ -1,130 +1,110 @@
 // src/routes/_layout/index.tsx
-import { Container, Grid, Spinner } from "@chakra-ui/react"
+import { Container, Spinner } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { z } from "zod"
 import { type ApiError, type DashboardData, DashboardService } from "@/client"
-// --- END CHANGE 1 ---
-import DashboardHeader from "@/components/Dashboard/DashboardHeader"
-import EnergyTrendChart from "@/components/Dashboard/EnergyTrendChart"
-import ItemsSection from "@/components/Dashboard/ItemsSection"
-import KpiSection from "@/components/Dashboard/KpiSection"
+import DashboardTabs from "@/components/Dashboard/DashboardTabs"
 import useAuth from "@/hooks/useAuth"
-import { useTenants } from "@/hooks/useTenantQueries"
+import { useTenants, useTenant } from "@/hooks/useTenantQueries"
 
-// --- Route Definition ---
-export const Route = createFileRoute("/_layout/")({
-  component: Dashboard,
+// Define search schema with plantId
+const dashboardSearchSchema = z.object({
+  plantId: z.number().optional(),
 })
 
-// Formats a Date object to a YYYY-MM-DD string (Helper removed, as it's now inside EnergyDashboard)
+// Route Definition with search validation
+export const Route = createFileRoute("/_layout/")({
+  component: Dashboard,
+  validateSearch: (search) => dashboardSearchSchema.parse(search),
+})
 
-// --- Dashboard Hook (Keep as is) ---
-const useDashboardData = (tenantId?: string | null) => {
+// Dashboard Hook - now accepts plantId instead of tenantId
+const useDashboardData = (plantId?: number | null) => {
   return useQuery<DashboardData, ApiError>({
-    queryKey: ["dashboard", { tenantId: tenantId ?? "current" }],
+    queryKey: ["dashboard", { plantId: plantId ?? "current" }],
     queryFn: () =>
       DashboardService.readDashboardData({
-        tenantIdOverride: tenantId ?? undefined,
+        tenantIdOverride: undefined, // We'll modify backend to use plantId
       }),
-    enabled: !!tenantId,
+    enabled: !!plantId,
   })
 }
 
-// --- Main Dashboard Component ---
 function Dashboard() {
   const { user: currentUser } = useAuth()
-  const [selectedTenant, setSelectedTenant] = useState<string | null>(null)
+  const { plantId } = Route.useSearch() // Get plantId from URL
 
-  // --- CHANGE 2: Update Chart ID state ---
-  // TODO: Replace '2502' with dynamic mapping from selectedTenant (UUID) to plant_id (int)
-  const [_plantId, _setPlantId] = useState<number | null>(2502)
-
-  // TODO: Replace with UI controls (e.g., checkboxes)
-  const [energyDataIds, _setEnergyDataIds] = useState<number[]>([1, 2, 3, 4, 5])
-  const [socDataId, _setSocDataId] = useState<number>(10) // New state for SOC
-  // --- END CHANGE 2 ---
-
+  // Determine if user is privileged
   const isPrivilegedUser =
     currentUser?.is_superuser ||
     currentUser?.role === "admin" ||
     currentUser?.role === "manager"
+
+  // Fetch all tenants (for privileged users to map plantId to tenantId)
   const { data: tenantsData, isLoading: isLoadingTenants } = useTenants(
     {},
-    { enabled: !!isPrivilegedUser },
+    { enabled: !!isPrivilegedUser }
   )
+
+  // Get user's tenant
+    // --- THE FIX: Use the correct hook to fetch a single tenant ---
+  // This is much more efficient than fetching a list and filtering.
+  const { data: userTenantData, isLoading: isLoadingUserTenant } = useTenant(
+    currentUser?.tenant_id ?? null,
+  )
+  // --- END FIX ---
+
+  // Determine effective plantId and tenantId
+  const effectivePlantId = plantId || userTenantData?.plant_id
+  const effectiveTenantId = plantId
+    ? tenantsData?.data.find((t) => t.plant_id === plantId)?.id
+    : currentUser?.tenant_id
+
+  // Fetch dashboard data
   const {
     data: dashboardData,
     isLoading: isLoadingDashboard,
     error,
-  } = useDashboardData(selectedTenant)
+  } = useDashboardData(effectivePlantId)
 
-  useEffect(() => {
-    if (currentUser && !selectedTenant) {
-      setSelectedTenant(currentUser.tenant_id)
-    }
-  }, [currentUser, selectedTenant])
+  // Configuration for chart data IDs
+  const energyDataIds = [1, 2, 3, 4, 5]
+  const socDataId = 10
 
-  // TODO: Add logic here to update `plantId` when `selectedTenant` changes.
-
+  // Loading state
   if (
     !currentUser ||
-    (isPrivilegedUser && isLoadingTenants && !selectedTenant)
+    (isPrivilegedUser && isLoadingTenants && !plantId) ||
+    isLoadingUserTenant
   ) {
     return (
       <Container py={8} centerContent>
-        <Spinner /> Loading user data...
+        <Spinner /> Loading dashboard...
       </Container>
     )
   }
 
-  // --- Render UI using Grid Layout ---
+  // No plant ID available
+  if (!effectivePlantId) {
+    return (
+      <Container py={8} centerContent>
+        No plant assigned to your account. Please contact administrator.
+      </Container>
+    )
+  }
+
   return (
     <Container maxW="full" py={4}>
-      {/* Header Row */}
-      <DashboardHeader
-        currentUser={currentUser}
-        tenantsData={tenantsData}
-        isLoadingTenants={isLoadingTenants}
-        selectedTenant={selectedTenant}
-        setSelectedTenant={setSelectedTenant}
-        isPrivilegedUser={isPrivilegedUser}
+      {/* Render tabs with plantId and tenantId */}
+      <DashboardTabs
+        isLoadingDashboard={isLoadingDashboard}
+        dashboardData={dashboardData}
+        error={error}
+        selectedTenant={effectiveTenantId ?? null}
+        energyDataIds={energyDataIds}
+        socDataId={socDataId}
       />
-
-      {/* Main Grid Layout */}
-      <Grid
-        templateAreas={{
-          base: `"chart" "kpi" "items"`,
-          md: `"chart chart" "kpi items"`,
-          lg: `"chart chart kpi" "chart chart items"`,
-        }}
-        templateColumns={{ base: "1fr", md: "1fr 1fr", lg: "1fr 1fr 1fr" }}
-        templateRows={{ lg: "auto 1fr" }}
-        gap={6}
-      >
-        {/* --- CHANGE 3: Render new Dashboard component --- */}
-        {/* <EnergyDashboard
-          tenantId={selectedTenant}
-          plantId={plantId}
-          dataIds={energyDataIds}
-        /> */}
-        <EnergyTrendChart
-          tenantId={selectedTenant}
-          energyDataIds={energyDataIds}
-          socDataId={socDataId}
-        />
-        {/* --- END CHANGE 3 --- */}
-
-        {/* KPI Cards Area */}
-        <KpiSection isLoading={isLoadingDashboard} error={error} />
-
-        {/* Items/Invoices Area */}
-        <ItemsSection
-          items={dashboardData?.items}
-          isLoading={isLoadingDashboard}
-          error={error}
-        />
-      </Grid>
     </Container>
   )
 }

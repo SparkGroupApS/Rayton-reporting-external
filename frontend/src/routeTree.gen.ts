@@ -17,7 +17,6 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutTenantRouteImport } from './routes/_layout/tenant'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutScheduleRouteImport } from './routes/_layout/schedule'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
@@ -60,11 +59,6 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutScheduleRoute = LayoutScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
@@ -83,7 +77,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
-  '/schedule': typeof LayoutScheduleRoute
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
@@ -95,7 +88,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
-  '/schedule': typeof LayoutScheduleRoute
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
@@ -109,7 +101,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/items': typeof LayoutItemsRoute
-  '/_layout/schedule': typeof LayoutScheduleRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tenant': typeof LayoutTenantRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -123,7 +114,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/items'
-    | '/schedule'
     | '/settings'
     | '/tenant'
     | '/'
@@ -135,7 +125,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/items'
-    | '/schedule'
     | '/settings'
     | '/tenant'
     | '/'
@@ -148,7 +137,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/items'
-    | '/_layout/schedule'
     | '/_layout/settings'
     | '/_layout/tenant'
     | '/_layout/'
@@ -220,13 +208,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/schedule': {
-      id: '/_layout/schedule'
-      path: '/schedule'
-      fullPath: '/schedule'
-      preLoaderRoute: typeof LayoutScheduleRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
@@ -247,7 +228,6 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
-  LayoutScheduleRoute: typeof LayoutScheduleRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTenantRoute: typeof LayoutTenantRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -256,7 +236,6 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutItemsRoute: LayoutItemsRoute,
-  LayoutScheduleRoute: LayoutScheduleRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTenantRoute: LayoutTenantRoute,
   LayoutIndexRoute: LayoutIndexRoute,

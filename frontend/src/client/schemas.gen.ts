@@ -6,7 +6,7 @@ export const Body_login_login_access_tokenSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    pattern: 'password'
+                    pattern: '^password$'
                 },
                 {
                     type: 'null'
@@ -20,6 +20,7 @@ export const Body_login_login_access_tokenSchema = {
         },
         password: {
             type: 'string',
+            format: 'password',
             title: 'Password'
         },
         scope: {
@@ -47,6 +48,7 @@ export const Body_login_login_access_tokenSchema = {
                     type: 'null'
                 }
             ],
+            format: 'password',
             title: 'Client Secret'
         }
     },
@@ -338,18 +340,6 @@ export const ScheduleRowSchema = {
             format: 'time',
             title: 'Start Time'
         },
-        end_time: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'time'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'End Time'
-        },
         charge_enable: {
             type: 'boolean',
             title: 'Charge Enable'
@@ -390,10 +380,14 @@ export const ScheduleRowSchema = {
             type: 'string',
             format: 'date-time',
             title: 'Updated At'
+        },
+        updated_by: {
+            type: 'string',
+            title: 'Updated By'
         }
     },
     type: 'object',
-    required: ['rec_no', 'start_time', 'end_time', 'charge_enable', 'charge_from_grid', 'discharge_enable', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at'],
+    required: ['rec_no', 'start_time', 'charge_enable', 'charge_from_grid', 'discharge_enable', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at', 'updated_by'],
     title: 'ScheduleRow'
 } as const;
 

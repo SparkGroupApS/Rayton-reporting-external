@@ -1,28 +1,14 @@
 // src/components/Dashboard/DashboardHeader.tsx
 
-import { Box, Flex, Heading, NativeSelect, Text } from "@chakra-ui/react"
-import type React from "react"
-import type { TenantPublic, TenantsPublic, UserPublic } from "@/client" // Adjust path
+import { Box, Flex, Heading, Text } from "@chakra-ui/react"
+import type { UserPublic } from "@/client"
 
-// Define props needed by the header
 interface DashboardHeaderProps {
   currentUser: UserPublic | null | undefined
-  tenantsData?: TenantsPublic | null // Allow null or undefined
-  isLoadingTenants: boolean // Pass loading state
-  selectedTenant: string | null
-  setSelectedTenant: (value: string | null) => void
-  isPrivilegedUser: boolean // Pass role check result
+  plantName?: string | null
 }
 
-const DashboardHeader = ({
-  currentUser,
-  tenantsData,
-  isLoadingTenants, // Receive loading state
-  selectedTenant,
-  setSelectedTenant,
-  isPrivilegedUser,
-}: DashboardHeaderProps) => {
-  // Don't render anything if the user isn't loaded yet
+const DashboardHeader = ({ currentUser, plantName }: DashboardHeaderProps) => {
   if (!currentUser) {
     return null
   }
@@ -32,43 +18,16 @@ const DashboardHeader = ({
       <Box>
         <Heading size="lg" color="teal.600">
           ☀️ Dashboard
+          {plantName && (
+            <Text as="span" fontSize="md" color="gray.600" ml={2}>
+              - {plantName}
+            </Text>
+          )}
         </Heading>
         <Text fontSize="md" color="gray.600">
           Welcome back, {currentUser?.full_name || currentUser?.email}!
         </Text>
       </Box>
-
-      {/* Conditional Tenant Switcher */}
-      {isPrivilegedUser && ( // Use the passed prop
-        <NativeSelect.Root
-          maxWidth="300px"
-          // Show loading state or actual tenants
-          disabled={isLoadingTenants || !tenantsData}
-        >
-          <NativeSelect.Field
-            value={selectedTenant ?? ""}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setSelectedTenant(e.target.value || null)
-            }
-            placeholder={isLoadingTenants ? "Loading tenants..." : undefined} // Add placeholder for loading
-          >
-            {/* Only map options if tenantsData exists */}
-            {currentUser.tenant_id && (
-              <option key={currentUser.tenant_id} value={currentUser.tenant_id}>
-                My Tenant
-              </option>
-            )}
-            {tenantsData?.data
-              ?.filter((t) => t.id !== currentUser.tenant_id)
-              .map((tenant: TenantPublic) => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.name}
-                </option>
-              ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
-      )}
     </Flex>
   )
 }

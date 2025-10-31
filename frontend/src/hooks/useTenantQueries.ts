@@ -54,16 +54,38 @@ export const useTenants = (
   })
 }
 
+// --- 1. Define a type for the custom options ---
+type UseTenantQueryOptions = Omit<
+  UseQueryOptions<TenantPublic, ApiError>,
+  "queryKey" | "queryFn"
+>
+
 // Hook to fetch a single tenant by ID
-export const useTenant = (tenantId: string | null) => {
-  // Type inference works for parameters here too
+export const useTenant = (
+  tenantId: string | null,
+  options: UseTenantQueryOptions = {}, // <-- Add options parameter
+) => {
   const queryParams = { tenantId: tenantId! }
   return useQuery<TenantPublic, ApiError>({
     queryKey: tenantKeys.detail(tenantId!),
     queryFn: () => TenantsService.readTenantById(queryParams),
-    enabled: !!tenantId,
+    // --- 3. Combine internal logic with passed-in options ---
+    ...options, // Spread the passed-in options
+    // The query is enabled only if a tenantId is provided AND
+    // the enabled option from the component is not false.
+    enabled: !!tenantId && (options.enabled ?? true),
   })
 }
+
+// export const useTenant = (tenantId: string | null) => {
+//   // Type inference works for parameters here too
+//   const queryParams = { tenantId: tenantId! }
+//   return useQuery<TenantPublic, ApiError>({
+//     queryKey: tenantKeys.detail(tenantId!),
+//     queryFn: () => TenantsService.readTenantById(queryParams),
+//     enabled: !!tenantId,
+//   })
+// }
 
 // Hook to create a new tenant
 export const useCreateTenant = () => {
