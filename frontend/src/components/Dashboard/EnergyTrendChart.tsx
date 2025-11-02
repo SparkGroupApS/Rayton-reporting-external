@@ -17,14 +17,14 @@ type TimeRange = "1D" | "1W" | "1M" | "1Y" | "All";
 
 // Preferred brand colors by stable text_id (if present)
 const colorByTextId: Record<string, string> = {
-  "txt-solar-power": "#facc15",          // yellow
-  "txt-grid-power": "#3b82f6",           // blue
-  "txt-plant-power": "#10b981",          // green
-  "txt-generator-power": "#f97316",      // orange
-  "txt-ess-power": "#8b5cf6",            // violet
-  "txt-ess-discharge": "#e11d48",        // red
-  "txt-ess-charge": "#0ea5e9",           // sky blue
-  "txt-generator-consumption": "#a855f7" // purple
+  "txt-solar-power": "#facc15", // yellow
+  "txt-grid-power": "#3b82f6", // blue
+  "txt-plant-power": "#10b981", // green
+  "txt-generator-power": "#f97316", // orange
+  "txt-ess-power": "#8b5cf6", // violet
+  "txt-ess-discharge": "#e11d48", // red
+  "txt-ess-charge": "#0ea5e9", // sky blue
+  "txt-generator-consumption": "#a855f7", // purple
 };
 
 // Fallback old english mapping, then we finally fall back to palette
@@ -41,15 +41,18 @@ const smallFallbackPalette = ["#22c55e", "#64748b", "#fb923c", "#0ea5e9", "#8b5c
 
 // Nice HSL ramp palette that scales to N series
 const hslToHex = (h: number, s: number, l: number) => {
-  s /= 100; l /= 100;
+  s /= 100;
+  l /= 100;
   const k = (n: number) => (n + h / 30) % 12;
   const a = s * Math.min(l, 1 - l);
   const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const toHex = (x: number) => Math.round(255 * x).toString(16).padStart(2, "0");
+  const toHex = (x: number) =>
+    Math.round(255 * x)
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 };
-const makePalette = (n: number) =>
-  Array.from({ length: n }, (_, i) => hslToHex((i * 360) / Math.max(1, n), 70, 52));
+const makePalette = (n: number) => Array.from({ length: n }, (_, i) => hslToHex((i * 360) / Math.max(1, n), 70, 52));
 
 const toLocalDateString = (date: Date) => {
   const year = date.getFullYear();
@@ -90,24 +93,28 @@ const formatHourlyTick = (timestamp: number, index: number, totalTicks: number) 
 };
 
 // Transform API response to chart format
-const transformApiData = (apiResponse: HistoricalDataGroupedResponse | undefined, colorIndices: number[], timeRange?: TimeRange, useCurrentPeriod?: boolean, startDate?: Date, endDate?: Date) => {
+const transformApiData = (
+  apiResponse: HistoricalDataGroupedResponse | undefined,
+  colorIndices: number[],
+  timeRange?: TimeRange,
+  useCurrentPeriod?: boolean,
+  startDate?: Date,
+  endDate?: Date
+) => {
   if (!apiResponse || !apiResponse.series) {
     return null;
   }
 
   const dataMap: { [key: number]: { x: number; [key: string]: any } } = {};
-  const seriesNames = apiResponse.series.map(s => s.name);
+  const seriesNames = apiResponse.series.map((s) => s.name);
   const palette = makePalette(seriesNames.length);
   const seriesInfo = apiResponse.series.map((s, i) => {
     const name = s.name;
     const english = name.toUpperCase();
     // Check for text_id in the name or use the name itself as a key
-    const textIdKey = Object.keys(colorByTextId).find(key => name.toLowerCase().includes(key) || name.toLowerCase() === key);
+    const textIdKey = Object.keys(colorByTextId).find((key) => name.toLowerCase().includes(key) || name.toLowerCase() === key);
     const color =
-      (textIdKey && colorByTextId[textIdKey]) ||
-      legacyColorByEnglish[english] ||
-      palette[i] ||
-      smallFallbackPalette[i % smallFallbackPalette.length];
+      (textIdKey && colorByTextId[textIdKey]) || legacyColorByEnglish[english] || palette[i] || smallFallbackPalette[i % smallFallbackPalette.length];
     return {
       name: name,
       color: color,
@@ -128,7 +135,7 @@ const transformApiData = (apiResponse: HistoricalDataGroupedResponse | undefined
   // For "Current week" and "Last 7 days" views, ensure all 7 days are present in the data
   if (timeRange === "1W" && startDate && endDate) {
     const filledDataMap: { [key: number]: { x: number; [key: string]: any } } = { ...dataMap };
-    
+
     // Generate all days for the 7-day period and fill missing ones with 0
     const periodStart = new Date(startDate);
     for (let i = 0; i < 7; i++) {
@@ -294,8 +301,8 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
   // Generate consistent colors for each series name across all chart states
   const allSeriesNames = useMemo(() => {
     const names = new Set<string>();
-    energyApiResponse?.series?.forEach(s => names.add(s.name));
-    socApiResponse?.series?.forEach(s => names.add(s.name));
+    energyApiResponse?.series?.forEach((s) => names.add(s.name));
+    socApiResponse?.series?.forEach((s) => names.add(s.name));
     return Array.from(names);
   }, [energyApiResponse, socApiResponse]);
 
@@ -305,12 +312,9 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
     allSeriesNames.forEach((name, i) => {
       const english = name.toUpperCase();
       // Check for text_id in the name or use the name itself as a key
-      const textIdKey = Object.keys(colorByTextId).find(key => name.toLowerCase().includes(key) || name.toLowerCase() === key);
+      const textIdKey = Object.keys(colorByTextId).find((key) => name.toLowerCase().includes(key) || name.toLowerCase() === key);
       const color =
-        (textIdKey && colorByTextId[textIdKey]) ||
-        legacyColorByEnglish[english] ||
-        palette[i] ||
-        smallFallbackPalette[i % smallFallbackPalette.length];
+        (textIdKey && colorByTextId[textIdKey]) || legacyColorByEnglish[english] || palette[i] || smallFallbackPalette[i % smallFallbackPalette.length];
       colorMap[name] = color;
     });
     return colorMap;
@@ -338,7 +342,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
     // For "Current week" and "Last 7 days" views, ensure all 7 days are present in the data
     if (timeRange === "1W" && startDate && endDate) {
       const filledDataMap: { [key: number]: { x: number; [key: string]: any } } = { ...dataMap };
-      
+
       // Generate all days for the 7-day period and fill missing ones with 0
       const periodStart = new Date(startDate);
       for (let i = 0; i < 7; i++) {
@@ -418,7 +422,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
     return undefined;
   }, [aggregateBy, startDate, endDate]);
 
- // Generate week ticks for both "Last 7 days" and "Current week" views to show all 7 days
+  // Generate week ticks for both "Last 7 days" and "Current week" views to show all 7 days
   const weekTicks = useMemo(() => {
     if (timeRange === "1W") {
       const ticks: number[] = [];
@@ -595,7 +599,8 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
                         <Tooltip
                           formatter={(value: number, name: string) => {
                             // Determine if this is SOC data (contains percentage) or energy data (kWh)
-                            const isSocData = name.toLowerCase().includes('soc') || name.toLowerCase().includes('state') || name.toLowerCase().includes('percentage');
+                            const isSocData =
+                              name.toLowerCase().includes("soc") || name.toLowerCase().includes("state") || name.toLowerCase().includes("percentage");
                             return [isSocData ? `${value.toFixed(1)} %` : `${value.toFixed(2)} kWh`, name];
                           }}
                           labelFormatter={(label: number) => new Date(label).toLocaleString()}
@@ -716,10 +721,10 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={transformedEnergyData.chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    type="number" 
-                    scale="time" 
-                    dataKey="x" 
+                  <XAxis
+                    type="number"
+                    scale="time"
+                    dataKey="x"
                     domain={["dataMin", "dataMax"]}
                     tickFormatter={(value) => formatXAxis(value)}
                     allowDataOverflow={true}
