@@ -59,9 +59,9 @@ const DashboardTabs = ({
           templateAreas={{
             base: `"chart" "kpi" "items"`,
             md: `"chart chart" "kpi items"`,
-            lg: `"chart chart kpi" "chart chart items"`,
+            lg: `"chart chart chart kpi" "chart chart chart items"`,
           }}
-          templateColumns={{ base: "1fr", md: "1fr 1fr", lg: "1fr 1fr 1fr" }}
+          templateColumns={{ base: "1fr", md: "1fr 1fr", lg: "1fr 1fr 1fr 1fr" }}
           templateRows={{ lg: "auto 1fr" }}
           gap={6}
         >

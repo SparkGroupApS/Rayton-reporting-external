@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "chakra-ui": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@chakra-ui/react-mcp"
+      ],
+      "alwaysAllow": [
+        "get_theme",
+        "v2_to_v3_code_review",
+        "customize_theme",
+        "get_component_props",
+        "list_components",
+        "installation",
+        "get_component_example"
+      ]
+    }
+  }
+}

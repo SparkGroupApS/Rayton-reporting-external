@@ -128,8 +128,8 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
                 gap={4}
                 px={4}
                 py={2}
-                bg={isActive ? "teal.50" : "transparent"}
-                color={isActive ? "teal.700" : "inherit"}
+                bg={isActive ? "amber.50" : "transparent"}
+                color={isActive ? "amber.700" : "inherit"}
                 fontWeight={isActive ? "semibold" : "normal"}
                 _hover={{ background: "gray.100" }}
                 alignItems="center"
@@ -155,8 +155,8 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
                 gap={4}
                 px={4}
                 py={2}
-                bg={isActive ? "teal.50" : "transparent"}
-                color={isActive ? "teal.700" : "inherit"}
+                bg={isActive ? "amber.50" : "transparent"}
+                color={isActive ? "amber.700" : "inherit"}
                 fontWeight={isActive ? "semibold" : "normal"}
                 _hover={{ background: "gray.100" }}
                 alignItems="center"
@@ -182,8 +182,8 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
                 gap={4}
                 px={4}
                 py={2}
-                bg={isActive ? "teal.50" : "transparent"}
-                color={isActive ? "teal.700" : "inherit"}
+                bg={isActive ? "amber.50" : "transparent"}
+                color={isActive ? "amber.700" : "inherit"}
                 fontWeight={isActive ? "semibold" : "normal"}
                 _hover={{ background: "gray.100" }}
                 alignItems="center"

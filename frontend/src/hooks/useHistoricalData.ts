@@ -4,52 +4,74 @@ import {
   type ApiError,
   type HistoricalDataGroupedResponse,
   HistoricalDataService,
-} from "@/client" // Adjust path if needed
+} from "@/client"
 
-// Define the type for the parameters needed by the hook/API
 interface FetchHistoricalDetailsParams {
   data_ids: number[]
   start?: string | null
   end?: string | null
-  tenantId: string | null // <-- Correct: Use tenantId (UUID string)
+  tenantId: string | null
+  aggregate_by?: "hour" | "day" | "month" | "year" | null
 }
 
-// Define the type for extra useQuery options
 type UseHistoricalDataQueryOptions = Omit<
   UseQueryOptions<HistoricalDataGroupedResponse, ApiError>,
-  "queryKey" | "queryFn" // Only omit keys set internally
+  "queryKey" | "queryFn"
 >
 
 /**
- * Hook to fetch detailed historical data, grouped by series, for charting.
+ * Hook to fetch historical data with DELTA logic (backend calculates differences).
+ * 
+ * The backend returns delta values (difference between consecutive readings)
+ * to calculate kWh consumption per period.
+ * 
+ * @param params.aggregate_by - Aggregation level:
+ *   - null/"hour": Hourly deltas (Day view)
+ *   - "day": Daily deltas (Week/Month view)
+ *   - "month": Monthly deltas (Year view)
+ *   - "year": Yearly deltas (Lifetime view)
+ *
+ * Time Range to Aggregation Mapping:
+ * - Day view: hour (raw data points)
+ * - Week/Month view: day (daily deltas)
+ * - Year view: month (monthly deltas)
+ * - Lifetime view: year (yearly deltas)
  */
 const useHistoricalData = (
   params: FetchHistoricalDetailsParams,
   options: UseHistoricalDataQueryOptions = {},
 ) => {
-  // Determine if the query should be enabled
   const enabled =
-    options.enabled !== false && // Allow explicit disabling
-    !!params.tenantId && // <-- FIX 2: Ensure tenantId exists
+    options.enabled !== false &&
+    !!params.tenantId &&
     params.data_ids &&
-    params.data_ids.length > 0 // Must have data_ids
+    params.data_ids.length > 0
 
   return useQuery<HistoricalDataGroupedResponse, ApiError>({
-    // Spread any additional options (like 'enabled' from the caller)
     ...options,
-
-    queryKey: ["historicalDataDetails", params], // Cache based on params
-
-    queryFn: () =>
-      HistoricalDataService.readHistoricalDetails({
+    queryKey: [
+      "historicalDataDetails",
+      {
+        ...params,
+        aggregate_by: params.aggregate_by || "hour",
+      },
+    ],
+    queryFn: () => {
+      const queryParams: any = {
         dataIds: params.data_ids,
         start: params.start || undefined,
         end: params.end || undefined,
-        tenantId: params.tenantId!, // <-- FIX 1: Use params.tenantId
-      }),
+        tenantId: params.tenantId!,
+      }
 
-    enabled: enabled, // Control when the query runs
-    staleTime: 5 * 60 * 1000, // 5 minutes
+      if (params.aggregate_by !== undefined && params.aggregate_by !== null) {
+        queryParams.aggregateBy = params.aggregate_by
+      }
+
+      return HistoricalDataService.readHistoricalDetails(queryParams)
+    },
+    enabled: enabled,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

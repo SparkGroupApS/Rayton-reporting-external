@@ -87,6 +87,7 @@ class Settings(BaseSettings):
             clean_session=True,
             ssl=False,
             version=4,  # ← ADD THIS! MQTTv3.1.1 (your test_mqtt.py uses version=4)
+            reconnect_delay = 2,  # Set reconnect delay to 5 seconds
         )
 
     # --- END Property ---

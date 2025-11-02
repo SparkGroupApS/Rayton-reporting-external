@@ -32,13 +32,21 @@ export class DashboardService {
 export class HistoricalDataService {
     /**
      * Read Historical Details
-     * Fetch historical DATA values for a specific Tenant ID and date range,
-     * grouped by series. Looks up Plant ID internally.
+     * Fetch historical data.
+     * - If aggregate_by is 'hour', it returns raw data points.
+     * - Otherwise, it calculates the DELTA (difference between consecutive readings).
+     *
+     * Frontend Time Range to Aggregation Mapping:
+     * - Day view: hour (raw data points)
+     * - Week/Month view: day (daily deltas)
+     * - Year view: month (monthly deltas)
+     * - Lifetime view: year (yearly deltas)
      * @param data The data for the request.
      * @param data.tenantId Tenant ID to fetch data for
      * @param data.dataIds List of DATA_IDs to fetch
      * @param data.start Start timestamp
      * @param data.end End timestamp
+     * @param data.aggregateBy Aggregation level: hour (raw data), day, month, year (deltas)
      * @returns HistoricalDataGroupedResponse Successful Response
      * @throws ApiError
      */
@@ -50,7 +58,8 @@ export class HistoricalDataService {
                 tenant_id: data.tenantId,
                 data_ids: data.dataIds,
                 start: data.start,
-                end: data.end
+                end: data.end,
+                aggregate_by: data.aggregateBy
             },
             errors: {
                 422: 'Validation Error'

@@ -1,12 +1,13 @@
 // src/routes/_layout/index.tsx
 import { Container, Spinner } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useQuery,  } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
 import { type ApiError, type DashboardData, DashboardService } from "@/client"
 import DashboardTabs from "@/components/Dashboard/DashboardTabs"
 import useAuth from "@/hooks/useAuth"
 import { useTenants, useTenant } from "@/hooks/useTenantQueries"
+import { useEffect } from "react"
 
 // Define search schema with plantId
 const dashboardSearchSchema = z.object({
@@ -34,6 +35,7 @@ const useDashboardData = (plantId?: number | null) => {
 function Dashboard() {
   const { user: currentUser } = useAuth()
   const { plantId } = Route.useSearch() // Get plantId from URL
+  const navigate = useNavigate({ from: Route.fullPath }) // --- 2. Get the navigate function ---
 
   // Determine if user is privileged
   const isPrivilegedUser =
@@ -48,18 +50,52 @@ function Dashboard() {
   )
 
   // Get user's tenant
-    // --- THE FIX: Use the correct hook to fetch a single tenant ---
-  // This is much more efficient than fetching a list and filtering.
-  const { data: userTenantData, isLoading: isLoadingUserTenant } = useTenant(
+   const { data: userTenantData, isLoading: isLoadingUserTenant } = useTenant(
     currentUser?.tenant_id ?? null,
   )
+
+  // --- 3. ADD THIS useEffect HOOK ---
+  useEffect(() => {
+    // This effect syncs the URL for a regular user after login.
+    // It runs when the user's tenant data is loaded.
+
+    // Condition 1: Only run for regular users.
+    // Condition 2: We must have the user's tenant data, specifically the plant_id.
+    // Condition 3: The URL's plantId must not already be correct (prevents loops).
+    if (
+      !isPrivilegedUser &&
+      userTenantData?.plant_id &&
+      plantId !== userTenantData.plant_id
+    ) {
+      // Perform a "replace" navigation to update the URL without adding to browser history.
+      navigate({
+        to: "/",
+        search: { plantId: userTenantData.plant_id },
+        replace: true, // This is important for a clean user history
+      })
+    }
+  }, [
+    isPrivilegedUser,
+    userTenantData,
+    plantId,
+    navigate,
+  ]) // Dependencies for the effect
+
+  // --- THE FIX: Correctly determine effectiveTenantId for all user types ---
+  let effectiveTenantId: string | undefined;
+  if (isPrivilegedUser) {
+    // For privileged users, find the tenant ID from the plantId in the URL.
+    effectiveTenantId = plantId
+      ? tenantsData?.data.find((t) => t.plant_id === plantId)?.id
+      : undefined; // No plantId selected, so no tenant.
+  } else {
+    // For regular users, the effective tenant is ALWAYS their own tenant.
+    effectiveTenantId = currentUser?.tenant_id;
+  }
   // --- END FIX ---
 
-  // Determine effective plantId and tenantId
+  // Determine effective plantId
   const effectivePlantId = plantId || userTenantData?.plant_id
-  const effectiveTenantId = plantId
-    ? tenantsData?.data.find((t) => t.plant_id === plantId)?.id
-    : currentUser?.tenant_id
 
   // Fetch dashboard data
   const {
