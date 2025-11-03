@@ -10,6 +10,7 @@ import EnergyTrendChart from "./EnergyTrendChart"
 import ItemsSection from "./ItemsSection"
 import KpiSection from "./KpiSection"
 import ScheduleTab from "./ScheduleTab"
+import Smartlogger from "./Smartlogger"
 
 // Define the props this component needs
 interface DashboardTabsProps {
@@ -90,9 +91,11 @@ const DashboardTabs = ({
 
       {/* Panel 3: Placeholder for future content */}
       <Tabs.Content value="smdata">
-        <Box p={4}>
+       {/* <Box p={4}>
           <p>SmartLogger Data content will go here!</p>
-        </Box>
+        </Box>*/}
+        <Smartlogger tenantId={selectedTenant}/>
+
       </Tabs.Content>
 
       {/* Panel 4: Placeholder for future content */}

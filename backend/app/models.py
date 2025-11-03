@@ -274,6 +274,22 @@ class PlcDataRealtime(SQLModel, table=True, metadata=external_metadata):
     DATA_ID: int | None = Field(default=None, index=True) # Part of unique key
     DATA: float | None = Field(default=None)
     STATUS: int | None = Field(default=None)
+    UPDATED_AT: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False, sa_column_kwargs={"name": "UPDATED_AT"})
+    UPDATED_BY: str | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100)
+
+
+class RealtimeDataPoint(BaseModel):
+    data_id: int
+    plant_id: int
+    device_id: int
+    name: str
+    timestamp: int
+    value: float | None
+
+class RealtimeDataResponse(BaseModel):
+    values: list[RealtimeDataPoint]
+
+
 
 # class Schedule(SQLModel, table=True, metadata=external_metadata):
 #     __tablename__ = "SCHEDULE"
@@ -325,8 +341,11 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     TEXT_ID: str | None = Field(default=None, max_length=100)
     TEXT_L1: str | None = Field(default=None, max_length=100)
     TEXT_L2: str | None = Field(default=None, max_length=100)
-    created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
-    updated_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
+
+
+
+
+
 
 # --- ADD THESE MODELS ---
 # These are the API Schema Models for the Schedule table.
@@ -416,5 +435,6 @@ class HistoricalDataGroupedResponse(BaseModel):
     # Optionally include requested range or other metadata
     # start_iso: str
     # end_iso: str
+
 
 # --- End Optimized Models ---

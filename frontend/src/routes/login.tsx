@@ -15,14 +15,17 @@ import { createFileRoute, Link as RouterLink, redirect } from "@tanstack/react-r
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { FiLock, FiMail } from "react-icons/fi";
 
-import { type Body_login_login_access_token as AccessToken, ApiError } from "@/client";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { InputGroup } from "@/components/ui/input-group";
-import { PasswordInput } from "@/components/ui/password-input";
-import useAuth, { isLoggedIn } from "@/hooks/useAuth";
-import Logo from "/assets/images/logo_300px.png";
-import { emailPattern, passwordRules } from "../utils";
+import {
+  type Body_login_login_access_token as AccessToken,
+  ApiError, // <-- ADD THIS
+} from "@/client"
+import { Button } from "@/components/ui/button"
+import { Field } from "@/components/ui/field"
+import { InputGroup } from "@/components/ui/input-group"
+import { PasswordInput } from "@/components/ui/password-input"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import Logo from "/assets/images/rayton_black.png"
+import { emailPattern, passwordRules } from "../utils"
 
 export const Route = createFileRoute("/login")({
   component: Login,
