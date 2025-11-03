@@ -106,6 +106,12 @@ export const DashboardDataSchema = {
     title: 'DashboardData'
 } as const;
 
+export const ExportGranularitySchema = {
+    type: 'string',
+    enum: ['hourly'],
+    title: 'ExportGranularity'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -311,6 +317,60 @@ export const PrivateUserCreateInputSchema = {
     type: 'object',
     required: ['email', 'password'],
     title: 'PrivateUserCreateInput'
+} as const;
+
+export const RealtimeDataPointSchema = {
+    properties: {
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        },
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        timestamp: {
+            type: 'integer',
+            title: 'Timestamp'
+        },
+        value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Value'
+        }
+    },
+    type: 'object',
+    required: ['data_id', 'plant_id', 'device_id', 'name', 'timestamp', 'value'],
+    title: 'RealtimeDataPoint'
+} as const;
+
+export const RealtimeDataResponseSchema = {
+    properties: {
+        values: {
+            items: {
+                '$ref': '#/components/schemas/RealtimeDataPoint'
+            },
+            type: 'array',
+            title: 'Values'
+        }
+    },
+    type: 'object',
+    required: ['values'],
+    title: 'RealtimeDataResponse'
 } as const;
 
 export const RevenueDataSchema = {

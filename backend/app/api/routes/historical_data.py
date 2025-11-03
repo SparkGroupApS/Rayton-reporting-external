@@ -2,8 +2,10 @@
 
 import datetime
 import uuid
-from typing import Any, Literal
+import logging
+from typing import List, Optional, Dict, Any, Literal
 from collections import defaultdict
+from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_
@@ -21,6 +23,12 @@ from app.models import (
     TimeSeriesPoint,
 )
 
+class ExportGranularity(str, Enum):
+    hourly = "hourly"
+    # daily = "daily" # Add others if needed for different export types
+    # raw = "raw" # If you want to differentiate raw from hourly
+
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/historical-data", tags=["historical-data"])
 
 async def get_plant_id_for_tenant(tenant_id: uuid.UUID, session: SessionDep) -> int:
@@ -294,3 +302,124 @@ async def read_historical_details(
 
     series_list = list(grouped_data.values())
     return HistoricalDataGroupedResponse(series=series_list)
+
+@router.get("/export/")
+async def export_historical_data(
+    # --- Query Parameters ---
+    tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
+    # plant_id: Optional[int] = Query(None, description="Plant ID (alternative to tenant_id lookup)"),
+    data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
+    start: datetime.datetime | None = Query(None, description="Start timestamp"),
+    end: datetime.datetime | None = Query(None, description="End timestamp"),
+    export_granularity: ExportGranularity = Query(..., description="Granularity for exported data (e.g., hourly)"),
+    # export_format: Optional[str] = Query("json", description="Desired export format (json/csv/xlsx)") # Handled by frontend for now
+
+    # --- Dependencies ---
+    data_session: AsyncSession = Depends(get_data_async_session), # Use the external data session
+    # current_user: CurrentUser = Depends(get_current_active_user), # Add auth if needed
+):
+    """
+    Endpoint to fetch and potentially pre-process data for export.
+    Currently focuses on fetching raw/hourly data for hourly delta calculations.
+    The frontend will handle final XLSX generation.
+    """
+    logger.info(f"Initiating data export request for tenant_id={tenant_id}, "
+                f"data_ids={data_ids}, start={start}, end={end}, granularity={export_granularity}")
+
+    # --- 1. Authorization & Plant ID Lookup (if needed) ---
+    # Add logic here to verify `current_user` has access to `tenant_id`
+    # if not current_user.is_superuser and current_user.tenant_id != tenant_id:
+    #     logger.warning(f"Unauthorized export attempt by user {current_user.id} for tenant {tenant_id}")
+    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
+
+    # Lookup plant_id based on tenant_id (reuse logic from schedule.py or create a helper)
+    # plant_id = await get_plant_id_for_tenant(tenant_id, primary_session) # You need primary_session or a helper
+    # Placeholder: Assume plant_id is derived or passed, or implement lookup
+    # For now, let's assume the frontend provides correct data_ids for the tenant's plant
+    # or the data_session is correctly scoped to the tenant's data DB.
+    # plant_id_from_lookup = await some_helper_function_to_get_plant_id(tenant_id, primary_session)
+    # if not plant_id_from_lookup:
+    #     raise HTTPException(status_code=404, detail="Plant configuration not found for tenant")
+
+    # --- 2. Validate Inputs ---
+    if start >= end:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start datetime must be before end datetime.")
+
+    # --- 3. Fetch Data Based on Granularity ---
+    if export_granularity == ExportGranularity.hourly:
+        # --- Fetch Raw/Hourly Data for Delta Calculation ---
+        logger.debug("Fetching hourly/raw data for export...")
+
+        # --- Construct Query for PLC_DATA_HISTORICAL ---
+        # Fetch data points within the time range for the specified data_ids
+        # We order by TIMESTAMP and DATA_ID to facilitate processing
+        statement = (
+            select(PlcDataHistorical)
+            .where(PlcDataHistorical.TIMESTAMP >= start)
+            .where(PlcDataHistorical.TIMESTAMP <= end)
+            .where(PlcDataHistorical.DATA_ID.in_(data_ids))
+            # .where(PlcDataHistorical.PLANT_ID == plant_id_from_lookup) # Add if scoping by plant_id is needed/possible here
+            .order_by(PlcDataHistorical.TIMESTAMP, PlcDataHistorical.DATA_ID)
+        )
+
+        try:
+            # --- Execute Query ---
+            logger.debug(f"Executing export query for {len(data_ids)} data_ids between {start} and {end}")
+            result = await data_session.exec(statement)
+            raw_data_points: List[PlcDataHistorical] = result.all()
+            logger.debug(f"Fetched {len(raw_data_points)} raw data points for export.")
+        except Exception as e:
+            logger.error(f"Database error fetching data for export: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch data for export.")
+
+        # --- 4. Process Data (Optional Pre-processing) ---
+        # The core logic for calculating hourly deltas (Consumption = Meter(t) - Meter(t-1h))
+        # is best done in the frontend using the raw data fetched.
+        # However, you *could* do some pre-processing here if beneficial, e.g., grouping by timestamp.
+        # For now, we'll return the raw data points grouped by DATA_ID.
+        # The frontend (React) will receive this structured data and use the xlsx library to create the file.
+
+        # Group raw data by DATA_ID for easier frontend handling
+        grouped_data: Dict[int, List[PlcDataHistorical]] = {}
+        for point in raw_data_points:
+            if point.DATA_ID not in grouped_data:
+                grouped_data[point.DATA_ID] = []
+            grouped_data[point.DATA_ID].append(point)
+
+        # Prepare data for JSON response (frontend will convert to XLSX)
+        # Return a structure that's easy for the frontend to consume.
+        # Example: List of dictionaries, one per data point, with timestamp and values for each requested data_id
+        export_ready_data = []
+        # Get all unique timestamps
+        unique_timestamps = sorted(set(point.TIMESTAMP for point in raw_data_points))
+        data_id_set = set(data_ids)
+
+        # Create a map for quick lookup: (timestamp, data_id) -> DATA value
+        data_map: Dict[tuple[datetime.datetime, int], float] = {
+            (point.TIMESTAMP, point.DATA_ID): point.DATA for point in raw_data_points if point.DATA is not None
+        }
+
+        # Build the export data structure (list of rows, each row has timestamp and data columns)
+        for timestamp in unique_timestamps:
+            row = {"timestamp": timestamp.isoformat()} # Use ISO format for easy parsing in frontend
+            for data_id in data_ids:
+                # Get the data value for this timestamp and data_id
+                value = data_map.get((timestamp, data_id))
+                # Add the value to the row (keyed by data_id string)
+                row[str(data_id)] = value # Handle None if needed (e.g., keep as None, or use "")
+            export_ready_data.append(row)
+
+        logger.info(f"Prepared {len(export_ready_data)} rows for export.")
+        # Return the structured data. Frontend will handle XLSX creation.
+        return export_ready_data
+
+    else:
+        # Handle other granularities if added (daily, monthly, etc. for direct export aggregates)
+        # For now, only hourly/raw is supported for detailed export
+        logger.warning(f"Unsupported export_granularity requested: {export_granularity}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Export granularity '{export_granularity}' is not currently supported for detailed export. Use 'hourly'."
+        )
+
+# --- END NEW: Export Endpoint ---

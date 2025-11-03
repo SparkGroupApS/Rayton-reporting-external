@@ -61,7 +61,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
          .map((tenant: TenantPublic) => ({
           icon: FaSolarPanel,
           title: tenant.name,
-          path: `/?plantId=${tenant.plant_id}`,
+          path: `/plant/${tenant.plant_id}`,
         }))
     } else if (userTenant?.plant_id) {
       // For regular user: create single item for their tenant's plant
@@ -69,7 +69,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         {
           icon: FaSolarPanel,
           title: userTenant.name,
-          path: `/?plantId=${userTenant.plant_id}`,
+          path: `/plant/${userTenant.plant_id}`,
         },
       ]
     }

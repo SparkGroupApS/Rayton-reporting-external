@@ -19,6 +19,7 @@ import { Route as LayoutTenantRouteImport } from './routes/_layout/tenant'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutPlantPlantIdRouteImport } from './routes/_layout/plant_/$plantId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -69,6 +70,11 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutPlantPlantIdRoute = LayoutPlantPlantIdRouteImport.update({
+  id: '/plant_/$plantId',
+  path: '/plant/$plantId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
+  '/plant/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
+  '/plant/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tenant': typeof LayoutTenantRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/plant_/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tenant'
     | '/'
+    | '/plant/$plantId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tenant'
     | '/'
+    | '/plant/$plantId'
   id:
     | '__root__'
     | '/_layout'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/tenant'
     | '/_layout/'
+    | '/_layout/plant_/$plantId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/plant_/$plantId': {
+      id: '/_layout/plant_/$plantId'
+      path: '/plant/$plantId'
+      fullPath: '/plant/$plantId'
+      preLoaderRoute: typeof LayoutPlantPlantIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
@@ -231,6 +250,7 @@ interface LayoutRouteChildren {
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTenantRoute: typeof LayoutTenantRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutPlantPlantIdRoute: typeof LayoutPlantPlantIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -239,6 +259,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTenantRoute: LayoutTenantRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutPlantPlantIdRoute: LayoutPlantPlantIdRoute,
 }
 
 const LayoutRouteWithChildren =
