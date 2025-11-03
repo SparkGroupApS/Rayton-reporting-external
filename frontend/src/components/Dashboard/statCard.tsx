@@ -21,7 +21,7 @@ const StatCard = ({ title, value, unit, Icon }: StatCardProps) => {
       borderWidth="1px"
       h="full"
     >
-      <Icon as={Icon} boxSize={{ base: 7, sm: 8 }} color="teal.500" mr={4} />
+      <Icon as={Icon} boxSize={{ base: 7, sm: 8 }} color="amber.500" mr={4} />
       <Box>
         <Heading size="md">
           {value}{" "}

@@ -18,6 +18,7 @@
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router": "^1.133.36",
     "axios": "1.13.1",
+    "date-fns": "^4.1.0",
     "form-data": "4.0.4",
     "highcharts": "^12.4.0",
     "highcharts-react-official": "^3.2.3",
@@ -44,4 +45,3 @@
     "vite": "^7.1.12"
   }
 }
-

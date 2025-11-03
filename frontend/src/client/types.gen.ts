@@ -191,6 +191,10 @@ export type DashboardReadDashboardDataResponse = (DashboardData);
 
 export type HistoricalDataReadHistoricalDetailsData = {
     /**
+     * Aggregation level: hour (raw data), day, month, year (deltas)
+     */
+    aggregateBy?: ('hour' | 'day' | 'month' | 'year' | null);
+    /**
      * List of DATA_IDs to fetch
      */
     dataIds: Array<number>;

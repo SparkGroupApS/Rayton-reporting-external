@@ -1,5 +1,5 @@
 import type { BoxProps, InputElementProps } from "@chakra-ui/react"
-import { Group, InputElement } from "@chakra-ui/react"
+import { Box, InputElement } from "@chakra-ui/react"
 import * as React from "react"
 
 export interface InputGroupProps extends BoxProps {
@@ -29,9 +29,15 @@ export const InputGroup = React.forwardRef<HTMLDivElement, InputGroupProps>(
       React.Children.only<React.ReactElement<InputElementProps>>(children)
 
     return (
-      <Group ref={ref} {...rest}>
+      <Box 
+        ref={ref} 
+        display="flex" 
+        alignItems="center" 
+        position="relative"
+        {...rest}
+      >
         {startElement && (
-          <InputElement pointerEvents="none" {...startElementProps}>
+          <InputElement pointerEvents="none" {...startElementProps} position="absolute" left="3px" top="50%" transform="translateY(-50%)">
             {startElement}
           </InputElement>
         )}
@@ -43,11 +49,11 @@ export const InputGroup = React.forwardRef<HTMLDivElement, InputGroupProps>(
           ...children.props,
         })}
         {endElement && (
-          <InputElement placement="end" {...endElementProps}>
+          <InputElement placement="end" {...endElementProps} position="absolute" right="3px" top="50%" transform="translateY(-50%)">
             {endElement}
           </InputElement>
         )}
-      </Group>
+      </Box>
     )
   },
 )

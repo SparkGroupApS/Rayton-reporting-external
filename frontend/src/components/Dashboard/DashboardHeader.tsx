@@ -16,7 +16,7 @@ const DashboardHeader = ({ currentUser, plantName }: DashboardHeaderProps) => {
   return (
     <Flex justify="space-between" align="center" mb={6}>
       <Box>
-        <Heading size="lg" color="teal.600">
+        <Heading size="lg" color="amber.600">
           ☀️ Dashboard
           {plantName && (
             <Text as="span" fontSize="md" color="gray.600" ml={2}>

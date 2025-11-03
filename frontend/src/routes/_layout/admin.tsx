@@ -140,7 +140,7 @@ function UsersTable() {
                 {/* Adjusted color */}
                 {user.full_name || "N/A"}
                 {currentUser?.id === user.id && (
-                  <Badge ml="1" colorScheme="teal">
+                  <Badge ml="1" colorScheme="amber">
                     You
                   </Badge>
                 )}
