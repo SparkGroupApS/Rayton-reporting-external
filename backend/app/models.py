@@ -2,6 +2,7 @@ import datetime
 import uuid
 from decimal import Decimal
 from typing import Optional  # Import Dict
+from typing import List
 
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import MetaData
@@ -235,6 +236,19 @@ class PlantConfig(SQLModel, table=True, metadata=external_metadata):
     TEXT_L2: str | None = Field(default=None, max_length=32)
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
     updated_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
+
+class DeviceInfo(BaseModel):
+    device_id: int
+    name: str
+    class_id: int  # int или str, как у тебя в БД
+    parent_id: int
+    plant_id: int
+
+class PlantConfigResponse(BaseModel):
+    tenant_id: str
+    devices: List[DeviceInfo]
+
+
 
 class PlantList(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "PLANT_LIST"

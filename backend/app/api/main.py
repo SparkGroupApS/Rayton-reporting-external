@@ -12,6 +12,7 @@ from app.api.routes import (
     users,
     utils,
     realtime_data,
+    plant_config,
 )
 from app.core.config import settings
 
@@ -26,6 +27,7 @@ api_router.include_router(historical_data.router)
 api_router.include_router(schedule.router)
 api_router.include_router(plants.router) 
 api_router.include_router(realtime_data.router) 
+api_router.include_router(plant_config.router) 
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

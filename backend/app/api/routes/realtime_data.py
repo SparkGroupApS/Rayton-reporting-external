@@ -17,6 +17,7 @@ from app.models import (
     TextList,
     RealtimeDataPoint,
     RealtimeDataResponse,
+    PlantConfig,
 )
 
 
@@ -103,14 +104,25 @@ async def read_realtime_latest(
         ),
     )
     .join(
-        TextList,
+        PlantConfig,
         and_(
-            PlcDataRealtime.DATA_ID == TextList.DATA_ID,
-          #  TextList.CLASS_ID == 0,
+            PlcDataRealtime.PLANT_ID == PlantConfig.PLANT_ID,
+            PlcDataRealtime.DEVICE_ID == PlantConfig.DEVICE_ID,
         ),
         isouter=True,
     )
-    .order_by(PlcDataRealtime.DATA_ID.asc())
+    .join(
+        TextList,
+        and_(
+            PlcDataRealtime.DATA_ID == TextList.DATA_ID,
+            TextList.CLASS_ID == PlantConfig.CLASS_ID,  # теперь динамически по PLANT_CONFIG
+        ),
+        isouter=True,
+    )
+    .order_by(
+        PlcDataRealtime.DEVICE_ID.asc(),
+        PlcDataRealtime.DATA_ID.asc()
+    )
 )   
 
 
