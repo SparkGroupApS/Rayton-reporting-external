@@ -558,13 +558,13 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
           </HStack>
         )}
 
-        {/* <ChartExportMenu
+        <ChartExportMenu
           chartRef={chartRef}
           data={timeRange === "1D" && isSocCombined && transformedCombinedData ? transformedCombinedData.chartData :
                 timeRange === "1D" && transformedSocData && !isSocCombined ? transformedEnergyData?.chartData :
                 transformedEnergyData?.chartData}
           fileName={`energy-trend-chart-${timeRange}-${toLocalDateString(currentDate)}`}
-        /> */}
+        />
       </Flex>
 
       <Box flex="1" h="0" minH="300px">
