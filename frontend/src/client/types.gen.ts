@@ -22,6 +22,8 @@ export type DashboardData = {
     items: Array<ItemPublic>;
 };
 
+export type ExportGranularity = 'hourly';
+
 export type HistoricalDataGroupedResponse = {
     series: Array<TimeSeriesData>;
 };
@@ -66,6 +68,19 @@ export type PrivateUserCreateInput = {
     email: string;
     password: string;
     full_name?: (string | null);
+};
+
+export type RealtimeDataPoint = {
+    data_id: number;
+    plant_id: number;
+    device_id: number;
+    name: string;
+    timestamp: number;
+    value: (number | null);
+};
+
+export type RealtimeDataResponse = {
+    values: Array<RealtimeDataPoint>;
 };
 
 export type RevenueData = {
@@ -214,6 +229,31 @@ export type HistoricalDataReadHistoricalDetailsData = {
 
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
 
+export type HistoricalDataExportHistoricalDataData = {
+    /**
+     * List of DATA_IDs to fetch
+     */
+    dataIds: Array<number>;
+    /**
+     * End timestamp
+     */
+    end?: (string | null);
+    /**
+     * Granularity for exported data (e.g., hourly)
+     */
+    exportGranularity: ExportGranularity;
+    /**
+     * Start timestamp
+     */
+    start?: (string | null);
+    /**
+     * Tenant ID for plant lookup
+     */
+    tenantId: string;
+};
+
+export type HistoricalDataExportHistoricalDataResponse = (unknown);
+
 export type ItemsReadItemsData = {
     /**
      * Fetch items from all tenants (Superuser only)
@@ -293,6 +333,19 @@ export type PrivateCreateUserWithNewTenantData = {
 };
 
 export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
+
+export type RealtimeDataReadRealtimeLatestData = {
+    /**
+     * List of DEVICE_IDs to fetch
+     */
+    deviceIds: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type RealtimeDataReadRealtimeLatestResponse = (RealtimeDataResponse);
 
 export type ScheduleReadScheduleData = {
     /**

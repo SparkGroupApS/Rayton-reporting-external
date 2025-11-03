@@ -1,7 +1,8 @@
 // src/components/Dashboard/EnergyTrendChart.tsx
 
 import { Box, Button, ButtonGroup, Flex, GridItem, HStack, IconButton, Input, Spinner, Switch, Text } from "@chakra-ui/react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+import ChartExportMenu from "./ChartExportMenu";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { HistoricalDataGroupedResponse } from "@/client";
@@ -161,6 +162,7 @@ const transformApiData = (
 
 const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendChartProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const chartRef = useRef<HTMLDivElement | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("1D");
   const [isSocCombined, setIsSocCombined] = useState(false);
   const [useCurrentPeriod, setUseCurrentPeriod] = useState(false);
@@ -463,6 +465,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
 
   return (
     <GridItem
+      ref={chartRef}
       area="chart"
       gridColumn={{ lg: "span 3" }}
       bg="white"
@@ -554,6 +557,14 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
             </IconButton>
           </HStack>
         )}
+
+        {/* <ChartExportMenu
+          chartRef={chartRef}
+          data={timeRange === "1D" && isSocCombined && transformedCombinedData ? transformedCombinedData.chartData :
+                timeRange === "1D" && transformedSocData && !isSocCombined ? transformedEnergyData?.chartData :
+                transformedEnergyData?.chartData}
+          fileName={`energy-trend-chart-${timeRange}-${toLocalDateString(currentDate)}`}
+        /> */}
       </Flex>
 
       <Box flex="1" h="0" minH="300px">

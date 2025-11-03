@@ -6,6 +6,7 @@ import {
   HistoricalDataService,
 } from "@/client"
 
+// Define the type for the parameters needed by the hook/API
 interface FetchHistoricalDetailsParams {
   data_ids: number[]
   start?: string | null
@@ -14,29 +15,22 @@ interface FetchHistoricalDetailsParams {
   aggregate_by?: "hour" | "day" | "month" | "year" | null
 }
 
+// Define the type for extra useQuery options
 type UseHistoricalDataQueryOptions = Omit<
   UseQueryOptions<HistoricalDataGroupedResponse, ApiError>,
   "queryKey" | "queryFn"
 >
 
 /**
- * Hook to fetch historical data with DELTA logic (backend calculates differences).
- * 
- * The backend returns delta values (difference between consecutive readings)
- * to calculate kWh consumption per period.
- * 
- * @param params.aggregate_by - Aggregation level:
- *   - null/"hour": Hourly deltas (Day view)
- *   - "day": Daily deltas (Week/Month view)
- *   - "month": Monthly deltas (Year view)
- *   - "year": Yearly deltas (Lifetime view)
+ * Hook to fetch detailed historical data, with optional aggregation.
  *
- * Time Range to Aggregation Mapping:
- * - Day view: hour (raw data points)
- * - Week/Month view: day (daily deltas)
- * - Year view: month (monthly deltas)
- * - Lifetime view: year (yearly deltas)
+ * param params.aggregate_by - Aggregation level:
+ * - null/"hour": Raw/averaged power data (kW) for Day view
+ * - "day": Daily delta energy (kWh) for Week/Month view
+ * - "month": Monthly delta energy (kWh) for Year view
+ * - "year": Yearly delta energy (kWh) for Lifetime view
  */
+
 const useHistoricalData = (
   params: FetchHistoricalDetailsParams,
   options: UseHistoricalDataQueryOptions = {},
@@ -71,7 +65,8 @@ const useHistoricalData = (
       return HistoricalDataService.readHistoricalDetails(queryParams)
     },
     enabled: enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   })
 }
 

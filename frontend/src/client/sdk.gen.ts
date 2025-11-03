@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DashboardService {
     /**
@@ -60,6 +60,37 @@ export class HistoricalDataService {
                 start: data.start,
                 end: data.end,
                 aggregate_by: data.aggregateBy
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Export Historical Data
+     * Endpoint to fetch and potentially pre-process data for export.
+     * Currently focuses on fetching raw/hourly data for hourly delta calculations.
+     * The frontend will handle final XLSX generation.
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID for plant lookup
+     * @param data.dataIds List of DATA_IDs to fetch
+     * @param data.exportGranularity Granularity for exported data (e.g., hourly)
+     * @param data.start Start timestamp
+     * @param data.end End timestamp
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static exportHistoricalData(data: HistoricalDataExportHistoricalDataData): CancelablePromise<HistoricalDataExportHistoricalDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/historical-data/export/',
+            query: {
+                tenant_id: data.tenantId,
+                data_ids: data.dataIds,
+                start: data.start,
+                end: data.end,
+                export_granularity: data.exportGranularity
             },
             errors: {
                 422: 'Validation Error'
@@ -336,6 +367,31 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class RealtimeDataService {
+    /**
+     * Read Realtime Latest
+     * Fetch the latest realtime data points for given DEVICE_IDs and tenant.
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.deviceIds List of DEVICE_IDs to fetch
+     * @returns RealtimeDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static readRealtimeLatest(data: RealtimeDataReadRealtimeLatestData): CancelablePromise<RealtimeDataReadRealtimeLatestResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/realtime-data/latest',
+            query: {
+                tenant_id: data.tenantId,
+                device_ids: data.deviceIds
+            },
             errors: {
                 422: 'Validation Error'
             }
