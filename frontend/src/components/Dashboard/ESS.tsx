@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Box, Flex, Text, Spinner } from "@chakra-ui/react";
+import GetDeviceData from "./GetDeviceData";
+import GetDeviceTree from "./GetDeviceTree"; // ✅ новое подключение
 
 type PlantConfigDevice = {
   device_id: number;
@@ -16,88 +19,57 @@ type PlantConfigResponse = {
 interface ESSProps {
   tenantId: string;
 }
-
 const REFRESH_INTERVAL = 60;
 
 const DEVICE_IDS = [
-  10, 11, 12, 13, 14, // SmartLoggers
-  101101, 101102, 101103, 101104, 101105, // SmartLogger 1 counters
-  101201, 101202, 101203, 101204, 101205, // SmartLogger 1 inverters
+  20, 21, 22, 23, 24, // SmartLoggers
+  201101, 201102, 201103, 201104, 201105, // SmartLogger 1 counters
+  201201, 201202, 201203, 201204, 201205, // SmartLogger 1 inverters
 
-  111101, 111102, 111103, 111104, 111105, // SmartLogger 2 counters
-  111201, 111202, 111203, 111204, 111205, // SmartLogger 2 inverters
+  211101, 211102, 211103, 211104, 211105, // SmartLogger 2 counters
+  211201, 211202, 211203, 211204, 211205, // SmartLogger 2 inverters
 
-  121101, 121102, 121103, 121104, 121105, // SmartLogger 3 counters
-  121201, 121202, 121203, 121204, 121205, // SmartLogger 3 inverters
+  221101, 221102, 221103, 221104, 221105, // SmartLogger 3 counters
+  221201, 221202, 221203, 221204, 221205, // SmartLogger 3 inverters
 
-  131101, 131102, 131103, 131104, 131105, // SmartLogger 4 counters
-  131201, 131202, 131203, 131204, 131205, // SmartLogger 4 inverters
+  231101, 231102, 231103, 231104, 231105, // SmartLogger 4 counters
+  231201, 231202, 231203, 231204, 231205, // SmartLogger 4 inverters
 
-  141101, 141102, 141103, 141104, 141105, // SmartLogger 5 counters
-  141201, 141202, 141203, 141204, 141205, // SmartLogger 5 inverters
+  241101, 241102, 241103, 241104, 241105, // SmartLogger 5 counters
+  241201, 241202, 241203, 241204, 241205, // SmartLogger 5 inverters
 ];
 
 export default function ESS({ tenantId }: ESSProps) {
   const [deviceTree, setDeviceTree] = useState<PlantConfigDevice[]>([]);
-  const [selected, setSelected] = useState<PlantConfigDevice | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<PlantConfigDevice | null>(null);
   const [plantId, setPlantId] = useState<number | string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const buildTree = (devices: PlantConfigDevice[]): PlantConfigDevice[] => {
     const map: Record<number, PlantConfigDevice> = {};
-
-    // создаём полные копии устройств
-    devices.forEach((d) => {
-      map[d.device_id] = { ...d, children: [] };
-    });
-
+    devices.forEach(d => (map[d.device_id] = { ...d, children: [] }));
     const tree: PlantConfigDevice[] = [];
-
-    devices.forEach((d) => {
+    devices.forEach(d => {
       const node = map[d.device_id];
-      if (d.parent_id === 0) {
-        tree.push(node);
-      } else if (map[d.parent_id]) {
-        map[d.parent_id].children!.push(node);
-      }
+      if (d.parent_id === 0) tree.push(node);
+      else map[d.parent_id]?.children?.push(node);
     });
-
     return tree;
   };
 
   const fetchPlantConfig = async (tenantId: string, token: string) => {
-    const res = await fetch(
-      `http://localhost:8000/api/v1/plant-config?tenant_id=${tenantId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const res = await fetch(`http://localhost:8000/api/v1/plant-config?tenant_id=${tenantId}`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
     if (!res.ok) throw new Error("Ошибка при получении PLANT_CONFIG");
     const data: PlantConfigResponse = await res.json();
-
-    let detectedPlantId: number | string | null =
-      data.devices.find((d) => d.plant_id)?.plant_id ?? null;
-
-    if (!detectedPlantId) {
-      const parsed = Number(tenantId);
-      detectedPlantId = isNaN(parsed) ? tenantId : parsed;
-    }
-
+    const detectedPlantId = data.devices.find(d => d.plant_id)?.plant_id ?? tenantId;
     setPlantId(detectedPlantId);
-
-    const filteredDevices = data.devices
-      .filter((d) => DEVICE_IDS.includes(d.device_id))
-      .map((d) => ({
-        ...d,
-        plant_id: d.plant_id ?? detectedPlantId,
-      }));
-
-    const tree = buildTree(filteredDevices);
-    setDeviceTree(tree);
+    const filtered = data.devices
+      .filter(d => DEVICE_IDS.includes(d.device_id))
+      .map(d => ({ ...d, plant_id: d.plant_id ?? detectedPlantId }));
+    setDeviceTree(buildTree(filtered));
   };
 
   const fetchDevices = async () => {
@@ -122,64 +94,40 @@ export default function ESS({ tenantId }: ESSProps) {
     return () => clearInterval(interval);
   }, [tenantId]);
 
- const handleSelect = (device: PlantConfigDevice) => {
-  // создаём копию, чтобы не затирались поля от родителя
-  setSelected({ ...device });
-};
+  if (loading)
+    return (
+      <Flex justify="center" align="center" h="100vh">
+        <Spinner size="xl" />
+        <Text ml={3}>Загрузка устройств...</Text>
+      </Flex>
+    );
 
-const renderTree = (devices: PlantConfigDevice[], level = 0) =>
-  devices.map((device) => (
-    <li
-      key={device.device_id}
-      className={`p-2 rounded-md cursor-pointer transition-colors duration-150 ${
-        selected?.device_id === device.device_id
-          ? "bg-blue-100 border border-blue-400"
-          : "hover:bg-gray-100"
-      }`}
-      style={{ marginLeft: `${level * 20}px` }}
-      onClick={(e) => {
-        e.stopPropagation(); // чтобы клик не всплывал к родителю
-        handleSelect(device);
-      }}
-    >
-      <div className="flex items-center">
-        <span>
-          • {device.name || "Без имени"}{" "}
-          <span className="text-xs text-gray-500">
-            (ID: {device.device_id}, CLASS: {device.class_id})
-          </span>
-        </span>
-      </div>
-      {device.children && device.children.length > 0 && (
-        <ul className="mt-1">{renderTree(device.children, level + 1)}</ul>
-      )}
-    </li>
-  ));
-
-  if (loading) return <div className="p-6">Загрузка устройств...</div>;
-  if (error) return <div className="p-6 text-red-600">Ошибка: {error}</div>;
+  if (error)
+    return (
+      <Flex justify="center" align="center" h="100vh">
+        <Text color="red.500">Ошибка: {error}</Text>
+      </Flex>
+    );
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Устройства (Всегда раскрытое дерево)</h2>
-        <ul className="space-y-1">{renderTree(deviceTree)}</ul>
-      </div>
+    <Flex p={4} h="calc(100vh - 100px)" gap={6} align="stretch" justify="space-between">
+      {/* ✅ Компонент дерева */}
+      <GetDeviceTree
+        deviceTree={deviceTree}
+        selectedDevice={selectedDevice}
+        setSelectedDevice={setSelectedDevice}
+      />
 
-      {selected && (
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <h3 className="text-lg font-semibold mb-2">Информация об устройстве:</h3>
-          <p>
-            <strong>PLANT_ID:</strong> {selected.plant_id ?? plantId ?? "—"}
-          </p>
-          <p>
-            <strong>DEVICE_ID:</strong> {selected.device_id}
-          </p>
-          <p>
-            <strong>CLASS_ID:</strong> {selected.class_id}
-          </p>
-        </div>
-      )}
-    </div>
+      {/* Правая панель */}
+      <Box flex="1" bg="white" borderWidth="1px" borderRadius="lg" p={4} overflowY="auto" shadow="sm">
+        {selectedDevice ? (
+          <GetDeviceData tenantId={tenantId} deviceIds={[selectedDevice.device_id]} />
+        ) : (
+          <Flex justify="center" align="center" h="full">
+            <Text color="gray.500">Выберите устройство слева, чтобы увидеть данные</Text>
+          </Flex>
+        )}
+      </Box>
+    </Flex>
   );
 }
