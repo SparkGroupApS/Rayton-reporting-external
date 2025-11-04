@@ -85,7 +85,7 @@ const AddTenant = () => {
       onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
-        <Button value="add-tenant" colorScheme="amber">
+        <Button size="sm" value="add-tenant" colorScheme="rayton_orange">
           <FaPlus fontSize="16px" />
           Add Tenant
         </Button>
@@ -165,7 +165,7 @@ const AddTenant = () => {
             </DialogActionTrigger>
             <Button
               variant="solid"
-              colorScheme="amber"
+              colorScheme="rayton_orange"
               type="submit"
               disabled={!isValid || isSubmitting}
               loading={isSubmitting}

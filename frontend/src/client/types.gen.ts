@@ -252,7 +252,7 @@ export type HistoricalDataExportHistoricalDataData = {
     tenantId: string;
 };
 
-export type HistoricalDataExportHistoricalDataResponse = (unknown);
+export type HistoricalDataExportHistoricalDataResponse = (HistoricalDataGroupedResponse);
 
 export type ItemsReadItemsData = {
     /**

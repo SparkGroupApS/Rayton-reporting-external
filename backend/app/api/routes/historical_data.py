@@ -3,14 +3,18 @@
 import datetime
 import uuid
 import logging
+import pytz
+
 from typing import List, Optional, Dict, Any, Literal
 from collections import defaultdict
-from enum import Enum
+from enum import Enum, StrEnum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_
+from sqlalchemy import *
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
+from datetime import datetime, date, time, timedelta
+
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import get_data_async_session
@@ -23,13 +27,16 @@ from app.models import (
     TimeSeriesPoint,
 )
 
-class ExportGranularity(str, Enum):
+
+class ExportGranularity(StrEnum):
     hourly = "hourly"
     # daily = "daily" # Add others if needed for different export types
     # raw = "raw" # If you want to differentiate raw from hourly
 
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/historical-data", tags=["historical-data"])
+
 
 async def get_plant_id_for_tenant(tenant_id: uuid.UUID, session: SessionDep) -> int:
     """Looks up the plant_id stored directly on the Tenant record."""
@@ -46,6 +53,7 @@ async def get_plant_id_for_tenant(tenant_id: uuid.UUID, session: SessionDep) -> 
         )
     return tenant.plant_id
 
+
 @router.get("/details", response_model=HistoricalDataGroupedResponse)
 async def read_historical_details(
     current_user: CurrentUser,
@@ -53,8 +61,8 @@ async def read_historical_details(
     data_session: AsyncSession = Depends(get_data_async_session),
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to fetch data for"),
     data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
-    start: datetime.datetime | None = Query(None, description="Start timestamp"),
-    end: datetime.datetime | None = Query(None, description="End timestamp"),
+    start: datetime | None = Query(None, description="Start timestamp"),
+    end: datetime | None = Query(None, description="End timestamp"),
     aggregate_by: Literal["hour", "day", "month", "year"] | None = Query(
         None, description="Aggregation level: hour (raw data), day, month, year (deltas)"
     ),
@@ -149,7 +157,7 @@ async def read_historical_details(
     # For daily aggregation, extend the start date by one day earlier to get the baseline for first day's delta
     extended_start = start
     if aggregate_by == "day" and start:
-        extended_start = start - datetime.timedelta(days=1)
+        extended_start = start - timedelta(days=1)
     
     query = select(
         PlcDataHistorical.DATA_ID,
@@ -214,14 +222,14 @@ async def read_historical_details(
             
             # Check if the current bucket (date) is within the original requested range
             include_in_result = True
-            if start and isinstance(curr["bucket"], datetime.date):
-                curr_datetime = datetime.datetime.combine(curr["bucket"], datetime.time.min)
+            if start and isinstance(curr["bucket"], date):
+                curr_datetime = datetime.combine(curr["bucket"], time.min)
                 if curr_datetime.date() < start.date():
                     include_in_result = False
             elif start and isinstance(curr["bucket"], str) and aggregate_by == "month":
                 year, month = curr["bucket"].split('-')
-                curr_datetime = datetime.datetime(int(year), int(month), 1)
-                start_month = datetime.datetime(start.year, start.month, 1)
+                curr_datetime = datetime(int(year), int(month), 1)
+                start_month = datetime(start.year, start.month, 1)
                 if curr_datetime < start_month:
                     include_in_result = False
             elif start and isinstance(curr["bucket"], str) and aggregate_by == "year":
@@ -230,14 +238,14 @@ async def read_historical_details(
                     include_in_result = False
             
             if include_in_result:
-                if isinstance(curr["bucket"], datetime.date):
-                    timestamp_dt = datetime.datetime.combine(curr["bucket"], datetime.time.min)
+                if isinstance(curr["bucket"], date):
+                    timestamp_dt = datetime.combine(curr["bucket"], time.min)
                 elif isinstance(curr["bucket"], str):
                     if aggregate_by == "month":
                         year, month = curr["bucket"].split('-')
-                        timestamp_dt = datetime.datetime(int(year), int(month), 1)
+                        timestamp_dt = datetime(int(year), int(month), 1)
                     else: # year
-                        timestamp_dt = datetime.datetime(int(curr["bucket"]), 1, 1)
+                        timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                 else:
                     timestamp_dt = curr["timestamp"]
                 
@@ -252,14 +260,14 @@ async def read_historical_details(
         if len(entries) > 0 and start:
             # Find the first entry that falls within the requested range
             for i, entry in enumerate(entries):
-                if isinstance(entry["bucket"], datetime.date):
-                    entry_datetime = datetime.datetime.combine(entry["bucket"], datetime.time.min)
+                if isinstance(entry["bucket"], date):
+                    entry_datetime = datetime.combine(entry["bucket"], time.min)
                     is_in_range = start.date() <= entry_datetime.date() <= end.date() if end else start.date() <= entry_datetime.date()
                 elif isinstance(entry["bucket"], str) and aggregate_by == "month":
                     year, month = entry["bucket"].split('-')
-                    entry_datetime = datetime.datetime(int(year), int(month), 1)
-                    start_month = datetime.datetime(start.year, start.month, 1)
-                    end_month = datetime.datetime(end.year, end.month, 1) if end else start_month
+                    entry_datetime = datetime(int(year), int(month), 1)
+                    start_month = datetime(start.year, start.month, 1)
+                    end_month = datetime(end.year, end.month, 1) if end else start_month
                     is_in_range = start_month <= entry_datetime <= end_month
                 elif isinstance(entry["bucket"], str) and aggregate_by == "year":
                     entry_year = int(entry["bucket"])
@@ -276,21 +284,21 @@ async def read_historical_details(
                     # We would need to handle it differently - but for delta calculation, we need a reference point
                     pass
                 # If the first entry in requested range is not the first in entries (i > 0), then it will be handled by the main loop
-                elif is_in_range and i > 0 and i < len(entries) and entries[i-1]["bucket"] < (start.date() if isinstance(entries[i]["bucket"], datetime.date) else entries[i]["bucket"]):
+                elif is_in_range and i > 0 and i < len(entries) and entries[i-1]["bucket"] < (start.date() if isinstance(entries[i]["bucket"], date) else entries[i]["bucket"]):
                     # Handle case where the entry is in range but the previous one was before the requested range
                     # In this case, we calculate delta from the previous entry even if it's outside the range
                     prev = entries[i - 1]
                     curr = entries[i]
                     delta = (curr["value"] or 0) - (prev["value"] or 0)
                     
-                    if isinstance(curr["bucket"], datetime.date):
-                        timestamp_dt = datetime.datetime.combine(curr["bucket"], datetime.time.min)
+                    if isinstance(curr["bucket"], date):
+                        timestamp_dt = datetime.combine(curr["bucket"], time.min)
                     elif isinstance(curr["bucket"], str):
                         if aggregate_by == "month":
                             year, month = curr["bucket"].split('-')
-                            timestamp_dt = datetime.datetime(int(year), int(month), 1)
+                            timestamp_dt = datetime(int(year), int(month), 1)
                         else: # year
-                            timestamp_dt = datetime.datetime(int(curr["bucket"]), 1, 1)
+                            timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                     else:
                         timestamp_dt = curr["timestamp"]
                     
@@ -303,123 +311,173 @@ async def read_historical_details(
     series_list = list(grouped_data.values())
     return HistoricalDataGroupedResponse(series=series_list)
 
-@router.get("/export/")
+
+@router.get("/export/", response_model=HistoricalDataGroupedResponse)
 async def export_historical_data(
-    # --- Query Parameters ---
+    current_user: CurrentUser,
+    primary_session: SessionDep,
     tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
-    # plant_id: Optional[int] = Query(None, description="Plant ID (alternative to tenant_id lookup)"),
-    data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
-    start: datetime.datetime | None = Query(None, description="Start timestamp"),
-    end: datetime.datetime | None = Query(None, description="End timestamp"),
-    export_granularity: ExportGranularity = Query(..., description="Granularity for exported data (e.g., hourly)"),
-    # export_format: Optional[str] = Query("json", description="Desired export format (json/csv/xlsx)") # Handled by frontend for now
-
-    # --- Dependencies ---
-    data_session: AsyncSession = Depends(get_data_async_session), # Use the external data session
-    # current_user: CurrentUser = Depends(get_current_active_user), # Add auth if needed
-):
+    start: datetime | None = Query(None, description="Start timestamp"),
+    end: datetime | None = Query(None, description="End timestamp"),
+    export_granularity: ExportGranularity = Query(
+        ..., description="Granularity for exported data (e.g., hourly)"
+    ),
+    data_session: AsyncSession = Depends(get_data_async_session),
+) -> Any:
     """
-    Endpoint to fetch and potentially pre-process data for export.
-    Currently focuses on fetching raw/hourly data for hourly delta calculations.
-    The frontend will handle final XLSX generation.
+    Export hourly consumption deltas using closest-to-hour-boundary logic.
+    All timestamps are in local Kyiv time (Europe/Kyiv).
     """
-    logger.info(f"Initiating data export request for tenant_id={tenant_id}, "
-                f"data_ids={data_ids}, start={start}, end={end}, granularity={export_granularity}")
+    logger.info(
+        f"Initiating export for tenant_id={tenant_id}, "
+        f"start={start}, end={end}, granularity={export_granularity}"
+    )
 
-    # --- 1. Authorization & Plant ID Lookup (if needed) ---
-    # Add logic here to verify `current_user` has access to `tenant_id`
-    # if not current_user.is_superuser and current_user.tenant_id != tenant_id:
-    #     logger.warning(f"Unauthorized export attempt by user {current_user.id} for tenant {tenant_id}")
-    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
+    # 1. Permission Check
+    if not current_user.is_superuser and current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this tenant")
 
-    # Lookup plant_id based on tenant_id (reuse logic from schedule.py or create a helper)
-    # plant_id = await get_plant_id_for_tenant(tenant_id, primary_session) # You need primary_session or a helper
-    # Placeholder: Assume plant_id is derived or passed, or implement lookup
-    # For now, let's assume the frontend provides correct data_ids for the tenant's plant
-    # or the data_session is correctly scoped to the tenant's data DB.
-    # plant_id_from_lookup = await some_helper_function_to_get_plant_id(tenant_id, primary_session)
-    # if not plant_id_from_lookup:
-    #     raise HTTPException(status_code=404, detail="Plant configuration not found for tenant")
+    # 2. Lookup plant_id
+    target_plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
 
-    # --- 2. Validate Inputs ---
-    if start >= end:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start datetime must be before end datetime.")
+    # 3. Validate Inputs
+    if start and end and start >= end:
+        raise HTTPException(status_code=400, detail="Start datetime must be before end datetime.")
 
-    # --- 3. Fetch Data Based on Granularity ---
-    if export_granularity == ExportGranularity.hourly:
-        # --- Fetch Raw/Hourly Data for Delta Calculation ---
-        logger.debug("Fetching hourly/raw data for export...")
-
-        # --- Construct Query for PLC_DATA_HISTORICAL ---
-        # Fetch data points within the time range for the specified data_ids
-        # We order by TIMESTAMP and DATA_ID to facilitate processing
-        statement = (
-            select(PlcDataHistorical)
-            .where(PlcDataHistorical.TIMESTAMP >= start)
-            .where(PlcDataHistorical.TIMESTAMP <= end)
-            .where(PlcDataHistorical.DATA_ID.in_(data_ids))
-            # .where(PlcDataHistorical.PLANT_ID == plant_id_from_lookup) # Add if scoping by plant_id is needed/possible here
-            .order_by(PlcDataHistorical.TIMESTAMP, PlcDataHistorical.DATA_ID)
+    # 4. Granularity Check
+    if export_granularity != ExportGranularity.hourly:
+        raise HTTPException(
+            status_code=400,
+            detail="Only 'hourly' granularity is supported."
         )
 
-        try:
-            # --- Execute Query ---
-            logger.debug(f"Executing export query for {len(data_ids)} data_ids between {start} and {end}")
-            result = await data_session.exec(statement)
-            raw_data_points: List[PlcDataHistorical] = result.all()
-            logger.debug(f"Fetched {len(raw_data_points)} raw data points for export.")
-        except Exception as e:
-            logger.error(f"Database error fetching data for export: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch data for export.")
+    # 5. Extend time range for baseline
+    extended_start = start - timedelta(hours=1) if start else None
+    query_end = end or datetime.now()
 
-        # --- 4. Process Data (Optional Pre-processing) ---
-        # The core logic for calculating hourly deltas (Consumption = Meter(t) - Meter(t-1h))
-        # is best done in the frontend using the raw data fetched.
-        # However, you *could* do some pre-processing here if beneficial, e.g., grouping by timestamp.
-        # For now, we'll return the raw data points grouped by DATA_ID.
-        # The frontend (React) will receive this structured data and use the xlsx library to create the file.
+    # 6. MariaDB CTE: closest reading to :00:00 per hour
+    cte_sql = text("""
+        WITH hour_boundaries AS (
+            SELECT 
+                DATA_ID,
+                DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00') AS hour_bucket_str,
+                TIMESTAMP,
+                DATA,
+                ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+                    STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
+                )) AS seconds_to_boundary,
+                ROW_NUMBER() OVER (
+                    PARTITION BY DATA_ID, DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00')
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+                        STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
+                    ))
+                ) AS rn
+            FROM PLC_DATA_HISTORICAL
+            WHERE PLANT_ID = :plant_id
+              AND DATA_ID BETWEEN 100 AND 199
+              AND TIMESTAMP >= :extended_start
+              AND TIMESTAMP <= :query_end
+        ),
+        closest_readings AS (
+            SELECT 
+                DATA_ID,
+                hour_bucket_str,
+                DATA,
+                LAG(DATA) OVER (PARTITION BY DATA_ID ORDER BY hour_bucket_str) AS prev_data
+            FROM hour_boundaries
+            WHERE rn = 1
+        )
+        SELECT 
+            cr.DATA_ID,
+            cr.hour_bucket_str AS bucket_local,  -- This is 10:00:00 for 10–11
+            (cr.DATA - cr.prev_data) AS hourly_delta
+        FROM closest_readings cr
+        WHERE cr.prev_data IS NOT NULL
+          AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') >= :start
+          AND (:end IS NULL OR STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') <= :end)
+        ORDER BY cr.DATA_ID, cr.hour_bucket_str
+    """)
 
-        # Group raw data by DATA_ID for easier frontend handling
-        grouped_data: Dict[int, List[PlcDataHistorical]] = {}
-        for point in raw_data_points:
-            if point.DATA_ID not in grouped_data:
-                grouped_data[point.DATA_ID] = []
-            grouped_data[point.DATA_ID].append(point)
+    try:
+        result = await data_session.execute(
+            cte_sql,
+            {
+                "plant_id": target_plant_id,
+                "extended_start": extended_start,
+                "query_end": query_end,
+                "start": start,
+                "end": end,
+            }
+        )
+        rows = result.fetchall()
+        logger.debug(f"Fetched {len(rows)} hourly delta rows (DATA_ID 100–199).")
+    except Exception as e:
+        logger.error(f"Database error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch export data.")
 
-        # Prepare data for JSON response (frontend will convert to XLSX)
-        # Return a structure that's easy for the frontend to consume.
-        # Example: List of dictionaries, one per data point, with timestamp and values for each requested data_id
-        export_ready_data = []
-        # Get all unique timestamps
-        unique_timestamps = sorted(set(point.TIMESTAMP for point in raw_data_points))
-        data_id_set = set(data_ids)
-
-        # Create a map for quick lookup: (timestamp, data_id) -> DATA value
-        data_map: Dict[tuple[datetime.datetime, int], float] = {
-            (point.TIMESTAMP, point.DATA_ID): point.DATA for point in raw_data_points if point.DATA is not None
+    # === Fetch labels for all DATA_IDs in result ===
+    data_ids_in_result = {row.DATA_ID for row in rows} if rows else set()
+    label_map = {}
+    if data_ids_in_result:
+        label_result = await data_session.execute(
+            select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2)
+            .where(TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0)
+        )
+        label_map = {
+            r.DATA_ID: {"label": r.TEXT_L1, "label_local": r.TEXT_L2}
+            for r in label_result
         }
 
-        # Build the export data structure (list of rows, each row has timestamp and data columns)
-        for timestamp in unique_timestamps:
-            row = {"timestamp": timestamp.isoformat()} # Use ISO format for easy parsing in frontend
-            for data_id in data_ids:
-                # Get the data value for this timestamp and data_id
-                value = data_map.get((timestamp, data_id))
-                # Add the value to the row (keyed by data_id string)
-                row[str(data_id)] = value # Handle None if needed (e.g., keep as None, or use "")
-            export_ready_data.append(row)
+    # === Group and convert to response ===
+    grouped_data: dict[int, TimeSeriesData] = {}
 
-        logger.info(f"Prepared {len(export_ready_data)} rows for export.")
-        # Return the structured data. Frontend will handle XLSX creation.
-        return export_ready_data
+    kyiv_tz = pytz.timezone("Europe/Kyiv")
 
-    else:
-        # Handle other granularities if added (daily, monthly, etc. for direct export aggregates)
-        # For now, only hourly/raw is supported for detailed export
-        logger.warning(f"Unsupported export_granularity requested: {export_granularity}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Export granularity '{export_granularity}' is not currently supported for detailed export. Use 'hourly'."
+    for row in rows:
+        data_id = row.DATA_ID
+        hour_str = row.bucket_local
+        delta = row.hourly_delta
+
+        # Skip invalid deltas
+        if delta is None or delta < 0 or delta > 10000:
+            continue
+
+        # Parse local time (naive)
+        try:
+            local_naive = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError as e:
+            logger.warning(f"Invalid timestamp format: {hour_str} — {e}")
+            continue
+
+        # Localize to Kyiv time
+        local_aware = kyiv_tz.localize(local_naive)
+        timestamp_ms = int(local_aware.timestamp() * 1000)
+
+        # Initialize series if not exists
+        if data_id not in grouped_data:
+            metadata = label_map.get(data_id, {})
+            series_name = (
+                metadata.get("label_local")
+                or metadata.get("label")
+                or f"Data ID {data_id}"
+            )
+            grouped_data[data_id] = TimeSeriesData(
+                data_id=data_id,
+                name=series_name,
+                data=[]
+            )
+
+        # Append point
+        grouped_data[data_id].data.append(
+            TimeSeriesPoint(x=timestamp_ms, y=round(float(delta), 3))
         )
 
-# --- END NEW: Export Endpoint ---
+    # Sort series by data_id
+    series_list = [grouped_data[k] for k in sorted(grouped_data.keys())]
+
+    logger.info(
+        f"Export ready: {sum(len(s.data) for s in series_list)} points "
+        f"across {len(series_list)} series (DATA_ID 100–199)."
+    )
+
+    return HistoricalDataGroupedResponse(series=series_list)
