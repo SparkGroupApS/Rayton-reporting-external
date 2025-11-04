@@ -1,5 +1,5 @@
 import {
-  Button,
+  //Button,
   DialogActionTrigger,
   DialogTitle,
   Field, // Use Chakra's Field system
@@ -8,42 +8,35 @@ import {
   NativeSelect, // Import NativeSelect
   Text,
   VStack,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { Controller, type SubmitHandler, useForm } from "react-hook-form"
-import { FaPlus } from "react-icons/fa"
+} from "@chakra-ui/react";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import { FaPlus } from "react-icons/fa";
 
 // Import Tenant models and the hook to fetch tenants
-import { type TenantPublic, type UserCreate, UsersService } from "@/client"
-import type { ApiError } from "@/client/core/ApiError"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useTenants } from "@/hooks/useTenantQueries" // Adjust path if needed
-import { emailPattern, handleError } from "@/utils"
+import { type TenantPublic, type UserCreate, UsersService } from "@/client";
+import type { ApiError } from "@/client/core/ApiError";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useTenants } from "@/hooks/useTenantQueries"; // Adjust path if needed
+import { emailPattern, handleError } from "@/utils";
 // Assuming Checkbox is compatible or imported correctly from Chakra v3
-import { Checkbox } from "../ui/checkbox" // Check path and v3 compatibility
+import { Checkbox } from "../ui/checkbox"; // Check path and v3 compatibility
 // Assuming Dialog components are compatible or imported correctly from Chakra v3
-import {
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogRoot,
-  DialogTrigger,
-} from "../ui/dialog" // Check paths and v3 compatibility
+import { DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "../ui/dialog"; // Check paths and v3 compatibility
 
 // Update form interface to include tenant_id
 interface UserCreateForm extends Omit<UserCreate, "tenant_id"> {
-  confirm_password: string
-  tenant_id: string // Add tenant_id as string (UUID)
+  confirm_password: string;
+  tenant_id: string; // Add tenant_id as string (UUID)
 }
 
 const AddUser = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
-  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants()
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
+  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants();
 
   const {
     control,
@@ -64,23 +57,22 @@ const AddUser = () => {
       is_active: true,
       tenant_id: "",
     },
-  })
+  });
 
   const mutation = useMutation({
-    mutationFn: (data: UserCreate) =>
-      UsersService.createUser({ requestBody: data }),
+    mutationFn: (data: UserCreate) => UsersService.createUser({ requestBody: data }),
     onSuccess: () => {
-      showSuccessToast("User created successfully.")
-      reset()
-      setIsOpen(false)
+      showSuccessToast("User created successfully.");
+      reset();
+      setIsOpen(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<UserCreateForm> = (data) => {
     const userCreateData: UserCreate = {
@@ -90,26 +82,25 @@ const AddUser = () => {
       is_active: data.is_active,
       is_superuser: data.is_superuser,
       tenant_id: data.tenant_id,
-    }
-    mutation.mutate(userCreateData)
-  }
+    };
+    mutation.mutate(userCreateData);
+  };
 
   const handleOpenChange = ({ open }: { open: boolean }) => {
-    setIsOpen(open)
+    setIsOpen(open);
     if (!open) {
-      reset()
+      reset();
     }
-  }
+  };
 
   return (
-    <DialogRoot
-      size={{ base: "xs", md: "md" }}
-      placement="center"
-      open={isOpen}
-      onOpenChange={handleOpenChange}
-    >
+    <DialogRoot size={{ base: "xs", md: "md" }} placement="center" open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button value="add-user" my={4}>
+        {/* <Button value="add-user" my={4}>
+          <FaPlus fontSize="16px" />
+          Add User
+        </Button> */}
+        <Button size="sm" my={4}>
           <FaPlus fontSize="16px" />
           Add User
         </Button>
@@ -120,30 +111,18 @@ const AddUser = () => {
             <DialogTitle>Add User</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>
-              Fill in the form below to add a new user to the system.
-            </Text>
+            <Text mb={4}>Fill in the form below to add a new user to the system.</Text>
             <VStack gap={4}>
               {/* === Tenant Selection (v3 Field + NativeSelect) === */}
-              <Field.Root
-                id="tenant-field"
-                required
-                invalid={!!errors.tenant_id}
-                disabled={isLoadingTenants || !tenantsData}
-              >
+              <Field.Root id="tenant-field" required invalid={!!errors.tenant_id} disabled={isLoadingTenants || !tenantsData}>
                 <Field.Label>Tenant</Field.Label>
                 <NativeSelect.Root maxWidth="full">
                   <NativeSelect.Field
                     id="tenant_id"
-                    placeholder={
-                      isLoadingTenants
-                        ? "Loading tenants..."
-                        : "Select a tenant"
-                    }
+                    placeholder={isLoadingTenants ? "Loading tenants..." : "Select a tenant"}
                     {...register("tenant_id", {
                       required: "Tenant selection is required",
-                    })}
-                  >
+                    })}>
                     {tenantsData?.data.map((tenant: TenantPublic) => (
                       <option key={tenant.id} value={tenant.id}>
                         {tenant.name}
@@ -178,21 +157,12 @@ const AddUser = () => {
               {/* === Full Name (v3 Field) === */}
               <Field.Root id="fullname-field" invalid={!!errors.full_name}>
                 <Field.Label>Full Name</Field.Label>
-                <Input
-                  id="full_name"
-                  {...register("full_name")}
-                  placeholder="Full name"
-                  type="text"
-                />
+                <Input id="full_name" {...register("full_name")} placeholder="Full name" type="text" />
                 <Field.ErrorText>{errors.full_name?.message}</Field.ErrorText>
               </Field.Root>
 
               {/* === Password (v3 Field) === */}
-              <Field.Root
-                id="password-field"
-                required
-                invalid={!!errors.password}
-              >
+              <Field.Root id="password-field" required invalid={!!errors.password}>
                 <Field.Label>Set Password</Field.Label>
                 <Input
                   id="password"
@@ -210,26 +180,18 @@ const AddUser = () => {
               </Field.Root>
 
               {/* === Confirm Password (v3 Field) === */}
-              <Field.Root
-                id="confirm-password-field"
-                required
-                invalid={!!errors.confirm_password}
-              >
+              <Field.Root id="confirm-password-field" required invalid={!!errors.confirm_password}>
                 <Field.Label>Confirm Password</Field.Label>
                 <Input
                   id="confirm_password"
                   {...register("confirm_password", {
                     required: "Please confirm your password",
-                    validate: (value) =>
-                      value === getValues().password ||
-                      "The passwords do not match",
+                    validate: (value) => value === getValues().password || "The passwords do not match",
                   })}
                   placeholder="Password"
                   type="password"
                 />
-                <Field.ErrorText>
-                  {errors.confirm_password?.message}
-                </Field.ErrorText>
+                <Field.ErrorText>{errors.confirm_password?.message}</Field.ErrorText>
               </Field.Root>
             </VStack>
 
@@ -240,10 +202,7 @@ const AddUser = () => {
                 name="is_superuser"
                 render={({ field }) => (
                   <Field.Root id="is_superuser-field" disabled={field.disabled}>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
-                    >
+                    <Checkbox checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
                       Is superuser?
                     </Checkbox>
                   </Field.Root>
@@ -254,10 +213,7 @@ const AddUser = () => {
                 name="is_active"
                 render={({ field }) => (
                   <Field.Root id="is_active-field" disabled={field.disabled}>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
-                    >
+                    <Checkbox checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
                       Is active? (Default: Yes)
                     </Checkbox>
                   </Field.Root>
@@ -278,14 +234,7 @@ const AddUser = () => {
                 Cancel
               </Button>
             </DialogActionTrigger>
-            <Button
-              variant="solid"
-              type="submit"
-              disabled={
-                !isValid || isLoadingTenants || !tenantsData || isSubmitting
-              }
-              loading={isSubmitting}
-            >
+            <Button variant="solid" type="submit" disabled={!isValid || isLoadingTenants || !tenantsData || isSubmitting} loading={isSubmitting}>
               Save User
             </Button>
           </DialogFooter>
@@ -293,7 +242,7 @@ const AddUser = () => {
         <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default AddUser
+export default AddUser;

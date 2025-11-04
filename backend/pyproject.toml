@@ -23,6 +23,7 @@ dependencies = [
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
     "fastapi-mqtt>=2.2.0",
+    "pytz>=2025.2",
 ]
 
 [tool.uv]

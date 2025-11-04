@@ -77,7 +77,7 @@ function Login() {
       backgroundRepeat="no-repeat">
       {/* 2. The main login card/panel */}
       <Box
-        bg="whiamberpha.700"
+        bg="whirayton_orangepha.700"
         _dark={{
           bg: "gray.700",
           shadow: "xl",
