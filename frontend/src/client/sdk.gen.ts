@@ -69,16 +69,16 @@ export class HistoricalDataService {
     
     /**
      * Export Historical Data
-     * Endpoint to fetch and potentially pre-process data for export.
-     * Currently focuses on fetching raw/hourly data for hourly delta calculations.
-     * The frontend will handle final XLSX generation.
+     * Endpoint to fetch and calculate hourly deltas for data export.
+     * Calculates plant consumption for each hour by subtracting energy meter (kWh) difference:
+     * consumption_for_hour_N = last_value_of_hour_N - last_value_of_hour_(N-1)
      * @param data The data for the request.
      * @param data.tenantId Tenant ID for plant lookup
      * @param data.dataIds List of DATA_IDs to fetch
      * @param data.exportGranularity Granularity for exported data (e.g., hourly)
      * @param data.start Start timestamp
      * @param data.end End timestamp
-     * @returns unknown Successful Response
+     * @returns HistoricalDataGroupedResponse Successful Response
      * @throws ApiError
      */
     public static exportHistoricalData(data: HistoricalDataExportHistoricalDataData): CancelablePromise<HistoricalDataExportHistoricalDataResponse> {

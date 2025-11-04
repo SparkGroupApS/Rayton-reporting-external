@@ -80,7 +80,7 @@ const Sidebar = () => {
       <Box
         display={{ base: "none", md: "flex" }}
         position="sticky"
-        bg="bg.subtle"
+        bg="rayton_neutral.200"
         top={0}
         minW="3xs" // Change "xs" to "sm", "md", or a specific value like "250px", "16rem"
         // Optionally add a fixed width:

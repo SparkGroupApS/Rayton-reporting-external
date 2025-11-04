@@ -14,7 +14,7 @@ function Navbar() {
       position="sticky"
       color="white"
       align="center"
-      bg="bg.muted"
+      bg="rayton_orange.400"
       w="100%"
       top={0}
       p={4}

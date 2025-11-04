@@ -1,6 +1,7 @@
 // src/components/Dashboard/EnergyTrendChart.tsx
 
-import { Box, Button, ButtonGroup, Flex, GridItem, HStack, IconButton, Input, Spinner, Switch, Text } from "@chakra-ui/react";
+import { Box, ButtonGroup, Flex, GridItem, HStack, IconButton, Input, Spinner, Switch, Text } from "@chakra-ui/react";
+import { Button } from "@/components/ui/button";
 import { useMemo, useState, useRef } from "react";
 import ChartExportMenu from "./ChartExportMenu";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
@@ -491,20 +492,20 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
         },
       }}>
       <Flex justify="space-between" align="center" mb={4} wrap="wrap" gap={2}>
-        <ButtonGroup size="sm" variant="outline">
-          <Button onClick={() => handleTimeRangeChange("1D")} data-active={timeRange === "1D"}>
+        <ButtonGroup variant="solid" size="sm">
+          <Button onClick={() => handleTimeRangeChange("1D")} data-active={timeRange === "1D" || undefined}>
             Day
           </Button>
-          <Button onClick={() => handleTimeRangeChange("1W")} data-active={timeRange === "1W"}>
+          <Button onClick={() => handleTimeRangeChange("1W")} data-active={timeRange === "1W" || undefined}>
             Week
           </Button>
-          <Button onClick={() => handleTimeRangeChange("1M")} data-active={timeRange === "1M"}>
+          <Button onClick={() => handleTimeRangeChange("1M")} data-active={timeRange === "1M" || undefined}>
             Month
           </Button>
-          <Button onClick={() => handleTimeRangeChange("1Y")} data-active={timeRange === "1Y"}>
+          <Button onClick={() => handleTimeRangeChange("1Y")} data-active={timeRange === "1Y" || undefined}>
             Year
           </Button>
-          <Button onClick={() => handleTimeRangeChange("All")} data-active={timeRange === "All"}>
+          <Button onClick={() => handleTimeRangeChange("All")} data-active={timeRange === "All" || undefined}>
             Lifetime
           </Button>
         </ButtonGroup>
@@ -516,7 +517,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
               {timeRange === "1M" && (useCurrentPeriod ? "Current Month" : "Last 30 Days")}
               {timeRange === "1Y" && (useCurrentPeriod ? "Current Year" : "Last 12 Months")}
             </Text>
-            <Switch.Root colorScheme="amber" checked={useCurrentPeriod} onCheckedChange={(e) => setUseCurrentPeriod(e.checked)}>
+            <Switch.Root colorScheme="rayton_orange" checked={useCurrentPeriod} onCheckedChange={(e) => setUseCurrentPeriod(e.checked)}>
               <Switch.HiddenInput />
               <Switch.Control>
                 <Switch.Thumb />
@@ -530,7 +531,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
             <Text fontSize="sm" fontWeight="medium">
               SOC Combined Display
             </Text>
-            <Switch.Root colorScheme="amber" checked={isSocCombined} onCheckedChange={(e) => setIsSocCombined(e.checked)}>
+            <Switch.Root colorScheme="rayton_orange" checked={isSocCombined} onCheckedChange={(e) => setIsSocCombined(e.checked)}>
               <Switch.HiddenInput />
               <Switch.Control>
                 <Switch.Thumb />
@@ -560,9 +561,10 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
 
         <ChartExportMenu
           chartRef={chartRef}
-          data={timeRange === "1D" && isSocCombined && transformedCombinedData ? transformedCombinedData.chartData :
-                timeRange === "1D" && transformedSocData && !isSocCombined ? transformedEnergyData?.chartData :
-                transformedEnergyData?.chartData}
+          tenantId={tenantId || ""}
+          dataIds={energyDataIds}
+          startDate={startDate}
+          endDate={endDate}
           fileName={`energy-trend-chart-${timeRange}-${toLocalDateString(currentDate)}`}
         />
       </Flex>

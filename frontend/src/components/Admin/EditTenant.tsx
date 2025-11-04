@@ -183,7 +183,7 @@ const EditTenant = ({ tenant }: EditTenantProps) => {
             </DialogActionTrigger>
             <Button
               variant="solid"
-              colorScheme="amber"
+              colorScheme="rayton_orange"
               type="submit"
               disabled={!isValid || isSubmitting}
               loading={isSubmitting}

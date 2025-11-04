@@ -1,21 +1,41 @@
-// src/components/Dashboard/ChartExportMenu.tsx
-import { Button, Menu, Portal } from "@chakra-ui/react";
+// src/components/Dashboard/ChartExportMenutsx
+import { Button } from "@chakra-ui/react"; //, Menu, Portal
+import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "../ui/menu";
 import { toPng } from "html-to-image";
 import { type RefObject, useState } from "react";
 import { LuDownload } from "react-icons/lu";
 import * as XLSX from "xlsx";
 import { toaster } from "@/components/ui/toaster";
+import useHistoricalDataExport from "@/hooks/useHistoricalDataExport";
+import type { HistoricalDataGroupedResponse } from "@/client";
 
 interface ChartExportMenuProps {
   chartRef: RefObject<HTMLDivElement | null>;
-  data?: { [key: string]: any; x: number; }[];
+  tenantId: string;
+  dataIds: number[];
+  startDate: Date;
+  endDate: Date;
   fileName: string;
 }
 
-export const ChartExportMenu = ({ chartRef, data, fileName }: ChartExportMenuProps) => {
+export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDate, fileName }: ChartExportMenuProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- PNG EXPORT (No change needed) ---
+  // Use the hook to fetch historical data for export
+  const { refetch: refetchExportData } = useHistoricalDataExport(
+    {
+      tenantId,
+      data_ids: dataIds,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+      export_granularity: "hourly",
+    },
+    {
+      enabled: false, // Disable automatic fetching, we'll use refetch when needed
+    }
+  );
+
+  // --- PNG EXPORT ---
   const onExportPNG = async () => {
     if (!chartRef.current) {
       toaster.create({ title: "Error exporting PNG", type: "error" });
@@ -36,72 +56,107 @@ export const ChartExportMenu = ({ chartRef, data, fileName }: ChartExportMenuPro
     }
   };
 
-  // --- CSV / XLSX EXPORT (MODIFIED to use the provided data prop) ---
+  // --- CSV / XLSX EXPORT ---
   const onExportData = async (format: "xlsx" | "csv") => {
-    if (!data) return;
     setIsLoading(true);
 
     try {
-      // Use the provided data prop for export
-      if (!data || data.length === 0) {
-         toaster.create({ title: "No data available for export.", type: "warning" });
-         return;
+      // Fetch data using the hook's refetch function
+      const result = await refetchExportData();
+      const responseData = result.data as HistoricalDataGroupedResponse;
+
+      if (!responseData || !responseData.series || responseData.series.length === 0) {
+        toaster.create({ title: "No data available for export.", type: "warning" });
+        return;
       }
 
-      // 2. --- FORMAT DATA FOR EXPORT (Simplified) ---
-      // The data prop is already structured as a list of row objects
-      // [{timestamp: "...", "101": 123.4, ...}, ...]
-      // XLSX.utils.json_to_sheet can often handle this directly.
-      // If you need specific formatting (e.g., renaming columns), do it here.
-      // For now, assume data is ready.
-      const formattedData = data; // Or process it further if needed
+      // Transform the series data into a flat array of rows for Excel
+      const seriesData = responseData.series;
 
-      // 3. --- CREATE EXCEL SHEET ---
-      const ws = XLSX.utils.json_to_sheet(formattedData);
+      // Create a map of timestamp -> row data
+      const rowMap = new Map<string, any>();
+
+      seriesData.forEach((series) => {
+        const columnName = series.name || `Data ID ${series.data_id}`;
+
+        series.data.forEach((point) => {
+          // Convert millisecond timestamp to readable format for Excel
+          const date = new Date(point.x);
+          // Format as "YYYY-MM-DD HH:MM:SS" without timezone
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          const seconds = String(date.getSeconds()).padStart(2, "0");
+          const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+          if (!rowMap.has(timestamp)) {
+            rowMap.set(timestamp, {
+              Timestamp: timestamp,
+            });
+          }
+
+          const row = rowMap.get(timestamp);
+          row[columnName] = point.y;
+        });
+      });
+
+      // Convert map to array and sort by timestamp
+      const exportData = Array.from(rowMap.values()).sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
+
+      if (exportData.length === 0) {
+        toaster.create({ title: "No data available for export.", type: "warning" });
+        return;
+      }
+
+      // Create Excel sheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Exported_Data"); // Use a generic name or base it on plantName/timeRange
+      XLSX.utils.book_append_sheet(wb, ws, "Hourly_Energy_Data");
 
-      // 4. --- TRIGGER DOWNLOAD ---
-      // Use the fileName prop for consistency, but change extension based on format
+      // Trigger download with appropriate file extension
       const fileExtension = format === "csv" ? ".csv" : ".xlsx";
       const finalFileName = fileName.endsWith(fileExtension) ? fileName : fileName + fileExtension;
-      XLSX.writeFile(wb, finalFileName); // Use the fileName prop for consistency
+      XLSX.writeFile(wb, finalFileName);
+
+      toaster.create({
+        title: "Export successful",
+        description: `Exported ${exportData.length} hours of data`,
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Export Error:", err);
       toaster.create({
         title: "Error exporting data",
-        description: err.message || "Could not export data.",
+        description: err.message || "Could not fetch data for export.",
         type: "error",
       });
     } finally {
       setIsLoading(false);
     }
   };
-  // --- END MODIFIED EXPORT ---
 
   return (
-    <Menu.Root>
-      <Menu.Trigger asChild>
-        <Button variant="outline" size="sm" as={Button} loading={isLoading}>
+    <MenuRoot>
+      <MenuTrigger asChild>
+        <Button variant="solid" size="sm" as={Button} loading={isLoading}>
           <LuDownload /> Export
         </Button>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content fontSize="sm">
-            <Menu.Item value="csv" onClick={() => onExportData("csv")} disabled={isLoading}>
-              Export as CSV
-            </Menu.Item>
-            <Menu.Item value="xlsx" onClick={() => onExportData("xlsx")} disabled={isLoading}>
-              Export as XLSX
-            </Menu.Item>
-            <Menu.Item value="png" onClick={onExportPNG} disabled={isLoading}>
-              Export Data as PNG
-            </Menu.Item>
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
+      </MenuTrigger>
+
+      <MenuContent>
+        <MenuItem value="csv" onClick={() => onExportData("csv")} disabled={isLoading}>
+          Export as CSV
+        </MenuItem>
+        <MenuItem value="xlsx" onClick={() => onExportData("xlsx")} disabled={isLoading}>
+          Export as XLSX
+        </MenuItem>
+        <MenuItem value="png" onClick={onExportPNG} disabled={isLoading}>
+          Export Chart as PNG
+        </MenuItem>
+      </MenuContent>
+    </MenuRoot>
   );
 };
 
