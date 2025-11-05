@@ -223,6 +223,25 @@ class ElectricityCost(SQLModel, table=True, metadata=external_metadata):
     price_UAH_per_MWh: Decimal = Field(nullable=False, decimal_places=4, max_digits=10)
     received_at: datetime.datetime | None = Field(default=None) # Timestamp allows NULL, let DB handle default
 
+# --- API Schema Models for Electricity Cost ---
+# These bridge the (UPPER_CASE) DB fields to the (snake_case) frontend fields.
+
+class ElectricityCostBase(SQLModel):
+    # Define fields using snake_case for API consistency
+    price_date: datetime.date
+    hour_of_day: int
+    price_UAH_per_MWh: Decimal
+    received_at: datetime.datetime | None = None
+
+class ElectricityCostRow(ElectricityCostBase):
+    # Public model for API responses, including ID
+    id: int
+
+    # Pydantic v2 configuration
+    model_config = {
+        "from_attributes": True, # Equivalent to orm_mode=True in Pydantic v1
+    }
+
 class PlantConfig(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "PLANT_CONFIG"
 

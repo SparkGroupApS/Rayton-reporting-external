@@ -12,6 +12,7 @@ from app.api.routes import (
     users,
     utils,
     realtime_data,
+    electricity_cost,
 )
 from app.core.config import settings
 
@@ -24,6 +25,7 @@ api_router.include_router(tenants.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(historical_data.router)
 api_router.include_router(schedule.router)
+api_router.include_router(electricity_cost.router)
 api_router.include_router(plants.router) 
 api_router.include_router(realtime_data.router) 
 

@@ -106,6 +106,44 @@ export const DashboardDataSchema = {
     title: 'DashboardData'
 } as const;
 
+export const ElectricityCostRowSchema = {
+    properties: {
+        price_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Price Date'
+        },
+        hour_of_day: {
+            type: 'integer',
+            title: 'Hour Of Day'
+        },
+        price_UAH_per_MWh: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Price Uah Per Mwh'
+        },
+        received_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Received At'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        }
+    },
+    type: 'object',
+    required: ['price_date', 'hour_of_day', 'price_UAH_per_MWh', 'id'],
+    title: 'ElectricityCostRow'
+} as const;
+
 export const ExportGranularitySchema = {
     type: 'string',
     enum: ['hourly'],

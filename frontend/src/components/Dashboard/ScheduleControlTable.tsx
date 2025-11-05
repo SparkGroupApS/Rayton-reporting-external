@@ -24,9 +24,10 @@ import {
 
 interface ScheduleControlTableProps {
   // plantId: number; // REMOVE
-  // tenantDb: string; // REMOVE
+ // tenantDb: string; // REMOVE
   tenantId: string // <-- ADD tenantId (UUID string)
   date: string
+ onScheduleDataChange?: (data: ScheduleRow[]) => void // Callback to notify when schedule data changes
 }
 
 // Interface for the data we actually render
@@ -54,6 +55,7 @@ const createNewScheduleRowTemplate = (): Omit<
 const ScheduleControlTable = ({
   tenantId,
   date,
+  onScheduleDataChange,
 }: ScheduleControlTableProps) => {
   // <-- Use tenantId
   const {
@@ -153,7 +155,7 @@ const ScheduleControlTable = ({
     [timeToMinutes],
   ) // Removed dependency on timeToMinutes
   
-  // --- Sync server data to local state when it loads ---
+   // --- Sync server data to local state when it loads ---
   // --- Sync server data to local state ---
   useEffect(() => {
     if (serverData) {
@@ -169,6 +171,13 @@ const ScheduleControlTable = ({
     }
     setNewRow(createNewScheduleRowTemplate())
   }, [serverData, validateRows])
+
+  // Notify parent component when local data changes
+  useEffect(() => {
+    if (onScheduleDataChange) {
+      onScheduleDataChange(localData);
+    }
+ }, [localData, onScheduleDataChange]);
 
  
 
@@ -399,7 +408,7 @@ const ScheduleControlTable = ({
   )
 
   return (
-    <VStack gap={4} align="stretch">
+    <VStack gap={0} align="stretch">
       {" "}
       {/* Wrap table and button */}
       <Box overflowX="auto">

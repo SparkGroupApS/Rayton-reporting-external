@@ -22,6 +22,14 @@ export type DashboardData = {
     items: Array<ItemPublic>;
 };
 
+export type ElectricityCostRow = {
+    price_date: string;
+    hour_of_day: number;
+    price_UAH_per_MWh: string;
+    received_at?: (string | null);
+    id: number;
+};
+
 export type ExportGranularity = 'hourly';
 
 export type HistoricalDataGroupedResponse = {
@@ -204,6 +212,19 @@ export type DashboardReadDashboardDataData = {
 
 export type DashboardReadDashboardDataResponse = (DashboardData);
 
+export type ElectricityCostReadElectricityCostData = {
+    /**
+     * Date (YYYY-MM-DD)
+     */
+    date: string;
+    /**
+     * Tenant ID to fetch electricity cost for
+     */
+    tenantId: string;
+};
+
+export type ElectricityCostReadElectricityCostResponse = (Array<ElectricityCostRow>);
+
 export type HistoricalDataReadHistoricalDetailsData = {
     /**
      * Aggregation level: hour (raw data), day, month, year (deltas)
@@ -230,10 +251,6 @@ export type HistoricalDataReadHistoricalDetailsData = {
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
 
 export type HistoricalDataExportHistoricalDataData = {
-    /**
-     * List of DATA_IDs to fetch
-     */
-    dataIds: Array<number>;
     /**
      * End timestamp
      */
