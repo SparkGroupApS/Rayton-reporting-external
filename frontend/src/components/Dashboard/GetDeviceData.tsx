@@ -14,8 +14,11 @@ type RealtimeDataPoint = {
   device_id: number;
   name: string;
   timestamp: number;
-  value: number | null;
+  value: string;
 };
+
+
+
 
 type RealtimeDataResponse = {
   values: RealtimeDataPoint[];
@@ -35,7 +38,7 @@ interface GetDeviceDataProps {
   deviceIds: number[];
 }
 
-const REFRESH_INTERVAL = 60;
+const REFRESH_INTERVAL = 300;
 
 export default function GetDeviceData({ tenantId, deviceIds }: GetDeviceDataProps) {
   const [logs, setLogs] = useState<RealtimeDataPoint[]>([]);
@@ -116,9 +119,13 @@ export default function GetDeviceData({ tenantId, deviceIds }: GetDeviceDataProp
   useEffect(() => {
     fetchLogs();
     const interval = setInterval(fetchLogs, REFRESH_INTERVAL * 1000);
+  //  console.log("tenantId:", tenantId);
+  //  console.log("deviceIds:", deviceIds);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, JSON.stringify(deviceIds)]); // use stringify to avoid ref equality issues
+  }, [tenantId, deviceIds, JSON.stringify(deviceIds)]); // use stringify to avoid ref equality issues
+
+
 
   if (loading)
     return (
@@ -139,20 +146,31 @@ return (
   <Box p={4}>
     <Flex align="center" justify="space-between" mb={4} flexWrap="wrap">
       <Heading size="md" mb={{ base: 2, md: 0 }}>
-        📊{" "}
+        {" "}
         {deviceNames[deviceIds[0]]
           ? `${deviceNames[deviceIds[0]]}`
           : `Пристрій ${deviceIds.join(", ")}`}{" "}
-        {logs[0]?.plant_id || logs[0]?.device_id
+    {/*     {logs[0]?.plant_id || logs[0]?.device_id
           ? `(${logs[0]?.plant_id ? `PLANT_ID: ${logs[0].plant_id}` : ""}${
               logs[0]?.plant_id && logs[0]?.device_id ? ", " : ""
             }${logs[0]?.device_id ? `DEVICE_ID: ${logs[0].device_id}` : ""})`
-          : ""}
+          : ""}*/}
       </Heading>
 
-      <Text fontSize="sm" color="gray.500">
-        Автооновлення кожні {REFRESH_INTERVAL} с
-      </Text>
+<Flex align="center" gap={4}>
+{/*   <Text fontSize="sm" color="gray.500">
+    Автооновлення кожні {REFRESH_INTERVAL} с
+  </Text> */}
+
+  {logs.length > 0 && (
+    <Text fontSize="sm" color="gray.600">
+      Останнє оновлення:{" "}
+      {new Date(
+        Math.max(...logs.map((l) => Number(l.timestamp)))
+      ).toLocaleString()}
+    </Text>
+  )}
+</Flex>
     </Flex>
 
     {/* TABLE (desktop) */}
@@ -161,6 +179,10 @@ return (
       overflowX="auto"
       borderWidth="1px"
       borderRadius="md"
+      maxW="800px"            // 👈 ограничиваем общую ширину таблицы
+      // mx="auto"               // 👈 центрируем таблицу
+      ml={4}                // Небольшое расстояние от левого края (16px)
+      shadow="sm"
     >
       <Box as="table" width="100%" borderCollapse="collapse">
         <Box as="thead" bg="gray.100">
@@ -173,10 +195,12 @@ return (
               fontWeight="semibold"
               borderBottom="1px solid"
               borderColor="gray.200"
+              w="40%"          // 👈 фиксируем ширину для параметра
             >
-              Час
+              Параметр
             </Box>
-            <Box
+            
+                        <Box
               as="th"
               px={3}
               py={2}
@@ -184,19 +208,34 @@ return (
               fontWeight="semibold"
               borderBottom="1px solid"
               borderColor="gray.200"
-            >
-              Назва
-            </Box>
-            <Box
-              as="th"
-              px={3}
-              py={2}
-              textAlign="left"
-              fontWeight="semibold"
-              borderBottom="1px solid"
-              borderColor="gray.200"
+              w="35%"          // 👈 фиксируем ширину для значения
             >
               Значення
+            </Box>
+
+         {/*    <Box
+              as="th"
+              px={3}
+              py={2}
+              textAlign="left"
+              fontWeight="semibold"
+              borderBottom="1px solid"
+              borderColor="gray.200"
+            >
+              Час оновлення
+            </Box>  */}
+
+            <Box
+              as="th"
+              px={3}
+              py={2}
+              textAlign="left"
+              fontWeight="semibold"
+              borderBottom="1px solid"
+              borderColor="gray.200"
+              w="25%"          // 👈 фиксируем ширину для ID
+            >
+              Data ID
             </Box>
           </Box>
         </Box>
@@ -211,17 +250,9 @@ return (
                 borderBottom="1px solid"
                 borderColor="gray.100"
               >
-                {new Date(log.timestamp).toLocaleString()}
-              </Box>
-              <Box
-                as="td"
-                px={3}
-                py={2}
-                borderBottom="1px solid"
-                borderColor="gray.100"
-              >
                 {log.name}
               </Box>
+
               <Box
                 as="td"
                 px={3}
@@ -230,6 +261,26 @@ return (
                 borderColor="gray.100"
               >
                 {log.value ?? "-"}
+              </Box>
+
+
+          {/*     <Box
+                as="td"
+                px={3}
+                py={2}
+                borderBottom="1px solid"
+                borderColor="gray.100"
+              >
+                {new Date(log.timestamp).toLocaleString()}
+              </Box> */}
+              <Box
+                as="td"
+                px={3}
+                py={2}
+                borderBottom="1px solid"
+                borderColor="gray.100"
+              >
+                {log.plant_id}:{log.device_id}:{log.data_id}
               </Box>
             </Box>
           ))}
@@ -251,9 +302,9 @@ return (
           <Text fontSize="sm" fontWeight="bold">
             {log.name}
           </Text>
-          <Text fontSize="sm" color="gray.600">
+   {/*       <Text fontSize="sm" color="gray.600">
             {new Date(log.timestamp).toLocaleString()}
-          </Text>
+          </Text> */}
           <Text fontSize="sm">
             <strong>Значення:</strong> {log.value ?? "-"}
           </Text>

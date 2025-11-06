@@ -298,7 +298,7 @@ class RealtimeDataPoint(BaseModel):
     device_id: int
     name: str
     timestamp: int
-    value: float | None
+    value: str
 
 class RealtimeDataResponse(BaseModel):
     values: list[RealtimeDataPoint]
@@ -351,6 +351,7 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
 
     ID: int | None = Field(default=None, primary_key=True, sa_column_kwargs={"name": "ID"})
     CLASS_ID: int | None = Field(default=None, index=True) # Part of unique key, also foreign key target
+    CHILD_CLASS_ID: int | None = Field(default=None) 
     DATA_ID: int | None = Field(default=None, index=True) # Part of unique key
     TEXT_ID: str | None = Field(default=None, max_length=100)
     TEXT_L1: str | None = Field(default=None, max_length=100)

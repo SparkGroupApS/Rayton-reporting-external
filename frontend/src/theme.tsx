@@ -4,14 +4,14 @@ import { buttonRecipe } from "./theme/button.recipe"
 export const system = createSystem(defaultConfig, {
   globalCss: {
     html: {
-      fontSize: "16px",
+      fontSize: "18px",
     },
     body: {
-      fontSize: "0.875rem",
+      fontSize: "0.75rem",
       margin: 0,
       padding: 0,
       fontFamily: "Montserrat, sans-serif",
-      fontWeight: 250, // Default weight
+      fontWeight: 500, // Default weight
     },
     ".main-link": {
       color: "ui.main",

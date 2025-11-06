@@ -62,7 +62,7 @@ export default function Smartlogger({ tenantId }: SmartloggerProps) {
     const res = await fetch(`http://localhost:8000/api/v1/plant-config?tenant_id=${tenantId}`, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
-    if (!res.ok) throw new Error("Ошибка при получении PLANT_CONFIG");
+    if (!res.ok) throw new Error("ОПомилка при отриманні PLANT_CONFIG");
     const data: PlantConfigResponse = await res.json();
     const detectedPlantId = data.devices.find(d => d.plant_id)?.plant_id ?? tenantId;
     setPlantId(detectedPlantId);
@@ -77,7 +77,7 @@ export default function Smartlogger({ tenantId }: SmartloggerProps) {
     try {
       setLoading(true);
       const token = localStorage.getItem("access_token");
-      if (!token) throw new Error("Нет токена авторизации.");
+      if (!token) throw new Error("Немає токена авторизації.");
       await fetchPlantConfig(tenantId, token);
       setError(null);
     } catch (err: any) {
@@ -124,7 +124,7 @@ export default function Smartlogger({ tenantId }: SmartloggerProps) {
           <GetDeviceData tenantId={tenantId} deviceIds={[selectedDevice.device_id]} />
         ) : (
           <Flex justify="center" align="center" h="full">
-            <Text color="gray.500">Выберите устройство слева, чтобы увидеть данные</Text>
+            <Text color="gray.500">Виберіть пристрій ліворуч, щоб побачити дані</Text>
           </Flex>
         )}
       </Box>

@@ -48,10 +48,10 @@ const DashboardTabs = ({
   return (
     <Tabs.Root colorScheme="blue" mt={4} defaultValue="main">
       <Tabs.List>
-        <Tabs.Trigger value="main">Main Dashboard</Tabs.Trigger>
-        <Tabs.Trigger value="schedule">Schedule</Tabs.Trigger>
-        <Tabs.Trigger value="smdata">SmartLogger Data</Tabs.Trigger>
-        <Tabs.Trigger value="essdata">ESS Data</Tabs.Trigger>
+        <Tabs.Trigger value="main">Головна</Tabs.Trigger>
+        <Tabs.Trigger value="schedule">Розклад</Tabs.Trigger>
+        <Tabs.Trigger value="smdata">СЕС</Tabs.Trigger>
+        <Tabs.Trigger value="essdata">УЗЕ</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 

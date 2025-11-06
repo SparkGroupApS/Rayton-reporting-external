@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text, VStack, Heading } from "@chakra-ui/react";
 
 type PlantConfigDevice = {
@@ -31,6 +31,14 @@ const GetDeviceTree: React.FC<GetDeviceTreeProps> = ({
   const toggleNode = (deviceId: number) => {
     setExpandedNodes(prev => ({ ...prev, [deviceId]: !prev[deviceId] }));
   };
+
+
+    // Выводим параметры в консоль каждый раз, когда компонент рендерится
+  // useEffect(() => {
+  //  console.log("deviceTree:", deviceTree);
+  // console.log("selectedDevice:", selectedDevice);
+  // console.log("setSelectedDevice:", setSelectedDevice);
+  // }, [deviceTree, selectedDevice, setSelectedDevice]);
 
   // рекурсивный рендер дерева
   const renderTree = (devices: PlantConfigDevice[], level = 0) =>
@@ -72,7 +80,7 @@ const GetDeviceTree: React.FC<GetDeviceTreeProps> = ({
               </Text>
             )}
             <Text fontSize="sm" fontWeight="medium">
-              {device.name || "Без имени"} 
+              {device.name || "Без імені"} 
             </Text>
           </Box>
 
@@ -95,7 +103,7 @@ const GetDeviceTree: React.FC<GetDeviceTreeProps> = ({
       shadow="sm"
     >
       <Heading size="md" mb={4}>
-        Устройства
+        Пристрої
       </Heading>
       <VStack align="stretch" spacing={1}>
         {renderTree(deviceTree)}
