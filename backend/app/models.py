@@ -548,9 +548,7 @@ class ScheduleBase(
     # Use Field(alias="UPPER_CASE_NAME") to map to DB column names
     rec_no: int = Field(alias="REC_NO")
     start_time: datetime.time = Field(alias="START_TIME")
-    charge_enable: bool = Field(alias="CHARGE_ENABLE")
     charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
-    discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
     allow_to_sell: bool = Field(alias="ALLOW_TO_SELL")
     charge_power: float = Field(alias="CHARGE_POWER")
     charge_limit: float = Field(alias="CHARGE_LIMIT")
