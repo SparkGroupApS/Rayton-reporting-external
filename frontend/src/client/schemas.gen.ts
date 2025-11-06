@@ -57,6 +57,22 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const CommandResponseSchema = {
+    properties: {
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        message_id: {
+            type: 'string',
+            title: 'Message Id'
+        }
+    },
+    type: 'object',
+    required: ['message', 'message_id'],
+    title: 'CommandResponse'
+} as const;
+
 export const DashboardCardDataSchema = {
     properties: {
         total_users: {

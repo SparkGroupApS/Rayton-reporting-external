@@ -36,8 +36,8 @@ export const useBulkUpdateSchedule = (params: ScheduleParams) => {
   const queryClient = useQueryClient()
   const { tenantId, date } = params
 
-  return useMutation<ScheduleRow[], ApiError, ScheduleRow[]>({
-    // Expects array, returns array
+  return useMutation({
+    // Expects array, returns CommandResponse with message_id
     mutationFn: (scheduleRows: ScheduleRow[]) =>
       ScheduleService.bulkUpdateSchedule({
         // Use the new service method
@@ -46,8 +46,8 @@ export const useBulkUpdateSchedule = (params: ScheduleParams) => {
         requestBody: scheduleRows,
       }),
 
-    onSuccess: (_savedData) => {
-      // 'savedData' is the List[ScheduleRow] from backend
+    onSuccess: (_response) => {
+      // 'response' is the CommandResponse from backend with message_id
       // Invalidate the query to refetch after save
       queryClient.invalidateQueries({
         queryKey: ["schedule", { tenantId, date }],

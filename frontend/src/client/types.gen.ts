@@ -9,6 +9,11 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CommandResponse = {
+    message: string;
+    message_id: string;
+};
+
 export type DashboardCardData = {
     total_users: number;
     total_items: number;
@@ -386,7 +391,7 @@ export type ScheduleBulkUpdateScheduleData = {
     tenantId: string;
 };
 
-export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);
+export type ScheduleBulkUpdateScheduleResponse = (CommandResponse);
 
 export type TenantsCreateTenantData = {
     requestBody: TenantCreate;

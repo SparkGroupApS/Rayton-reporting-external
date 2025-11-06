@@ -445,12 +445,11 @@ export class ScheduleService {
     
     /**
      * Bulk Update Schedule
-     * Update/insert/delete schedule rows AND publish the new schedule to MQTT.
      * @param data The data for the request.
      * @param data.date
      * @param data.tenantId Tenant ID to update schedule for
      * @param data.requestBody
-     * @returns ScheduleRow Successful Response
+     * @returns CommandResponse Successful Response
      * @throws ApiError
      */
     public static bulkUpdateSchedule(data: ScheduleBulkUpdateScheduleData): CancelablePromise<ScheduleBulkUpdateScheduleResponse> {
