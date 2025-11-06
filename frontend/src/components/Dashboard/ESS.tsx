@@ -16,30 +16,30 @@ type PlantConfigResponse = {
   devices: PlantConfigDevice[];
 };
 
-interface SmartloggerProps {
+interface ESSProps {
   tenantId: string;
 }
 const REFRESH_INTERVAL = 60;
 
 const DEVICE_IDS = [
-  10, 11, 12, 13, 14, // SmartLoggers
-  101101, 101102, 101103, 101104, 101105, // SmartLogger 1 counters
-  101201, 101202, 101203, 101204, 101205, // SmartLogger 1 inverters
+  20, 21, 22, 23, 24, // SmartLoggers
+  201101, 201102, 201103, 201104, 201105, // SmartLogger 1 counters
+  201201, 201202, 201203, 201204, 201205, // SmartLogger 1 inverters
 
-  111101, 111102, 111103, 111104, 111105, // SmartLogger 2 counters
-  111201, 111202, 111203, 111204, 111205, // SmartLogger 2 inverters
+  211101, 211102, 211103, 211104, 211105, // SmartLogger 2 counters
+  211201, 211202, 211203, 211204, 211205, // SmartLogger 2 inverters
 
-  121101, 121102, 121103, 121104, 121105, // SmartLogger 3 counters
-  121201, 121202, 121203, 121204, 121205, // SmartLogger 3 inverters
+  221101, 221102, 221103, 221104, 221105, // SmartLogger 3 counters
+  221201, 221202, 221203, 221204, 221205, // SmartLogger 3 inverters
 
-  131101, 131102, 131103, 131104, 131105, // SmartLogger 4 counters
-  131201, 131202, 131203, 131204, 131205, // SmartLogger 4 inverters
+  231101, 231102, 231103, 231104, 231105, // SmartLogger 4 counters
+  231201, 231202, 231203, 231204, 231205, // SmartLogger 4 inverters
 
-  141101, 141102, 141103, 141104, 141105, // SmartLogger 5 counters
-  141201, 141202, 141203, 141204, 141205, // SmartLogger 5 inverters
+  241101, 241102, 241103, 241104, 241105, // SmartLogger 5 counters
+  241201, 241202, 241203, 241204, 241205, // SmartLogger 5 inverters
 ];
 
-export default function Smartlogger({ tenantId }: SmartloggerProps) {
+export default function ESS({ tenantId }: ESSProps) {
   const [deviceTree, setDeviceTree] = useState<PlantConfigDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<PlantConfigDevice | null>(null);
   const [plantId, setPlantId] = useState<number | string | null>(null);
@@ -62,7 +62,7 @@ export default function Smartlogger({ tenantId }: SmartloggerProps) {
     const res = await fetch(`http://localhost:8000/api/v1/plant-config?tenant_id=${tenantId}`, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
-    if (!res.ok) throw new Error("ОПомилка при отриманні PLANT_CONFIG");
+    if (!res.ok) throw new Error("Помилка при отриманні PLANT_CONFIG");
     const data: PlantConfigResponse = await res.json();
     const detectedPlantId = data.devices.find(d => d.plant_id)?.plant_id ?? tenantId;
     setPlantId(detectedPlantId);

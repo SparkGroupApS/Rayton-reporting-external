@@ -19,8 +19,13 @@ from app.api.routes.websocket import router as websocket_router
 logger = logging.getLogger(__name__)
 
 
-def custom_generate_unique_id(route: APIRoute) -> str:
-    return f"{route.tags[0]}-{route.name}"
+# def custom_generate_unique_id(route: APIRoute) -> str:
+#    return f"{route.tags[0]}-{route.name}"
+
+#    Проверять наличие тегов:
+def custom_generate_unique_id(route):
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}-{route.name}"
 
 
 @asynccontextmanager
