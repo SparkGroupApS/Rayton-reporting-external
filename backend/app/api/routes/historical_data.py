@@ -3,7 +3,7 @@
 import datetime
 import uuid
 import logging
-import pytz
+#import pytz
 
 from typing import List, Optional, Dict, Any, Literal
 from collections import defaultdict
@@ -312,172 +312,172 @@ async def read_historical_details(
     return HistoricalDataGroupedResponse(series=series_list)
 
 
-@router.get("/export/", response_model=HistoricalDataGroupedResponse)
-async def export_historical_data(
-    current_user: CurrentUser,
-    primary_session: SessionDep,
-    tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
-    start: datetime | None = Query(None, description="Start timestamp"),
-    end: datetime | None = Query(None, description="End timestamp"),
-    export_granularity: ExportGranularity = Query(
-        ..., description="Granularity for exported data (e.g., hourly)"
-    ),
-    data_session: AsyncSession = Depends(get_data_async_session),
-) -> Any:
-    """
-    Export hourly consumption deltas using closest-to-hour-boundary logic.
-    All timestamps are in local Kyiv time (Europe/Kyiv).
-    """
-    logger.info(
-        f"Initiating export for tenant_id={tenant_id}, "
-        f"start={start}, end={end}, granularity={export_granularity}"
-    )
+# @router.get("/export/", response_model=HistoricalDataGroupedResponse)
+# async def export_historical_data(
+#     current_user: CurrentUser,
+#     primary_session: SessionDep,
+#     tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
+#     start: datetime | None = Query(None, description="Start timestamp"),
+#     end: datetime | None = Query(None, description="End timestamp"),
+#     export_granularity: ExportGranularity = Query(
+#         ..., description="Granularity for exported data (e.g., hourly)"
+#     ),
+#     data_session: AsyncSession = Depends(get_data_async_session),
+# ) -> Any:
+#     """
+#     Export hourly consumption deltas using closest-to-hour-boundary logic.
+#     All timestamps are in local Kyiv time (Europe/Kyiv).
+#     """
+#     logger.info(
+#         f"Initiating export for tenant_id={tenant_id}, "
+#         f"start={start}, end={end}, granularity={export_granularity}"
+#     )
 
-    # 1. Permission Check
-    if not current_user.is_superuser and current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this tenant")
+#     # 1. Permission Check
+#     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
+#         raise HTTPException(status_code=403, detail="Not authorized for this tenant")
 
-    # 2. Lookup plant_id
-    target_plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
+#     # 2. Lookup plant_id
+#     target_plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
 
-    # 3. Validate Inputs
-    if start and end and start >= end:
-        raise HTTPException(status_code=400, detail="Start datetime must be before end datetime.")
+#     # 3. Validate Inputs
+#     if start and end and start >= end:
+#         raise HTTPException(status_code=400, detail="Start datetime must be before end datetime.")
 
-    # 4. Granularity Check
-    if export_granularity != ExportGranularity.hourly:
-        raise HTTPException(
-            status_code=400,
-            detail="Only 'hourly' granularity is supported."
-        )
+#     # 4. Granularity Check
+#     if export_granularity != ExportGranularity.hourly:
+#         raise HTTPException(
+#             status_code=400,
+#             detail="Only 'hourly' granularity is supported."
+#         )
 
-    # 5. Extend time range for baseline
-    extended_start = start - timedelta(hours=1) if start else None
-    query_end = end or datetime.now()
+#     # 5. Extend time range for baseline
+#     extended_start = start - timedelta(hours=1) if start else None
+#     query_end = end or datetime.now()
 
-    # 6. MariaDB CTE: closest reading to :00:00 per hour
-    cte_sql = text("""
-        WITH hour_boundaries AS (
-            SELECT 
-                DATA_ID,
-                DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00') AS hour_bucket_str,
-                TIMESTAMP,
-                DATA,
-                ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
-                    STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
-                )) AS seconds_to_boundary,
-                ROW_NUMBER() OVER (
-                    PARTITION BY DATA_ID, DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00')
-                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
-                        STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
-                    ))
-                ) AS rn
-            FROM PLC_DATA_HISTORICAL
-            WHERE PLANT_ID = :plant_id
-              AND DATA_ID BETWEEN 100 AND 199
-              AND TIMESTAMP >= :extended_start
-              AND TIMESTAMP <= :query_end
-        ),
-        closest_readings AS (
-            SELECT 
-                DATA_ID,
-                hour_bucket_str,
-                DATA,
-                LAG(DATA) OVER (PARTITION BY DATA_ID ORDER BY hour_bucket_str) AS prev_data
-            FROM hour_boundaries
-            WHERE rn = 1
-        )
-        SELECT 
-            cr.DATA_ID,
-            cr.hour_bucket_str AS bucket_local,  -- This is 10:00:00 for 10–11
-            (cr.DATA - cr.prev_data) AS hourly_delta
-        FROM closest_readings cr
-        WHERE cr.prev_data IS NOT NULL
-          AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') >= :start
-          AND (:end IS NULL OR STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') <= :end)
-        ORDER BY cr.DATA_ID, cr.hour_bucket_str
-    """)
+#     # 6. MariaDB CTE: closest reading to :00:00 per hour
+#     cte_sql = text("""
+#         WITH hour_boundaries AS (
+#             SELECT 
+#                 DATA_ID,
+#                 DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00') AS hour_bucket_str,
+#                 TIMESTAMP,
+#                 DATA,
+#                 ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+#                     STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
+#                 )) AS seconds_to_boundary,
+#                 ROW_NUMBER() OVER (
+#                     PARTITION BY DATA_ID, DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00')
+#                     ORDER BY ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+#                         STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
+#                     ))
+#                 ) AS rn
+#             FROM PLC_DATA_HISTORICAL
+#             WHERE PLANT_ID = :plant_id
+#               AND DATA_ID BETWEEN 100 AND 199
+#               AND TIMESTAMP >= :extended_start
+#               AND TIMESTAMP <= :query_end
+#         ),
+#         closest_readings AS (
+#             SELECT 
+#                 DATA_ID,
+#                 hour_bucket_str,
+#                 DATA,
+#                 LAG(DATA) OVER (PARTITION BY DATA_ID ORDER BY hour_bucket_str) AS prev_data
+#             FROM hour_boundaries
+#             WHERE rn = 1
+#         )
+#         SELECT 
+#             cr.DATA_ID,
+#             cr.hour_bucket_str AS bucket_local,  -- This is 10:00:00 for 10–11
+#             (cr.DATA - cr.prev_data) AS hourly_delta
+#         FROM closest_readings cr
+#         WHERE cr.prev_data IS NOT NULL
+#           AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') >= :start
+#           AND (:end IS NULL OR STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') <= :end)
+#         ORDER BY cr.DATA_ID, cr.hour_bucket_str
+#     """)
 
-    try:
-        result = await data_session.execute(
-            cte_sql,
-            {
-                "plant_id": target_plant_id,
-                "extended_start": extended_start,
-                "query_end": query_end,
-                "start": start,
-                "end": end,
-            }
-        )
-        rows = result.fetchall()
-        logger.debug(f"Fetched {len(rows)} hourly delta rows (DATA_ID 100–199).")
-    except Exception as e:
-        logger.error(f"Database error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch export data.")
+#     try:
+#         result = await data_session.execute(
+#             cte_sql,
+#             {
+#                 "plant_id": target_plant_id,
+#                 "extended_start": extended_start,
+#                 "query_end": query_end,
+#                 "start": start,
+#                 "end": end,
+#             }
+#         )
+#         rows = result.fetchall()
+#         logger.debug(f"Fetched {len(rows)} hourly delta rows (DATA_ID 100–199).")
+#     except Exception as e:
+#         logger.error(f"Database error: {e}", exc_info=True)
+#         raise HTTPException(status_code=500, detail="Failed to fetch export data.")
 
-    # === Fetch labels for all DATA_IDs in result ===
-    data_ids_in_result = {row.DATA_ID for row in rows} if rows else set()
-    label_map = {}
-    if data_ids_in_result:
-        label_result = await data_session.execute(
-            select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2)
-            .where(TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0)
-        )
-        label_map = {
-            r.DATA_ID: {"label": r.TEXT_L1, "label_local": r.TEXT_L2}
-            for r in label_result
-        }
+#     # === Fetch labels for all DATA_IDs in result ===
+#     data_ids_in_result = {row.DATA_ID for row in rows} if rows else set()
+#     label_map = {}
+#     if data_ids_in_result:
+#         label_result = await data_session.execute(
+#             select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2)
+#             .where(TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0)
+#         )
+#         label_map = {
+#             r.DATA_ID: {"label": r.TEXT_L1, "label_local": r.TEXT_L2}
+#             for r in label_result
+#         }
 
-    # === Group and convert to response ===
-    grouped_data: dict[int, TimeSeriesData] = {}
+#     # === Group and convert to response ===
+#     grouped_data: dict[int, TimeSeriesData] = {}
 
-    kyiv_tz = pytz.timezone("Europe/Kyiv")
+#     kyiv_tz = pytz.timezone("Europe/Kyiv")
 
-    for row in rows:
-        data_id = row.DATA_ID
-        hour_str = row.bucket_local
-        delta = row.hourly_delta
+#     for row in rows:
+#         data_id = row.DATA_ID
+#         hour_str = row.bucket_local
+#         delta = row.hourly_delta
 
-        # Skip invalid deltas
-        if delta is None or delta < 0 or delta > 10000:
-            continue
+#         # Skip invalid deltas
+#         if delta is None or delta < 0 or delta > 10000:
+#             continue
 
-        # Parse local time (naive)
-        try:
-            local_naive = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
-        except ValueError as e:
-            logger.warning(f"Invalid timestamp format: {hour_str} — {e}")
-            continue
+#         # Parse local time (naive)
+#         try:
+#             local_naive = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
+#         except ValueError as e:
+#             logger.warning(f"Invalid timestamp format: {hour_str} — {e}")
+#             continue
 
-        # Localize to Kyiv time
-        local_aware = kyiv_tz.localize(local_naive)
-        timestamp_ms = int(local_aware.timestamp() * 1000)
+#         # Localize to Kyiv time
+#         local_aware = kyiv_tz.localize(local_naive)
+#         timestamp_ms = int(local_aware.timestamp() * 1000)
 
-        # Initialize series if not exists
-        if data_id not in grouped_data:
-            metadata = label_map.get(data_id, {})
-            series_name = (
-                metadata.get("label_local")
-                or metadata.get("label")
-                or f"Data ID {data_id}"
-            )
-            grouped_data[data_id] = TimeSeriesData(
-                data_id=data_id,
-                name=series_name,
-                data=[]
-            )
+#         # Initialize series if not exists
+#         if data_id not in grouped_data:
+#             metadata = label_map.get(data_id, {})
+#             series_name = (
+#                 metadata.get("label_local")
+#                 or metadata.get("label")
+#                 or f"Data ID {data_id}"
+#             )
+#             grouped_data[data_id] = TimeSeriesData(
+#                 data_id=data_id,
+#                 name=series_name,
+#                 data=[]
+#             )
 
-        # Append point
-        grouped_data[data_id].data.append(
-            TimeSeriesPoint(x=timestamp_ms, y=round(float(delta), 3))
-        )
+#         # Append point
+#         grouped_data[data_id].data.append(
+#             TimeSeriesPoint(x=timestamp_ms, y=round(float(delta), 3))
+#         )
 
-    # Sort series by data_id
-    series_list = [grouped_data[k] for k in sorted(grouped_data.keys())]
+#     # Sort series by data_id
+#     series_list = [grouped_data[k] for k in sorted(grouped_data.keys())]
 
-    logger.info(
-        f"Export ready: {sum(len(s.data) for s in series_list)} points "
-        f"across {len(series_list)} series (DATA_ID 100–199)."
-    )
+#     logger.info(
+#         f"Export ready: {sum(len(s.data) for s in series_list)} points "
+#         f"across {len(series_list)} series (DATA_ID 100–199)."
+#     )
 
-    return HistoricalDataGroupedResponse(series=series_list)
+#     return HistoricalDataGroupedResponse(series=series_list)

@@ -11,6 +11,7 @@ import ItemsSection from "./ItemsSection"
 import KpiSection from "./KpiSection"
 import ScheduleTab from "./ScheduleTab"
 import Smartlogger from "./Smartlogger"
+import ESS from "./ESS"
 
 // Define the props this component needs
 interface DashboardTabsProps {
@@ -47,10 +48,10 @@ const DashboardTabs = ({
   return (
     <Tabs.Root colorScheme="blue" mt={4} defaultValue="main">
       <Tabs.List>
-        <Tabs.Trigger value="main">Main Dashboard</Tabs.Trigger>
-        <Tabs.Trigger value="schedule">Schedule</Tabs.Trigger>
-        <Tabs.Trigger value="smdata">SmartLogger Data</Tabs.Trigger>
-        <Tabs.Trigger value="essdata">ESS Data</Tabs.Trigger>
+        <Tabs.Trigger value="main">Головна</Tabs.Trigger>
+        <Tabs.Trigger value="schedule">Розклад</Tabs.Trigger>
+        <Tabs.Trigger value="smdata">СЕС</Tabs.Trigger>
+        <Tabs.Trigger value="essdata">УЗЕ</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 
@@ -100,9 +101,10 @@ const DashboardTabs = ({
 
       {/* Panel 4: Placeholder for future content */}
       <Tabs.Content value="essdata">
-        <Box p={4}>
-          <p>ESS Data content will go here!</p>
-        </Box>
+       {/* <Box p={4}>
+          <p>SmartLogger Data content will go here!</p>
+        </Box>*/}
+        <ESS tenantId={selectedTenant}/>
       </Tabs.Content>
 
     </Tabs.Root>

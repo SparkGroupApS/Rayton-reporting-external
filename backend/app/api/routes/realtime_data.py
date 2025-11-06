@@ -4,10 +4,13 @@ import datetime
 import uuid
 from typing import Any
 
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import and_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy import func
+from sqlalchemy import case
+from sqlalchemy.orm import aliased
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import get_data_async_session
@@ -17,7 +20,9 @@ from app.models import (
     TextList,
     RealtimeDataPoint,
     RealtimeDataResponse,
+    PlantConfig,
 )
+
 
 
 # --- UPDATED Helper function ---
@@ -82,46 +87,90 @@ async def read_realtime_latest(
         .subquery()
     )
 
-    # 4. Main query: join with subquery and TextList (shared for all plants)
+    TextListChild = aliased(TextList)
+
+    # print("target_plant_id:", target_plant_id)
+    # print("device_ids:", device_ids)
+ 
+
+
+    # 4. Main query
+    # -- Дополнительный alias для второго TextList (если CHILD_CLASS_ID не NULL)
+ 
+
+
+    # CASE: если есть CHILD_CLASS_ID, то берём текст из дочернего TextListChild
+    text_value_expr = case(
+        (
+            TextList.CHILD_CLASS_ID.isnot(None),
+            TextListChild.TEXT_L2,
+        ),
+        else_=PlcDataRealtime.DATA,
+    ).label("resolved_text")
+
+
     statement = (
         select(
-        PlcDataRealtime.DATA_ID,
-        PlcDataRealtime.PLANT_ID,
-        PlcDataRealtime.DEVICE_ID,
-        PlcDataRealtime.TIMESTAMP,
-        PlcDataRealtime.DATA,
-        TextList.TEXT_L1,
-        TextList.TEXT_L2,
-        TextList.TEXT_ID,
+            PlcDataRealtime.DATA_ID,
+            PlcDataRealtime.PLANT_ID,
+            PlcDataRealtime.DEVICE_ID,
+            PlcDataRealtime.TIMESTAMP,
+            PlcDataRealtime.DATA,
+            text_value_expr,  # ← теперь используем
+            TextList.TEXT_L1,
+            TextList.TEXT_L2,
+            TextList.TEXT_ID,
+        )
+        .join(
+            subquery,
+            and_(
+                PlcDataRealtime.DATA_ID == subquery.c.DATA_ID,
+                PlcDataRealtime.TIMESTAMP == subquery.c.latest_timestamp,
+                PlcDataRealtime.PLANT_ID == target_plant_id,
+                PlcDataRealtime.DEVICE_ID.in_(device_ids),
+            ),
+        )
+        .join(
+            PlantConfig,
+            and_(
+                PlcDataRealtime.PLANT_ID == PlantConfig.PLANT_ID,
+                PlcDataRealtime.DEVICE_ID == PlantConfig.DEVICE_ID,
+            ),
+            isouter=True,
+        )
+        # основной TEXT_LIST
+        .join(
+            TextList,
+            and_(
+                PlcDataRealtime.DATA_ID == TextList.DATA_ID,
+                TextList.CLASS_ID == PlantConfig.CLASS_ID,
+            ),
+            isouter=True,
+        )
+        # self join — дочерний TEXT_LIST
+        .join(
+            TextListChild,
+            and_(
+                TextListChild.CLASS_ID == TextList.CHILD_CLASS_ID,
+                TextListChild.DATA_ID == PlcDataRealtime.DATA,
+            ),
+            isouter=True,
+        )
+        .order_by(
+            PlcDataRealtime.DEVICE_ID.asc(),
+            PlcDataRealtime.DATA_ID.asc()
+        )
     )
-    .join(
-        subquery,
-        and_(
-            PlcDataRealtime.DATA_ID == subquery.c.DATA_ID,
-            PlcDataRealtime.TIMESTAMP == subquery.c.latest_timestamp,
-            PlcDataRealtime.PLANT_ID == target_plant_id,  # <- фильтр здесь
-        ),
-    )
-    .join(
-        TextList,
-        and_(
-            PlcDataRealtime.DATA_ID == TextList.DATA_ID,
-          #  TextList.CLASS_ID == 0,
-        ),
-        isouter=True,
-    )
-    .order_by(PlcDataRealtime.DATA_ID.asc())
-)   
 
 
-    # 5. Execute and fetch
+    # Выполняем
     results = await data_session.exec(statement)
     rows = results.all()
 
     # 6. Transform results
     latest_values = []
     for row in rows:
-        dt_id, pl_id, dv_id, ts, d, tl1, tl2, tid = row
+        dt_id, pl_id, dv_id, ts, d, resolved_text, tl1, tl2, tid = row  # добавили resolved_text
         series_name = tl2 or tid or f"Data ID {dt_id}"
         latest_values.append(
             RealtimeDataPoint(
@@ -130,7 +179,7 @@ async def read_realtime_latest(
                 device_id=dv_id,
                 name=series_name,
                 timestamp=int(ts.timestamp() * 1000),
-                value=d,
+                value=resolved_text,
             )
         )
 

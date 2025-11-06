@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DashboardService {
     /**
@@ -21,6 +21,30 @@ export class DashboardService {
             url: '/api/v1/dashboard/',
             query: {
                 tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class DefaultService {
+    /**
+     * Get Plant Config
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.deviceIds Optional list of DEVICE_IDs to fetch
+     * @returns PlantConfigResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPlantConfig(data: DefaultGetPlantConfigData): CancelablePromise<DefaultGetPlantConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/plant-config',
+            query: {
+                tenant_id: data.tenantId,
+                device_ids: data.deviceIds
             },
             errors: {
                 422: 'Validation Error'
@@ -84,34 +108,6 @@ export class HistoricalDataService {
                 start: data.start,
                 end: data.end,
                 aggregate_by: data.aggregateBy
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Export Historical Data
-     * Export hourly consumption deltas using closest-to-hour-boundary logic.
-     * All timestamps are in local Kyiv time (Europe/Kyiv).
-     * @param data The data for the request.
-     * @param data.tenantId Tenant ID for plant lookup
-     * @param data.exportGranularity Granularity for exported data (e.g., hourly)
-     * @param data.start Start timestamp
-     * @param data.end End timestamp
-     * @returns HistoricalDataGroupedResponse Successful Response
-     * @throws ApiError
-     */
-    public static exportHistoricalData(data: HistoricalDataExportHistoricalDataData): CancelablePromise<HistoricalDataExportHistoricalDataResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/historical-data/export/',
-            query: {
-                tenant_id: data.tenantId,
-                start: data.start,
-                end: data.end,
-                export_granularity: data.exportGranularity
             },
             errors: {
                 422: 'Validation Error'

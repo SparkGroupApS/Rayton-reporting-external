@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Optional, Dict, Any, Union  # Import Dict
 from enum import Enum
 
+from typing import List
 
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import MetaData
@@ -316,6 +317,32 @@ class PlantConfig(SQLModel, table=True, metadata=external_metadata):
     )
 
 
+class DeviceInfo(BaseModel):
+    device_id: int
+    name: str
+    class_id: int  # int или str, как у тебя в БД
+    parent_id: int
+    plant_id: int
+
+class PlantConfigResponse(BaseModel):
+    tenant_id: str
+    devices: List[DeviceInfo]
+
+
+
+class DeviceInfo(BaseModel):
+    device_id: int
+    name: str
+    class_id: int  # int или str, как у тебя в БД
+    parent_id: int
+    plant_id: int
+
+class PlantConfigResponse(BaseModel):
+    tenant_id: str
+    devices: List[DeviceInfo]
+
+
+
 class PlantList(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "PLANT_LIST"
 
@@ -390,7 +417,7 @@ class RealtimeDataPoint(BaseModel):
     device_id: int
     name: str
     timestamp: int
-    value: float | None
+    value: str
 
 
 class RealtimeDataResponse(BaseModel):
@@ -477,6 +504,7 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     CLASS_ID: int | None = Field(
         default=None, index=True
     )  # Part of unique key, also foreign key target
+    CHILD_CLASS_ID: int | None = Field(default=None) 
     DATA_ID: int | None = Field(default=None, index=True)  # Part of unique key
     TEXT_ID: str | None = Field(default=None, max_length=100)
     TEXT_L1: str | None = Field(default=None, max_length=100)
