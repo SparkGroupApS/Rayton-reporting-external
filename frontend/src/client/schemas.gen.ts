@@ -122,6 +122,34 @@ export const DashboardDataSchema = {
     title: 'DashboardData'
 } as const;
 
+export const DeviceInfoSchema = {
+    properties: {
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        class_id: {
+            type: 'integer',
+            title: 'Class Id'
+        },
+        parent_id: {
+            type: 'integer',
+            title: 'Parent Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        }
+    },
+    type: 'object',
+    required: ['device_id', 'name', 'class_id', 'parent_id', 'plant_id'],
+    title: 'DeviceInfo'
+} as const;
+
 export const ElectricityCostRowSchema = {
     properties: {
         price_date: {
@@ -158,12 +186,6 @@ export const ElectricityCostRowSchema = {
     type: 'object',
     required: ['price_date', 'hour_of_day', 'price_UAH_per_MWh', 'id'],
     title: 'ElectricityCostRow'
-} as const;
-
-export const ExportGranularitySchema = {
-    type: 'string',
-    enum: ['hourly'],
-    title: 'ExportGranularity'
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -345,6 +367,25 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
+export const PlantConfigResponseSchema = {
+    properties: {
+        tenant_id: {
+            type: 'string',
+            title: 'Tenant Id'
+        },
+        devices: {
+            items: {
+                '$ref': '#/components/schemas/DeviceInfo'
+            },
+            type: 'array',
+            title: 'Devices'
+        }
+    },
+    type: 'object',
+    required: ['tenant_id', 'devices'],
+    title: 'PlantConfigResponse'
+} as const;
+
 export const PrivateUserCreateInputSchema = {
     properties: {
         email: {
@@ -396,14 +437,7 @@ export const RealtimeDataPointSchema = {
             title: 'Timestamp'
         },
         value: {
-            anyOf: [
-                {
-                    type: 'number'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
             title: 'Value'
         }
     },

@@ -27,6 +27,14 @@ export type DashboardData = {
     items: Array<ItemPublic>;
 };
 
+export type DeviceInfo = {
+    device_id: number;
+    name: string;
+    class_id: number;
+    parent_id: number;
+    plant_id: number;
+};
+
 export type ElectricityCostRow = {
     price_date: string;
     hour_of_day: number;
@@ -34,8 +42,6 @@ export type ElectricityCostRow = {
     received_at?: (string | null);
     id: number;
 };
-
-export type ExportGranularity = 'hourly';
 
 export type HistoricalDataGroupedResponse = {
     series: Array<TimeSeriesData>;
@@ -77,6 +83,11 @@ export type NewPassword = {
     new_password: string;
 };
 
+export type PlantConfigResponse = {
+    tenant_id: string;
+    devices: Array<DeviceInfo>;
+};
+
 export type PrivateUserCreateInput = {
     email: string;
     password: string;
@@ -89,7 +100,7 @@ export type RealtimeDataPoint = {
     device_id: number;
     name: string;
     timestamp: number;
-    value: (number | null);
+    value: string;
 };
 
 export type RealtimeDataResponse = {
@@ -217,6 +228,19 @@ export type DashboardReadDashboardDataData = {
 
 export type DashboardReadDashboardDataResponse = (DashboardData);
 
+export type DefaultGetPlantConfigData = {
+    /**
+     * Optional list of DEVICE_IDs to fetch
+     */
+    deviceIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type DefaultGetPlantConfigResponse = (PlantConfigResponse);
+
 export type ElectricityCostReadElectricityCostData = {
     /**
      * Date (YYYY-MM-DD)
@@ -254,27 +278,6 @@ export type HistoricalDataReadHistoricalDetailsData = {
 };
 
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
-
-export type HistoricalDataExportHistoricalDataData = {
-    /**
-     * End timestamp
-     */
-    end?: (string | null);
-    /**
-     * Granularity for exported data (e.g., hourly)
-     */
-    exportGranularity: ExportGranularity;
-    /**
-     * Start timestamp
-     */
-    start?: (string | null);
-    /**
-     * Tenant ID for plant lookup
-     */
-    tenantId: string;
-};
-
-export type HistoricalDataExportHistoricalDataResponse = (HistoricalDataGroupedResponse);
 
 export type ItemsReadItemsData = {
     /**
