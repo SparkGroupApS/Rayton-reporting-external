@@ -12,6 +12,9 @@ from app.core.config import settings
 from app.mqtt_handlers import mqtt  # Import the FastMQTT instance
 from app.core.db import init_db, async_engine
 
+# Import WebSocket router
+from app.api.routes.websocket import router as websocket_router
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -85,3 +88,6 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Include WebSocket routes
+app.include_router(websocket_router, prefix=settings.API_V1_STR)

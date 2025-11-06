@@ -9,6 +9,11 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CommandResponse = {
+    message: string;
+    message_id: string;
+};
+
 export type DashboardCardData = {
     total_users: number;
     total_items: number;
@@ -20,6 +25,14 @@ export type DashboardData = {
     cards: DashboardCardData;
     revenue: Array<RevenueData>;
     items: Array<ItemPublic>;
+};
+
+export type ElectricityCostRow = {
+    price_date: string;
+    hour_of_day: number;
+    price_UAH_per_MWh: string;
+    received_at?: (string | null);
+    id: number;
 };
 
 export type ExportGranularity = 'hourly';
@@ -204,6 +217,19 @@ export type DashboardReadDashboardDataData = {
 
 export type DashboardReadDashboardDataResponse = (DashboardData);
 
+export type ElectricityCostReadElectricityCostData = {
+    /**
+     * Date (YYYY-MM-DD)
+     */
+    date: string;
+    /**
+     * Tenant ID to fetch electricity cost for
+     */
+    tenantId: string;
+};
+
+export type ElectricityCostReadElectricityCostResponse = (Array<ElectricityCostRow>);
+
 export type HistoricalDataReadHistoricalDetailsData = {
     /**
      * Aggregation level: hour (raw data), day, month, year (deltas)
@@ -230,10 +256,6 @@ export type HistoricalDataReadHistoricalDetailsData = {
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
 
 export type HistoricalDataExportHistoricalDataData = {
-    /**
-     * List of DATA_IDs to fetch
-     */
-    dataIds: Array<number>;
     /**
      * End timestamp
      */
@@ -369,7 +391,7 @@ export type ScheduleBulkUpdateScheduleData = {
     tenantId: string;
 };
 
-export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);
+export type ScheduleBulkUpdateScheduleResponse = (CommandResponse);
 
 export type TenantsCreateTenantData = {
     requestBody: TenantCreate;
