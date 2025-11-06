@@ -1,12 +1,17 @@
 // src/components/Dashboard/ScheduleTab.tsx
 import {
   Box,
-  Heading,
+ Heading,
   HStack,
   Input,
+  Grid,
+  GridItem,
+ VStack,
 } from "@chakra-ui/react"
 import { useState } from "react"
 import ScheduleControlTable from "./ScheduleControlTable" // Ensure this path is correct
+import ScheduleChart from "./ScheduleChart"
+import type { ScheduleRow } from "@/client";
 
 // --- Helper function to format date ---
 const toLocalDateString = (date: Date) => {
@@ -23,11 +28,12 @@ interface ScheduleTabProps {
 const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     toLocalDateString(new Date()),
-  )
+ )
+  const [scheduleData, setScheduleData] = useState<ScheduleRow[] | undefined>(undefined);
 
   return (
-    <Box mt={6} bg="white" shadow="sm" rounded="lg" p={4} borderWidth="1px">
-      <HStack justify="space-between" mb={4}>
+    <Box bg="white" shadow="sm" rounded="lg" p={4} borderWidth="1px">
+      <HStack justify="space-between" mb={2}>
         <Heading as="h2" size="lg">
           Schedule Control
         </Heading>
@@ -40,10 +46,26 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
         />
       </HStack>
 
-      <ScheduleControlTable
-        tenantId={tenantId} // Pass the tenant UUID
-        date={selectedDate}
-      />
+      <Grid templateColumns="1fr 1fr" gap={2}>
+        <GridItem>
+          <VStack alignItems="stretch">
+            <ScheduleControlTable
+              tenantId={tenantId} // Pass the tenant UUID
+              date={selectedDate}
+              onScheduleDataChange={setScheduleData} // Pass callback to receive schedule data updates
+            />
+          </VStack>
+        </GridItem>
+        <GridItem>
+          <VStack alignItems="stretch">
+            <ScheduleChart
+              tenantId={tenantId}
+              date={selectedDate}
+              scheduleData={scheduleData} // Pass the schedule data from the table to the chart
+            />
+          </VStack>
+        </GridItem>
+      </Grid>
     </Box>
   )
 }

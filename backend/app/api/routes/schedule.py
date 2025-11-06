@@ -3,10 +3,10 @@ import datetime
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Dict
+from typing import List, Dict, Optional
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession  # Import AsyncSession
-from pydantic import BaseModel # <-- 1. Import BaseModel for MQTT payload
+from pydantic import BaseModel, Field
 
 # Adjust these imports to match your project structure
 from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
@@ -14,27 +14,22 @@ from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
 # Use the correct dependency for your external data session
 from app.core.db import get_data_async_session
 from app.models import Schedule, ScheduleRow, Tenant, ScheduleBase
-from fastapi_mqtt import FastMQTT 
-#from app.core.mqtt import mqtt
+from app.models import (
+    ScheduleMqttPayload,
+    #RebootPayload,  # This needs to be defined in mqtt_models now
+    ActionCommand,
+    ActionEnvelope,
+    MqttResponsePayload,
+    MqttResponseStatus,
+    CommandResponse
+)
+from fastapi_mqtt import FastMQTT
 from app.mqtt_handlers import mqtt
 
+# Import WebSocket manager to register message-tenant mappings
+from app.api.routes.ws import manager
+
 router = APIRouter(prefix="/schedule", tags=["schedule"])
-
-# --- Define the MQTT Payload Model (Optional, but good practice) ---
-# This uses the ScheduleBase model which has the aliases for UPPER_CASE
-class ScheduleMqttPayloadItem(ScheduleBase):
-    class Config:
-        # Ensure it uses aliases for JSON output (snake_case -> UPPER_CASE)
-        populate_by_name = True 
-
-class ScheduleMqttPayload(BaseModel):
-    plant_id: int
-    date: datetime.date
-    # We send the snake_case version, but if devices expect UPPER_CASE,
-    # we can add aliases here too or format it manually.
-    # Let's assume the device can consume the same snake_case JSON.
-    schedule: List[ScheduleRow] # Send the full ScheduleRow, which includes ID
-# --- END MQTT Payload Model ---
 
 # --- UPDATED Helper function ---
 async def get_plant_id_for_tenant(
@@ -62,6 +57,7 @@ async def get_plant_id_for_tenant(
 
 
 # --- End Helper ---
+
 
 @router.get("/", response_model=list[ScheduleRow])
 async def read_schedule(
@@ -107,7 +103,7 @@ async def read_schedule(
                 "discharge_power": db_row.DISCHARGE_POWER,
                 "source": db_row.SOURCE,
                 "updated_at": db_row.UPDATED_AT,
-                "updated_by": db_row.UPDATED_BY
+                "updated_by": db_row.UPDATED_BY,
                 # Add any other necessary fields from ScheduleRow
             }
             # Validate the dictionary against the ScheduleRow model
@@ -116,7 +112,9 @@ async def read_schedule(
         except Exception as e:
             # Catch potential validation errors or attribute errors more specifically
             error_msg = f"Error processing DB row ID {getattr(db_row, 'ID', 'Unknown')}: {str(e)}"
-            print(f"{error_msg}. Row Data: {vars(db_row)}") # Log row data for debugging
+            print(
+                f"{error_msg}. Row Data: {vars(db_row)}"
+            )  # Log row data for debugging
             # Decide whether to skip the row or raise an error for the whole request
             # For now, let's raise, as it indicates a bigger issue
             raise HTTPException(
@@ -129,7 +127,7 @@ async def read_schedule(
 
 
 # --- NEW: Bulk Update Endpoint ---
-@router.put("/bulk", response_model=list[ScheduleRow])
+@router.put("/bulk", response_model=CommandResponse, status_code=status.HTTP_202_ACCEPTED)
 async def bulk_update_schedule(
     primary_session: SessionDep,
     current_user: CurrentUser,
@@ -139,51 +137,47 @@ async def bulk_update_schedule(
     data_session: AsyncSession = Depends(get_data_async_session),
     mqtt_client: FastMQTT = Depends(get_mqtt_client)
 ):
-    """
-    Update/insert/delete schedule rows AND publish the new schedule to MQTT.
-    """
-    # Permission check
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
          raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
 
-    # Lookup plant_id using the primary session
     plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
-
     rows_to_save = sort_schedule_rows_by_start_time(schedule_rows_in)
 
-    # --- 3. PUBLISH TO MQTT (After successful commit) ---
+    # --- 3. PUBLISH TO MQTT (Using Option 1: Sub-topic) ---
     try:
-        # Create the MQTT payload
-        mqtt_payload = ScheduleMqttPayload(
+        # 3a. Create the schedule payload (this is the *entire* message)
+        # The message_id is now generated automatically by the model
+        schedule_payload = ScheduleMqttPayload(
             plant_id=plant_id,
             date=date,
-            schedule=rows_to_save # rows_to_save is the list of ScheduleRow objects
+            schedule=rows_to_save
         )
+                
+        # 3b. Define the *specific* topic for schedules
+        topic = f"cmd/cloud-to-site/{plant_id}/schedule"
         
-        # Define the topic. Use the plant_id for specific device targeting.
-        #topic = f"schedule/update/{plant_id}"
-        topic = f"cmd_server/rt2500"
-        # Publish the payload as a JSON string
-        # Use the injected mqtt_client (which should be the FastMQTT instance)
-        # Check fastapi-mqtt docs for the exact publish method signature.
-        # It's often something like: await mqtt_client.publish(topic, payload, qos=...)
-        #logger.info(f"Publishing to MQTT topic: {topic}")
-        print(f"Publishing to MQTT topic: {topic}")
-        # Example publish call (adjust based on fastapi-mqtt version/docs):
+        print(f"Publishing schedule to MQTT topic: {topic} (MsgID: {schedule_payload.message_id})")
+        
+        # Register the message-tenant mapping before publishing
+        manager.register_message_tenant_mapping(schedule_payload.message_id, str(tenant_id))
+        
+        # 3c. Publish the JSON of the schedule payload
         mqtt_client.publish(
             topic, 
-            mqtt_payload.model_dump_json(), 
-            qos=0 # Changed to QoS 1 for at-least-once delivery
+            schedule_payload.model_dump_json(), 
+            qos=1 # Use QoS 1 for commands to ensure they arrive
         )
-
-        #logger.info(f"✅ Published schedule to MQTT for plant {plant_id}")
+        
+        # 3d. Return the 202 response with the tracking ID
+        return CommandResponse(
+            message="Schedule update sent",
+            message_id=schedule_payload.message_id
+        )
         
     except Exception as e:
-         #logger.error(f"⚠️ Failed to publish schedule to MQTT for plant {plant_id}: {e}")
-        # Don't fail the request if MQTT publish fails
         print(f"CRITICAL: Failed to publish schedule to MQTT for plant {plant_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to publish to MQTT")
 
-    return rows_to_save
 
 # --- Helper function to sort rows by start time ---
 def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRow]:
@@ -195,3 +189,58 @@ def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRo
             return datetime.time.min  # Sort invalid/missing times first
 
     return sorted(rows, key=time_key)
+
+
+# --- UPDATED: Example endpoint for sending OTHER commands ---
+# @router.post("/{plant_id}/reboot", response_model=CommandResponse, status_code=status.HTTP_202_ACCEPTED)
+# async def send_reboot_command(
+#     plant_id: int,
+#     command_data: RebootCommand,
+#     current_user: CurrentUser, # TODO: Add permission check
+#     primary_session: SessionDep,
+#     mqtt_client: FastMQTT = Depends(get_mqtt_client)
+# ):
+#     """
+#     Sends a REBOOT command to a plant using the ".../action" sub-topic.
+#     Returns a 202 Accepted with a message_id.
+#     """
+#     # --- Permission Check (Example) ---
+#     print(f"User {current_user.id} attempting to reboot plant {plant_id}")
+#     # ... (Add your permission logic here) ...
+
+
+#     # 1. Create the inner payload
+#     reboot_payload = RebootPayload(delay_seconds=command_data.delay_seconds)
+    
+#     # 2. Wrap it in the "ActionEnvelope"
+#     # The message_id is generated automatically
+#     action_envelope = ActionEnvelope(
+#         command=ActionCommand.REBOOT_DEVICE,
+#         payload=reboot_payload.model_dump() # Send the reboot data as the payload
+#     )
+
+#     # 3. Define the *specific* topic for actions
+#     topic = f"cmd/cloud-to-site/{plant_id}/action"
+
+#     try:
+#         print(f"Publishing REBOOT_DEVICE to MQTT topic: {topic} (MsgID: {action_envelope.message_id})")
+#         # Register the message-tenant mapping before publishing
+#         manager.register_message_tenant_mapping(action_envelope.message_id, str(tenant_id))
+#         mqtt_client.publish(
+#             topic, 
+#             action_envelope.model_dump_json(), 
+#             qos=1 # Use QoS 1 for commands
+#         )
+        
+#         # 4. Return the 202 response with the tracking ID
+#         return CommandResponse(
+#             message="Reboot command sent",
+#             message_id=action_envelope.message_id
+#         )
+        
+#     except Exception as e:
+#         print(f"CRITICAL: Failed to publish REBOOT command to {topic}: {e}")
+#         raise HTTPException(
+#             status_code=500,
+#             detail="Failed to send command to MQTT broker."
+#         )

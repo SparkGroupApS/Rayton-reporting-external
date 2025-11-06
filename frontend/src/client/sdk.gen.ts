@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DashboardService {
     /**
@@ -21,6 +21,30 @@ export class DashboardService {
             url: '/api/v1/dashboard/',
             query: {
                 tenant_id_override: data.tenantIdOverride
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ElectricityCostService {
+    /**
+     * Read Electricity Cost
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch electricity cost for
+     * @param data.date Date (YYYY-MM-DD)
+     * @returns ElectricityCostRow Successful Response
+     * @throws ApiError
+     */
+    public static readElectricityCost(data: ElectricityCostReadElectricityCostData): CancelablePromise<ElectricityCostReadElectricityCostResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/electricity-cost/',
+            query: {
+                tenant_id: data.tenantId,
+                date: data.date
             },
             errors: {
                 422: 'Validation Error'
@@ -69,12 +93,10 @@ export class HistoricalDataService {
     
     /**
      * Export Historical Data
-     * Endpoint to fetch and calculate hourly deltas for data export.
-     * Calculates plant consumption for each hour by subtracting energy meter (kWh) difference:
-     * consumption_for_hour_N = last_value_of_hour_N - last_value_of_hour_(N-1)
+     * Export hourly consumption deltas using closest-to-hour-boundary logic.
+     * All timestamps are in local Kyiv time (Europe/Kyiv).
      * @param data The data for the request.
      * @param data.tenantId Tenant ID for plant lookup
-     * @param data.dataIds List of DATA_IDs to fetch
      * @param data.exportGranularity Granularity for exported data (e.g., hourly)
      * @param data.start Start timestamp
      * @param data.end End timestamp
@@ -87,7 +109,6 @@ export class HistoricalDataService {
             url: '/api/v1/historical-data/export/',
             query: {
                 tenant_id: data.tenantId,
-                data_ids: data.dataIds,
                 start: data.start,
                 end: data.end,
                 export_granularity: data.exportGranularity
@@ -424,12 +445,11 @@ export class ScheduleService {
     
     /**
      * Bulk Update Schedule
-     * Update/insert/delete schedule rows AND publish the new schedule to MQTT.
      * @param data The data for the request.
      * @param data.date
      * @param data.tenantId Tenant ID to update schedule for
      * @param data.requestBody
-     * @returns ScheduleRow Successful Response
+     * @returns CommandResponse Successful Response
      * @throws ApiError
      */
     public static bulkUpdateSchedule(data: ScheduleBulkUpdateScheduleData): CancelablePromise<ScheduleBulkUpdateScheduleResponse> {
