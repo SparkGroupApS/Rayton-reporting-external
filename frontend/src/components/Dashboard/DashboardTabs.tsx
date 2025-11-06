@@ -6,12 +6,14 @@ import {
   Tabs, // Import the main Tabs namespace
 } from "@chakra-ui/react"
 import type { ApiError, DashboardData } from "@/client"
+import { useNavigate } from "@tanstack/react-router"
 import EnergyTrendChart from "./EnergyTrendChart"
 import ItemsSection from "./ItemsSection"
 import KpiSection from "./KpiSection"
 import ScheduleTab from "./ScheduleTab"
 import Smartlogger from "./Smartlogger"
 import ESS from "./ESS"
+import { useEffect, useState } from "react"
 
 // Define the props this component needs
 interface DashboardTabsProps {
@@ -21,6 +23,7 @@ interface DashboardTabsProps {
   selectedTenant: string | null
   energyDataIds: number[] // <-- UPDATED type
   socDataId: number       // <-- UPDATED type
+  initialTab?: string     // <-- Add initialTab prop to receive tab from route
 }
 
 const DashboardTabs = ({
@@ -30,7 +33,25 @@ const DashboardTabs = ({
   selectedTenant,
   energyDataIds,
   socDataId,
+  initialTab = "main"     // Default to main tab
 }: DashboardTabsProps) => {
+  // Initialize activeTab from the prop passed from the route, default to "main"
+  const [activeTab, setActiveTab] = useState(initialTab)
+
+  const navigate = useNavigate()
+
+  // Update the URL when activeTab changes
+  useEffect(() => {
+    navigate({
+      to: ".",
+      search: (prev: any) => ({
+        ...prev,
+        tab: activeTab
+      }),
+      replace: true // Replace history instead of pushing to avoid back button issues
+    })
+  }, [activeTab, navigate])
+
   if (isLoadingDashboard) {
     return (
       <Box display="flex" justifyContent="center" py={10}>
@@ -44,14 +65,19 @@ const DashboardTabs = ({
     return <Box>Please select a tenant to view data.</Box>
   }
 
+  // Function to handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+  }
+
   // Use the v3 namespaced syntax
   return (
-    <Tabs.Root colorScheme="blue" mt={4} defaultValue="main">
+    <Tabs.Root colorScheme="blue" mt={4} value={activeTab}>
       <Tabs.List>
-        <Tabs.Trigger value="main">Головна</Tabs.Trigger>
-        <Tabs.Trigger value="schedule">Розклад</Tabs.Trigger>
-        <Tabs.Trigger value="smdata">СЕС</Tabs.Trigger>
-        <Tabs.Trigger value="essdata">УЗЕ</Tabs.Trigger>
+        <Tabs.Trigger value="main" onClick={() => handleTabChange("main")}>Головна</Tabs.Trigger>
+        <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")}>Розклад</Tabs.Trigger>
+        <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
+        <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 

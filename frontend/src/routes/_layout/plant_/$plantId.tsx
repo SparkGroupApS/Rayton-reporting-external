@@ -9,14 +9,16 @@ import useAuth from "@/hooks/useAuth"
 import { useTenants, useTenant } from "@/hooks/useTenantQueries"
 import { useEffect } from "react"
 
-// Define search schema with plantId as a path parameter
+// Define search schema with plantId as a path parameter and tab as search parameter
 const plantSearchSchema = z.object({
   plantId: z.string().transform(Number), // Transform string to number
+  tab: z.string().optional(),
 })
 
 // Route Definition with path parameter validation
 export const Route = createFileRoute("/_layout/plant_/$plantId")({
   component: PlantDashboard,
+  validateSearch: (search) => plantSearchSchema.parse(search),
 })
 
 // Dashboard Hook - now accepts plantId instead of tenantId
@@ -34,6 +36,7 @@ const useDashboardData = (plantId?: number | null) => {
 function PlantDashboard() {
   const { user: currentUser } = useAuth()
   const { plantId } = Route.useParams() // Get plantId from path parameters
+  const { tab } = Route.useSearch() // Get tab from search parameters
   const navigate = useNavigate({ from: Route.fullPath })
 
   // Convert plantId to number
@@ -115,6 +118,7 @@ function PlantDashboard() {
         selectedTenant={effectiveTenantId ?? null}
         energyDataIds={energyDataIds}
         socDataId={socDataId}
+        initialTab={tab || "main"} // Pass the tab from URL search params
       />
     </Container>
   )

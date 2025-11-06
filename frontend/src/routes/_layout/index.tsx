@@ -9,9 +9,10 @@ import useAuth from "@/hooks/useAuth"
 import { useTenants, useTenant } from "@/hooks/useTenantQueries"
 import { useEffect } from "react"
 
-// Define search schema with plantId
+// Define search schema with plantId and tab
 const dashboardSearchSchema = z.object({
   plantId: z.number().optional(),
+  tab: z.string().optional(),
 })
 
 // Route Definition with search validation
@@ -34,7 +35,7 @@ const useDashboardData = (plantId?: number | null) => {
 
 function Dashboard() {
   const { user: currentUser } = useAuth()
-  const { plantId } = Route.useSearch() // Get plantId from URL
+  const { plantId, tab } = Route.useSearch() // Get plantId and tab from URL
   const navigate = useNavigate({ from: Route.fullPath }) // --- 2. Get the navigate function ---
 
   // Determine if user is privileged
@@ -71,6 +72,7 @@ function Dashboard() {
       navigate({
         to: "/plant/$plantId",
         params: { plantId: userTenantData.plant_id.toString() },
+        search: (prev: any) => ({ ...prev, tab: tab }), // Preserve the tab parameter
         replace: true, // This is important for a clean user history
       })
     }
@@ -79,6 +81,7 @@ function Dashboard() {
     userTenantData,
     plantId,
     navigate,
+    tab,
   ]) // Dependencies for the effect
 
   // --- THE FIX: Correctly determine effectiveTenantId for all user types ---
@@ -140,6 +143,7 @@ function Dashboard() {
         selectedTenant={effectiveTenantId ?? null}
         energyDataIds={energyDataIds}
         socDataId={socDataId}
+        initialTab={tab || "main"} // Pass the tab from URL search params
       />
     </Container>
   )
