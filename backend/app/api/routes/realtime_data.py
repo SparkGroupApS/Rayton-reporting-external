@@ -157,7 +157,7 @@ async def read_realtime_latest(
             isouter=True,
         )
         .order_by(
-            PlcDataRealtime.DEVICE_ID.asc(),
+            # PlcDataRealtime.DEVICE_ID.asc(),
             PlcDataRealtime.DATA_ID.asc()
         )
     )
