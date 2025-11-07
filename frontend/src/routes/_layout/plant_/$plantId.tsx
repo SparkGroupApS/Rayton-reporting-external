@@ -9,9 +9,8 @@ import useAuth from "@/hooks/useAuth"
 import { useTenants, useTenant } from "@/hooks/useTenantQueries"
 import { useEffect } from "react"
 
-// Define search schema with plantId as a path parameter and tab as search parameter
+// Define search schema with only tab as a search parameter (plantId is a path parameter)
 const plantSearchSchema = z.object({
-  plantId: z.string().transform(Number), // Transform string to number
   tab: z.string().optional(),
 })
 

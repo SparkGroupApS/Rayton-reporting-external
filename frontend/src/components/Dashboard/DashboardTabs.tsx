@@ -78,6 +78,7 @@ const DashboardTabs = ({
         <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")}>Розклад</Tabs.Trigger>
         <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
         <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
+        <Tabs.Trigger value="control" onClick={() => handleTabChange("control")}>Керування</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 
@@ -111,26 +112,25 @@ const DashboardTabs = ({
         </Grid>
       </Tabs.Content>
 
-      {/* Panel 2: Placeholder for future content */}
       <Tabs.Content value="schedule">
         <ScheduleTab tenantId={selectedTenant} />
       </Tabs.Content>
 
-      {/* Panel 3: Placeholder for future content */}
       <Tabs.Content value="smdata">
-       {/* <Box p={4}>
-          <p>SmartLogger Data content will go here!</p>
-        </Box>*/}
         <Smartlogger tenantId={selectedTenant}/>
-
       </Tabs.Content>
 
-      {/* Panel 4: Placeholder for future content */}
       <Tabs.Content value="essdata">
        {/* <Box p={4}>
           <p>SmartLogger Data content will go here!</p>
         </Box>*/}
         <ESS tenantId={selectedTenant}/>
+      </Tabs.Content>
+
+      <Tabs.Content value="control">
+       <Box p={4}>
+          <p>Settings content will go here!</p>
+        </Box>
       </Tabs.Content>
 
     </Tabs.Root>

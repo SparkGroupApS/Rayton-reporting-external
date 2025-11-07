@@ -43,7 +43,7 @@ const transformElectricityCostData = (apiResponse: ElectricityCostRow[] | undefi
   }
 
   // Add a point at hour 24 with the actual price if available in API data, otherwise use the last hour's price
- const hour24Price = hourMap.has(24) ? hourMap.get(24)! : chartData[chartData.length - 1].price;
+  const hour24Price = hourMap.has(24) ? hourMap.get(24)! : chartData[chartData.length - 1].price;
   chartData = [
     ...chartData,
     {
@@ -132,8 +132,8 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
       if (hour < 24) {
         // Only for valid hours 0-23
         hourValues[hour] = {
-          charge_power: currentRow.charge_power != 0 && currentRow.charge_from_grid ? currentRow.charge_power : 0,
-          discharge_power: currentRow.discharge_power || 0,
+          charge_power: currentRow.charge_power != 0 && currentRow.charge_from_grid ? Math.abs(currentRow.charge_power) : 0,
+          discharge_power: currentRow.discharge_power * -1 || 0,
         };
       }
     }
@@ -255,21 +255,21 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3"  vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" /> 
                 <XAxis
                   dataKey="timeLabel"
                   interval={3} // Show every 3rd label to avoid crowding
                 />
                 {/* <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} /> */}
-                <YAxis yAxisId="right" orientation="left" label={{ value: "MW", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} />
+                <YAxis yAxisId="right" orientation="left" label={{ value: "MW", angle: -90, position: "insideLeft" }} domain={['dataMin - 50', 'dataMax + 50']} />
                 <Tooltip
                   formatter={(value, name) => {
-                    if (name === "price") {
+                    if (name === "Electricity Price (UAH/MWh)") {
                       return [`${value} UAH/MWh`, "Price"];
-                    } else if (name === "charge_power") {
+                    } else if (name === "Charge Power (MW)") {
                       return [`${value} MW`, "Charge Power"];
-                    } else if (name === "discharge_power") {
-                      return [`${value} MW`, "Discharge Power"];
+                    } else if (name === "Discharge Power (MW)") {
+                      return [`${Number(value) * -1} MW`, "Discharge Power"];
                     }
                     return [value, name];
                   }}
@@ -333,7 +333,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3"  vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timeLabel"
                   interval={3} // Show every 3rd label to avoid crowding
@@ -342,12 +342,12 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                 {/* <YAxis yAxisId="right" orientation="right" label={{ value: "MW", angle: 90, position: "insideRight" }} domain={["auto", "auto"]} /> */}
                 <Tooltip
                   formatter={(value, name) => {
-                    if (name === "price") {
+                    if (name === "Electricity Price (UAH/MWh)") {
                       return [`${value} UAH/MWh`, "Price"];
-                    } else if (name === "charge_power") {
+                    } else if (name === "Charge Power (MW)") {
                       return [`${value} MW`, "Charge Power"];
-                    } else if (name === "discharge_power") {
-                      return [`${value} MW`, "Discharge Power"];
+                    } else if (name === "Discharge Power (MW)") {
+                      return [`${Number(value) * -1} MW`, "Discharge Power"];
                     }
                     return [value, name];
                   }}
