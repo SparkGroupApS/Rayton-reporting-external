@@ -35,19 +35,7 @@ const AddRowForm = ({ newRow, isNewRowStartTimeInvalid, nextRecNoDisplay, handle
         <Input type="time" size="sm" readOnly placeholder="--" bg="gray.100" />
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Checkbox.Root variant="outline" checked={newRow.charge_enable} onCheckedChange={(e) => handleNewRowChange("charge_enable", e.checked)}>
-          <Checkbox.HiddenInput />
-          <Checkbox.Control />
-        </Checkbox.Root>
-      </Table.Cell>
-      <Table.Cell textAlign="end">
         <Checkbox.Root variant="outline" checked={newRow.charge_from_grid} onCheckedChange={(e) => handleNewRowChange("charge_from_grid", e.checked)}>
-          <Checkbox.HiddenInput />
-          <Checkbox.Control />
-        </Checkbox.Root>
-      </Table.Cell>
-      <Table.Cell textAlign="end">
-        <Checkbox.Root variant="outline" checked={newRow.discharge_enable} onCheckedChange={(e) => handleNewRowChange("discharge_enable", e.checked)}>
           <Checkbox.HiddenInput />
           <Checkbox.Control />
         </Checkbox.Root>
@@ -59,16 +47,16 @@ const AddRowForm = ({ newRow, isNewRowStartTimeInvalid, nextRecNoDisplay, handle
         </Checkbox.Root>
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Input type="number" size="sm" w="100px" value={newRow.charge_power} onChange={(e) => handleNewRowChange("charge_power", Number(e.target.value))} />
+        <Input type="number" size="sm" w="80px" value={newRow.charge_power} onChange={(e) => handleNewRowChange("charge_power", Number(e.target.value))} />
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Input type="number" size="sm" w="100px" value={newRow.charge_limit} onChange={(e) => handleNewRowChange("charge_limit", Number(e.target.value))} />
+        <Input type="number" size="sm" w="80px" value={newRow.charge_limit} onChange={(e) => handleNewRowChange("charge_limit", Number(e.target.value))} />
       </Table.Cell>
       <Table.Cell textAlign="end">
         <Input
           type="number"
           size="sm"
-          w="100px"
+          w="80px"
           value={newRow.discharge_power}
           onChange={(e) => handleNewRowChange("discharge_power", Number(e.target.value))}
         />
