@@ -105,7 +105,7 @@ const GetDeviceTree: React.FC<GetDeviceTreeProps> = ({
       <Heading size="md" mb={4}>
         Пристрої
       </Heading>
-      <VStack align="stretch" spacing={1}>
+      <VStack align="stretch" gap={1}>
         {renderTree(deviceTree)}
       </VStack>
     </Box>

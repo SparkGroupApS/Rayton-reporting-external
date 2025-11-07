@@ -73,37 +73,12 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
           bg="gray.100"
         />
       </Table.Cell>
-      {/* ... Checkboxes and Numeric Inputs (use handleChange) ... */}
-      <Table.Cell textAlign="end">
-        <Checkbox.Root
-          variant="outline"
-          checked={row.charge_enable}
-          onCheckedChange={(e) =>
-            handleChange(row.id, "charge_enable", e.checked)
-          }
-        >
-          <Checkbox.HiddenInput />
-          <Checkbox.Control />
-        </Checkbox.Root>
-      </Table.Cell>
       <Table.Cell textAlign="end">
         <Checkbox.Root
           variant="outline"
           checked={row.charge_from_grid}
           onCheckedChange={(e) =>
             handleChange(row.id, "charge_from_grid", e.checked)
-          }
-        >
-          <Checkbox.HiddenInput />
-          <Checkbox.Control />
-        </Checkbox.Root>
-      </Table.Cell>
-      <Table.Cell textAlign="end">
-        <Checkbox.Root
-          variant="outline"
-          checked={row.discharge_enable}
-          onCheckedChange={(e) =>
-            handleChange(row.id, "discharge_enable", e.checked)
           }
         >
           <Checkbox.HiddenInput />
@@ -126,7 +101,7 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
         <Input
           type="number"
           size="sm"
-          w="100px"
+          w="80px"
           value={row.charge_power}
           onChange={(e) =>
             handleChange(
@@ -141,7 +116,7 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
         <Input
           type="number"
           size="sm"
-          w="100px"
+          w="80px"
           value={row.charge_limit}
           onChange={(e) =>
             handleChange(
@@ -156,7 +131,7 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
         <Input
           type="number"
           size="sm"
-          w="100px"
+          w="80px"
           value={row.discharge_power}
           onChange={(e) =>
             handleChange(

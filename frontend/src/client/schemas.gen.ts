@@ -488,17 +488,9 @@ export const ScheduleRowSchema = {
             format: 'time',
             title: 'Start Time'
         },
-        charge_enable: {
-            type: 'boolean',
-            title: 'Charge Enable'
-        },
         charge_from_grid: {
             type: 'boolean',
             title: 'Charge From Grid'
-        },
-        discharge_enable: {
-            type: 'boolean',
-            title: 'Discharge Enable'
         },
         allow_to_sell: {
             type: 'boolean',
@@ -535,7 +527,7 @@ export const ScheduleRowSchema = {
         }
     },
     type: 'object',
-    required: ['rec_no', 'start_time', 'charge_enable', 'charge_from_grid', 'discharge_enable', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at', 'updated_by'],
+    required: ['rec_no', 'start_time', 'charge_from_grid', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at', 'updated_by'],
     title: 'ScheduleRow'
 } as const;
 

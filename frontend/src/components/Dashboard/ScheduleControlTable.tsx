@@ -410,16 +410,14 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
       {" "}
       {/* Wrap table and button */}
       <Box overflowX="auto">
-        <Table.Root size="sm">
+        <Table.Root size="sm"  >
           {/* ... (Table.Header remains the same) ... */}
           <Table.Header bg="gray.100">
             <Table.Row>
               <Table.ColumnHeader>Rec</Table.ColumnHeader>
               <Table.ColumnHeader>Start</Table.ColumnHeader>
               <Table.ColumnHeader>End</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Charge</Table.ColumnHeader>
               <Table.ColumnHeader textAlign="end">From Grid</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Discharge</Table.ColumnHeader>
               <Table.ColumnHeader textAlign="end">Sell</Table.ColumnHeader>
               <Table.ColumnHeader textAlign="end">Charge Power</Table.ColumnHeader>
               <Table.ColumnHeader textAlign="end">Charge Limit</Table.ColumnHeader>

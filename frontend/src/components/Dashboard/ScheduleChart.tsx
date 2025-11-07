@@ -17,7 +17,7 @@ const transformElectricityCostData = (apiResponse: ElectricityCostRow[] | undefi
     return [];
   }
 
-  // Create a map of all hours from 0 to 23 with their prices
+  // Create a map of all hours with their prices
   const hourMap = new Map<number, number>();
   apiResponse.forEach((cost) => {
     hourMap.set(cost.hour_of_day, parseFloat(cost.price_UAH_per_MWh.toString()));
@@ -37,18 +37,21 @@ const transformElectricityCostData = (apiResponse: ElectricityCostRow[] | undefi
     }
     chartData.push({
       hour: hour,
-      timeLabel: `${hour.toString().padStart(2, '0')}:00`,
+      timeLabel: `${hour.toString().padStart(2, "0")}:00`,
       price: price,
     });
   }
 
-  // Add a point at hour 24 with the same price as the last hour to extend the step
-  const lastPoint = chartData[chartData.length - 1];
-  chartData = [...chartData, {
-    hour: 24,
-    timeLabel: "24:00",
-    price: lastPoint.price
-  }];
+  // Add a point at hour 24 with the actual price if available in API data, otherwise use the last hour's price
+  const hour24Price = hourMap.has(24) ? hourMap.get(24)! : chartData[chartData.length - 1].price;
+  chartData = [
+    ...chartData,
+    {
+      hour: 24,
+      timeLabel: "24:00",
+      price: hour24Price,
+    },
+  ];
 
   return chartData;
 };
@@ -61,19 +64,22 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
     for (let hour = 0; hour < 24; hour++) {
       chartData.push({
         hour: hour,
-        timeLabel: `${hour.toString().padStart(2, '0')}:00`,
+        timeLabel: `${hour.toString().padStart(2, "0")}:00`,
         charge_power: 0,
         discharge_power: 0,
       });
     }
     // Add a point at hour 24 with same values as the last hour
     const lastPoint = chartData[chartData.length - 1];
-    chartData = [...chartData, {
-      hour: 24,
-      timeLabel: "24:00",
-      charge_power: lastPoint.charge_power,
-      discharge_power: lastPoint.discharge_power
-    }];
+    chartData = [
+      ...chartData,
+      {
+        hour: 24,
+        timeLabel: "24:00",
+        charge_power: lastPoint.charge_power,
+        discharge_power: lastPoint.discharge_power,
+      },
+    ];
 
     return chartData;
   }
@@ -81,7 +87,7 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
   // Create an array to hold the schedule values for each hour of the day
   const hourValues = new Array(24).fill(null).map(() => ({
     charge_power: 0,
-    discharge_power: 0
+    discharge_power: 0,
   }));
 
   // Filter out duplicate start times, keeping only the first occurrence (by rec_no)
@@ -99,15 +105,15 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
   // Process each unique schedule row to fill the appropriate hours
   for (let i = 0; i < uniqueScheduleRows.length; i++) {
     const currentRow = uniqueScheduleRows[i];
-    const currentHour = parseInt(currentRow.start_time.split(':')[0], 10);
-    
+    const currentHour = parseInt(currentRow.start_time.split(":")[0], 10);
+
     // Determine the end hour for this row's values
     let endHour;
     if (i === uniqueScheduleRows.length - 1) {
       // For the last row in the list, the values apply until the next row in the list (which might be the first row if wrapping around)
       // Or until the end of the day if the next row has an earlier time (indicating wrap-around)
       const nextRow = uniqueScheduleRows[0]; // First row in the list
-      const nextHour = parseInt(nextRow.start_time.split(':')[0], 10);
+      const nextHour = parseInt(nextRow.start_time.split(":")[0], 10);
       if (nextHour > currentHour) {
         // If next hour is later in the day, use that as the end point
         endHour = nextHour;
@@ -118,15 +124,16 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
     } else {
       // For non-last rows, values apply until the next row in the list
       const nextRow = uniqueScheduleRows[i + 1];
-      endHour = parseInt(nextRow.start_time.split(':')[0], 10);
+      endHour = parseInt(nextRow.start_time.split(":")[0], 10);
     }
 
     // Apply the current row's values to all hours from currentHour up to (but not including) endHour
     for (let hour = currentHour; hour < endHour; hour++) {
-      if (hour < 24) { // Only for valid hours 0-23
+      if (hour < 24) {
+        // Only for valid hours 0-23
         hourValues[hour] = {
-          charge_power: currentRow.charge_power || 0,
-          discharge_power: currentRow.discharge_power || 0
+          charge_power: currentRow.charge_power != 0 && currentRow.charge_from_grid ? Math.abs(currentRow.charge_power) : 0,
+          discharge_power: currentRow.discharge_power * -1 || 0,
         };
       }
     }
@@ -137,7 +144,7 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
   for (let hour = 0; hour < 24; hour++) {
     chartData.push({
       hour: hour,
-      timeLabel: `${hour.toString().padStart(2, '0')}:00`,
+      timeLabel: `${hour.toString().padStart(2, "0")}:00`,
       charge_power: hourValues[hour].charge_power,
       discharge_power: hourValues[hour].discharge_power,
     });
@@ -145,28 +152,23 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
 
   // Add a point at hour 24 with same values as the last hour of the day (hour 23)
   const lastPoint = chartData[23]; // Use the values from hour 23, not from chartData[chartData.length - 1] which would be hour 23's data
-  chartData = [...chartData, {
-    hour: 24,
-    timeLabel: "24:00",
-    charge_power: lastPoint.charge_power,
-    discharge_power: lastPoint.discharge_power
-  }];
+  chartData = [
+    ...chartData,
+    {
+      hour: 24,
+      timeLabel: "24:00",
+      charge_power: lastPoint.charge_power,
+      discharge_power: lastPoint.discharge_power,
+    },
+  ];
 
   return chartData;
 };
 
 const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: ScheduleChartProps) => {
-  const {
-    data: fetchedScheduleData,
-    isLoading: isScheduleLoading,
-    error: scheduleError,
-  } = useGetSchedule({ tenantId, date });
+  const { data: fetchedScheduleData, isLoading: isScheduleLoading, error: scheduleError } = useGetSchedule({ tenantId, date });
 
-  const {
-    data: electricityCostData,
-    isLoading: isElectricityCostLoading,
-    error: electricityCostError,
-  } = useGetElectricityCost({ tenantId, date });
+  const { data: electricityCostData, isLoading: isElectricityCostLoading, error: electricityCostError } = useGetElectricityCost({ tenantId, date });
 
   // Use the schedule data passed via props if available, otherwise use the fetched data
   const scheduleDataToUse = propScheduleData || fetchedScheduleData;
@@ -190,7 +192,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
         return {
           ...costPoint, // Spread the cost data (hour, timeLabel, price)
           charge_power: schedulePoint.charge_power,
-          discharge_power: schedulePoint.discharge_power
+          discharge_power: schedulePoint.discharge_power,
         };
       });
     } else if (transformedScheduleData.length > 0) {
@@ -207,7 +209,9 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
   if (isLoading) {
     return (
       <Box p={4} borderWidth="1px" borderRadius="md" bg="gray.50" minHeight="400px">
-        <Heading as="h3" size="md" mb={2}>Schedule Chart</Heading>
+        <Heading as="h3" size="md" mb={2}>
+          Schedule Chart
+        </Heading>
         <Flex justify="center" align="center" h="300px">
           <Spinner size="xl" />
         </Flex>
@@ -218,7 +222,9 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
   if (error) {
     return (
       <Box p={4} borderWidth="1px" borderRadius="md" bg="gray.50" minHeight="400px">
-        <Heading as="h3" size="md" mb={2}>Schedule Chart</Heading>
+        <Heading as="h3" size="md" mb={2}>
+          Schedule Chart
+        </Heading>
         <Text color="red.500">Error loading chart: {error.message}</Text>
       </Box>
     );
@@ -229,99 +235,167 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
       {/* <Heading as="h3" size="md" mb={2}>Schedule Chart</Heading>
       <Text>Schedule visualization for {date}</Text>
       <Text>Total entries: {combinedData.length}</Text> */}
-      
+
       <Box h="450px" mt={2}>
         {combinedData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-              data={combinedData}
-              margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorChargePower" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorDischargePower" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="timeLabel" 
-                interval={3} // Show every 3rd label to avoid crowding
-              />
-              <YAxis 
-                yAxisId="left"
-                label={{ value: 'UAH/MWh', angle: -90, position: 'insideLeft' }}
-                domain={['auto', 'auto']}
-              />
-              <YAxis 
-                yAxisId="right"
-                orientation="right"
-                label={{ value: 'MW', angle: 90, position: 'insideRight' }}
-                domain={['auto', 'auto']}
-              />
-              <Tooltip 
-                formatter={(value, name) => {
-                  if (name === 'price') {
-                    return [`${value} UAH/MWh`, 'Price'];
-                  } else if (name === 'charge_power') {
-                    return [`${value} MW`, 'Charge Power'];
-                  } else if (name === 'discharge_power') {
-                    return [`${value} MW`, 'Discharge Power'];
-                  }
-                  return [value, name];
-                }}
-                labelFormatter={(label) => `Time: ${label}`}
-              />
-              <Legend />
-              <Area
-                type="stepAfter"
-                dataKey="price"
-                name="Electricity Price (UAH/MWh)"
-                stroke="#3b82f6"
-                fill="url(#colorPrice)"
-                fillOpacity={1}
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6 }}
-                isAnimationActive={false}
-                yAxisId="left"
-              />
-              <Area
-                type="stepAfter"
-                dataKey="charge_power"
-                name="Charge Power (MW)"
-                stroke="#10b981"
-                fill="url(#colorChargePower)"
-                fillOpacity={1}
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6 }}
-                isAnimationActive={false}
-                yAxisId="right"
-              />
-              <Area
-                type="stepAfter"
-                dataKey="discharge_power"
-                name="Discharge Power (MW)"
-                stroke="#ef4444"
-                fill="url(#colorDischargePower)"
-                fillOpacity={1}
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6 }}
-                isAnimationActive={false}
-                yAxisId="right"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height="50%">
+              <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorChargePower" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorDischargePower" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" /> 
+                <XAxis
+                  dataKey="timeLabel"
+                  interval={3} // Show every 3rd label to avoid crowding
+                />
+                {/* <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} /> */}
+                <YAxis yAxisId="right" orientation="left" label={{ value: "MW", angle: -90, position: "insideLeft" }} domain={['dataMin - 50', 'dataMax + 50']} />
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === "Electricity Price (UAH/MWh)") {
+                      return [`${value} UAH/MWh`, "Price"];
+                    } else if (name === "Charge Power (MW)") {
+                      return [`${value} MW`, "Charge Power"];
+                    } else if (name === "Discharge Power (MW)") {
+                      return [`${Number(value) * -1} MW`, "Discharge Power"];
+                    }
+                    return [value, name];
+                  }}
+                  labelFormatter={(label) => `Time: ${label}`}
+                />
+                <Legend />
+                {/* <Area
+                  type="stepBefore"
+                  dataKey="price"
+                  name="Electricity Price (UAH/MWh)"
+                  stroke="#3b82f6"
+                  fill="url(#colorPrice)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="left"
+                /> */}
+                <Area
+                  type="stepAfter"
+                  dataKey="charge_power"
+                  name="Charge Power (MW)"
+                  stroke="#10b981"
+                  fill="url(#colorChargePower)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="right"
+                />
+                <Area
+                  type="stepAfter"
+                  dataKey="discharge_power"
+                  name="Discharge Power (MW)"
+                  stroke="#ef4444"
+                  fill="url(#colorDischargePower)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="right"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="50%">
+              <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorChargePower" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorDischargePower" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="timeLabel"
+                  interval={3} // Show every 3rd label to avoid crowding
+                />
+                <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} />
+                {/* <YAxis yAxisId="right" orientation="right" label={{ value: "MW", angle: 90, position: "insideRight" }} domain={["auto", "auto"]} /> */}
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === "Electricity Price (UAH/MWh)") {
+                      return [`${value} UAH/MWh`, "Price"];
+                    } else if (name === "Charge Power (MW)") {
+                      return [`${value} MW`, "Charge Power"];
+                    } else if (name === "Discharge Power (MW)") {
+                      return [`${Number(value) * -1} MW`, "Discharge Power"];
+                    }
+                    return [value, name];
+                  }}
+                  labelFormatter={(label) => `Time: ${label}`}
+                />
+                <Legend />
+                <Area
+                  type="stepBefore"
+                  dataKey="price"
+                  name="Electricity Price (UAH/MWh)"
+                  stroke="#3b82f6"
+                  fill="url(#colorPrice)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="left"
+                />
+                {/* <Area
+                  type="stepAfter"
+                  dataKey="charge_power"
+                  name="Charge Power (MW)"
+                  stroke="#10b981"
+                  fill="url(#colorChargePower)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="right"
+                />
+                <Area
+                  type="stepAfter"
+                  dataKey="discharge_power"
+                  name="Discharge Power (MW)"
+                  stroke="#ef4444"
+                  fill="url(#colorDischargePower)"
+                  fillOpacity={1}
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                  yAxisId="right"
+                /> */}
+              </AreaChart>
+            </ResponsiveContainer>
+          </>
         ) : (
           <Flex justify="center" align="center" h="300px">
             <Text>No data available for charting</Text>

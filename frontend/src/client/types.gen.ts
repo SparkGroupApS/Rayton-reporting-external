@@ -115,9 +115,7 @@ export type RevenueData = {
 export type ScheduleRow = {
     rec_no: number;
     start_time: string;
-    charge_enable: boolean;
     charge_from_grid: boolean;
-    discharge_enable: boolean;
     allow_to_sell: boolean;
     charge_power: number;
     charge_limit: number;
