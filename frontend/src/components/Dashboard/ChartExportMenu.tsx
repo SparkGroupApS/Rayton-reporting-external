@@ -18,6 +18,22 @@ interface ChartExportMenuProps {
   fileName: string;
 }
 
+// --- ADD THIS HELPER FUNCTION ---
+/**
+ * Formats a Date object as a local ISO string (e.g., "2025-11-04T00:00:00")
+ * without converting it to UTC.
+ */
+const toLocalISOString = (date: Date) => {
+  const tzOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+  const localISOTime = new Date(date.getTime() - tzOffset)
+    .toISOString()
+    .slice(0, 23); // Get precision (YYYY-MM-DDTHH:mm:ss.sss)
+  
+  // Return YYYY-MM-DDTHH:mm:ss format
+  return localISOTime.slice(0, 19);
+};
+// ---------------------------------
+
 export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDate, fileName }: ChartExportMenuProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,8 +42,8 @@ export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDat
     {
       tenantId,
       data_ids: dataIds,
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
+      start: toLocalISOString(startDate), // Was: startDate.toISOString()
+      end: toLocalISOString(endDate),     // Was: endDate.toISOString()
       export_granularity: "hourly",
     },
     {
@@ -91,9 +107,14 @@ export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDat
           const seconds = String(date.getSeconds()).padStart(2, "0");
           const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
+          // Якщо getHours() = 4, це кінець 4-ї години (03:00-04:00). Це і є "Година 4".
+          // Виняток: 00:00 (getHours() = 0) - це кінець "Години 24".
+          const marketHour = date.getHours() === 0 ? 24 : date.getHours();
+
           if (!rowMap.has(timestamp)) {
             rowMap.set(timestamp, {
               Timestamp: timestamp,
+              "Година": marketHour, 
             });
           }
 

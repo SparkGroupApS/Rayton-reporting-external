@@ -356,21 +356,23 @@ async def export_historical_data(
     current_user: CurrentUser,
     primary_session: SessionDep,
     tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
-    start: datetime | None = Query(None, description="Start timestamp"),
-    end: datetime | None = Query(None, description="End timestamp"),
+    # --- ADDED data_ids ---
+    #data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
+    start: datetime | None = Query(None, description="Start timestamp (local time)"),
+    end: datetime | None = Query(None, description="End timestamp (local time)"),
     export_granularity: ExportGranularity = Query(
-        ..., description="Granularity for exported data (e.g., hourly)"
+        ..., description="Granularity for exported data (e..g, 'hourly')"
     ),
     data_session: AsyncSession = Depends(get_data_async_session),
 ) -> Any:
     """
     Export hourly consumption deltas using closest-to-hour-boundary logic.
-    All timestamps are in local Kyiv time (Europe/Kyiv).
+    All timestamps are handled as naive local time, matching the database storage.
     """
-    logger.info(
-        f"Initiating export for tenant_id={tenant_id}, "
-        f"start={start}, end={end}, granularity={export_granularity}"
-    )
+    # logger.info(
+    #     f"Initiating export for tenant_id={tenant_id}, data_ids={data_ids}, "
+    #     f"start={start}, end={end}, granularity={export_granularity}"
+    # )
 
     # 1. Permission Check
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
@@ -380,6 +382,8 @@ async def export_historical_data(
     target_plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
 
     # 3. Validate Inputs
+    # if not data_ids:
+    #     raise HTTPException(status_code=400, detail="No data_ids provided.")
     if start and end and start >= end:
         raise HTTPException(status_code=400, detail="Start datetime must be before end datetime.")
 
@@ -390,11 +394,22 @@ async def export_historical_data(
             detail="Only 'hourly' granularity is supported."
         )
 
-    # 5. Extend time range for baseline
+    # 5. Extend time range for baseline (one hour before start)
     extended_start = start - timedelta(hours=1) if start else None
-    query_end = end or datetime.now()
+    # --- ЗМІНА 1: Логіка для включення останньої години (Година 24) ---
+    # Якщо 'end' = 23:59:59, нам потрібно включити рядок з 00:00 наступного дня.
+    adjusted_end = end
+    if end:
+        # Округляємо до початку години і додаємо 1 годину.
+        # (2025-11-10 23:59:59 -> 2025-11-10 23:00:00 -> 2025-11-11 00:00:00)
+        adjusted_end = end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        logger.info(f"Original end='{end}', adjusted end for query='{adjusted_end}'")
+    # -------------------------------------------------------------------
+    
+    query_end = adjusted_end or datetime.now() # Використовуємо скориговану дату кінця
 
     # 6. MariaDB CTE: closest reading to :00:00 per hour
+    # MODIFIED: Replaced hardcoded DATA_ID range with dynamic DATA_ID IN :data_ids
     cte_sql = text("""
         WITH hour_boundaries AS (
             SELECT 
@@ -428,28 +443,31 @@ async def export_historical_data(
         )
         SELECT 
             cr.DATA_ID,
-            cr.hour_bucket_str AS bucket_local,  -- This is 10:00:00 for 10–11
+            cr.hour_bucket_str AS bucket_local,
             (cr.DATA - cr.prev_data) AS hourly_delta
         FROM closest_readings cr
         WHERE cr.prev_data IS NOT NULL
-          AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') >= :start
+          
+          AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') > :start
           AND (:end IS NULL OR STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') <= :end)
         ORDER BY cr.DATA_ID, cr.hour_bucket_str
     """)
-
+#-- Змінено з >= на > (строго більше), щоб виключити 'Годину 24' попереднього дня
+#          -- Використовуємо :adjusted_end, щоб включити 'Годину 24' останнього дня
     try:
         result = await data_session.execute(
             cte_sql,
             {
                 "plant_id": target_plant_id,
+                #"data_ids": tuple(data_ids), # Pass data_ids as a tuple
                 "extended_start": extended_start,
                 "query_end": query_end,
                 "start": start,
-                "end": end,
+                "end": adjusted_end,
             }
         )
         rows = result.fetchall()
-        logger.debug(f"Fetched {len(rows)} hourly delta rows (DATA_ID 100–199).")
+        #logger.debug(f"Fetched {len(rows)} hourly delta rows for data_ids: {data_ids}.")
     except Exception as e:
         logger.error(f"Database error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch export data.")
@@ -458,7 +476,7 @@ async def export_historical_data(
     data_ids_in_result = {row.DATA_ID for row in rows} if rows else set()
     label_map = {}
     if data_ids_in_result:
-        label_result = await data_session.execute(
+        label_result = await data_session.exec(
             select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2)
             .where(TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0)
         )
@@ -470,27 +488,29 @@ async def export_historical_data(
     # === Group and convert to response ===
     grouped_data: dict[int, TimeSeriesData] = {}
 
-    kyiv_tz = pytz.timezone("Europe/Kyiv")
+    # --- REMOVED pytz logic ---
 
     for row in rows:
         data_id = row.DATA_ID
         hour_str = row.bucket_local
         delta = row.hourly_delta
 
-        # Skip invalid deltas
+        # Skip invalid deltas (e.g., negative from counter reset, or null)
+        # You might want to adjust the upper bound (10000)
         if delta is None or delta < 0 or delta > 10000:
             continue
 
-        # Parse local time (naive)
+        # Parse local time string (naive)
         try:
-            local_naive = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
+            local_naive_dt = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
         except ValueError as e:
             logger.warning(f"Invalid timestamp format: {hour_str} — {e}")
             continue
 
-        # Localize to Kyiv time
-        local_aware = kyiv_tz.localize(local_naive)
-        timestamp_ms = int(local_aware.timestamp() * 1000)
+        # --- SIMPLIFIED timestamp conversion ---
+        # Convert naive local datetime directly to a POSIX timestamp (seconds),
+        # then multiply by 1000 for milliseconds.
+        timestamp_ms = int(local_naive_dt.timestamp() * 1000)
 
         # Initialize series if not exists
         if data_id not in grouped_data:
@@ -511,12 +531,12 @@ async def export_historical_data(
             TimeSeriesPoint(x=timestamp_ms, y=round(float(delta), 3))
         )
 
-    # Sort series by data_id
+    # Sort series by data_id for consistent export order
     series_list = [grouped_data[k] for k in sorted(grouped_data.keys())]
 
     logger.info(
         f"Export ready: {sum(len(s.data) for s in series_list)} points "
-        f"across {len(series_list)} series (DATA_ID 100–199)."
+        #f"across {len(series_list)} series for data_ids: {data_ids}."
     )
 
     return HistoricalDataGroupedResponse(series=series_list)
