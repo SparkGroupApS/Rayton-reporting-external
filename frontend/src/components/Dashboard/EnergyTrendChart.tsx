@@ -55,6 +55,8 @@ const hslToHex = (h: number, s: number, l: number) => {
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 };
 const makePalette = (n: number) => Array.from({ length: n }, (_, i) => hslToHex((i * 360) / Math.max(1, n), 70, 52));
+//more pastel
+//const makePalette = (n: number) => Array.from({ length: n }, (_, i) => hslToHex((i * 360) / Math.max(1, n), 55, 70)); //If you want an even subtler look, you can tweak to s = 35, l = 78.
 
 const toLocalDateString = (date: Date) => {
   const year = date.getFullYear();
@@ -584,7 +586,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
               (transformedEnergyData && (isSocCombined ? transformedCombinedData : transformedSocData) ? (
                 <>
                   {isSocCombined ? (
-                    <ResponsiveContainer key="combined-chart" width="100%" height="100%">
+                    <ResponsiveContainer key="combined-chart" width="100%" height="100%" initialDimension={ { width: 320, height: 200 } }>
                       <AreaChart data={transformedCombinedData!.chartData} syncId="chartSync" margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
                         <defs>
                           {transformedCombinedData!.seriesInfo.map((series, index) => (
@@ -636,7 +638,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
                     </ResponsiveContainer>
                   ) : (
                     <>
-                      <ResponsiveContainer key="energy-chart" width="100%" height="60%">
+                      <ResponsiveContainer key="energy-chart" width="100%" height="60%" initialDimension={ { width: 320, height: 200 } }>
                         <AreaChart data={transformedEnergyData.chartData} syncId="chartSync" margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
                           <defs>
                             {transformedEnergyData.seriesInfo.map((series, index) => (
@@ -677,7 +679,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
                           ))}
                         </AreaChart>
                       </ResponsiveContainer>
-                      <ResponsiveContainer key="soc-chart" width="100%" height="30%">
+                      <ResponsiveContainer key="soc-chart" width="100%" height="30%" initialDimension={ { width: 320, height: 200 } }>
                         <AreaChart data={transformedSocData?.chartData || []} syncId="chartSync" margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
                           <defs>
                             {transformedSocData?.seriesInfo.map((series, index) => (
@@ -731,7 +733,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
 
             {/* Week/Month/Year/Lifetime View - Bar Chart */}
             {timeRange !== "1D" && transformedEnergyData && (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={ { width: 320, height: 200 } }>
                 <BarChart data={transformedEnergyData.chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis

@@ -81,9 +81,7 @@ export const validateRows = (
 // We'll calculate rec_no when adding
 export const createNewScheduleRowTemplate = (): NewScheduleRow => ({
   start_time: "00:00:00",
-  charge_enable: false,
   charge_from_grid: false,
-  discharge_enable: false,
   allow_to_sell: false,
   charge_power: 0,
   charge_limit: 100,

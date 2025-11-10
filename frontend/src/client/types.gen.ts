@@ -488,4 +488,6 @@ export type UtilsTestEmailData = {
 
 export type UtilsTestEmailResponse = (Message);
 
+export type UtilsWebhookPullResponse = (unknown);
+
 export type UtilsHealthCheckResponse = (boolean);

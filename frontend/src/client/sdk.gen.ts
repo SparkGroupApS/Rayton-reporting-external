@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DashboardService {
     /**
@@ -778,6 +778,20 @@ export class UtilsService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Webhook Pull
+     * Receives a webhook from GitHub to pull changes.
+     * Verifies the signature.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static webhookPull(): CancelablePromise<UtilsWebhookPullResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/utils/webhook-pull-a8d9f'
         });
     }
     

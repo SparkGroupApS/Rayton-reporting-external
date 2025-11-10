@@ -145,10 +145,13 @@ async def bulk_update_schedule(
     try:
         # 3a. Create the schedule payload (this is the *entire* message)
         # The message_id is now generated automatically by the model
+        # Include current user's email in the payload, with fallback to user ID if email is None
+        updated_by_info = current_user.email or str(current_user.id)
         schedule_payload = ScheduleMqttPayload(
             plant_id=plant_id,
             date=date,
-            schedule=rows_to_save
+            schedule=rows_to_save,
+            updated_by=updated_by_info
         )
                 
         # 3b. Define the *specific* topic for schedules
