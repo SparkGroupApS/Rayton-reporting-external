@@ -59,10 +59,21 @@ async def webhook_pull(request: Request):
     if not hmac.compare_digest(expected_signature, signature):
         raise HTTPException(status_code=403, detail="Invalid signature")
 
-    # If signature is valid, run the script in the background
-    print("Valid signature. Initiating pull script...")
-    subprocess.Popen(["/home/webapp/git_pull.sh"])
-    return {"message": "Pull script initiated"}
+    try:
+        # Parse the JSON payload
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    # Check the 'ref' field for the branch
+    if data.get('ref') == 'refs/heads/develop':
+        # If it's the 'dev' branch, run the script
+        print("Valid signature for 'dev' branch. Initiating pull script...")
+        subprocess.Popen(["/home/webapp/git_pull.sh"])
+        return {"message": "Pull script initiated for dev branch"}
+    
+    # If it's any other branch, do nothing
+    return {"message": "Push received, but not for 'dev' branch. No action taken."}
 
 @router.get("/health-check/")
 async def health_check() -> bool:
