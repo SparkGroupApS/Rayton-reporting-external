@@ -130,6 +130,7 @@ const DashboardTabs = ({
       <Tabs.Content value="control">
        <Box p={4}>
           <p>Settings content will go here!</p>
+          <p>Control and management features coming soon.</p>
         </Box>
       </Tabs.Content>
 
