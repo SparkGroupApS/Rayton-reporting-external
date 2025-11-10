@@ -619,6 +619,7 @@ class ScheduleMqttPayload(BaseModel):
     plant_id: int
     date: datetime.date
     schedule: list[ScheduleRow]
+    updated_by: Optional[str] = None
 
 # This is the "envelope" for the "cmd/cloud-to-site/{plant_id}/action" topic
 class ActionCommand(str, Enum):
@@ -643,7 +644,7 @@ class MqttResponseStatus(str, Enum):
 class MqttResponsePayload(BaseModel):
     message_id: str
     status: MqttResponseStatus
-    error: Optional[str] = None
+    error: Optional[Union[str, int]] = None
 
 # --- 3. API Response Model (for the 202 Accepted) ---
 # This is used by the API endpoints, not in MQTT

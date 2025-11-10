@@ -132,8 +132,8 @@ const transformScheduleData = (scheduleRows: ScheduleRow[] | undefined) => {
       if (hour < 24) {
         // Only for valid hours 0-23
         hourValues[hour] = {
-          charge_power: currentRow.charge_power != 0 && currentRow.charge_from_grid ? Math.abs(currentRow.charge_power) : 0,
-          discharge_power: currentRow.discharge_power * -1 || 0,
+          charge_power: currentRow.charge_power != 0 && currentRow.charge_from_grid ? -Math.abs(currentRow.charge_power ) : 0,
+          discharge_power: Math.abs(currentRow.discharge_power) || 0,
         };
       }
     }
@@ -239,7 +239,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
       <Box h="450px" mt={2}>
         {combinedData.length > 0 ? (
           <>
-            <ResponsiveContainer width="100%" height="50%">
+            <ResponsiveContainer width="100%" height="50%" initialDimension={ { width: 320, height: 200 } }>
               <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -317,7 +317,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                 />
               </AreaChart>
             </ResponsiveContainer>
-            <ResponsiveContainer width="100%" height="50%">
+            <ResponsiveContainer width="100%" height="50%" initialDimension={ { width: 320, height: 200 } }>
               <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
