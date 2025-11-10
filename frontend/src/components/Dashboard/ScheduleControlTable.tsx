@@ -90,8 +90,9 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   const commandTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const commandMessageIdRef = useRef<string | null>(null);
 
-  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [wsRetryCount, setWsRetryCount] = useState<number>(0);
 
   useEffect(() => {
     if (serverData) {
@@ -111,72 +112,128 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   useEffect(() => {
     if (!tenantId) return;
 
-    // --- FIX for import.meta: More robust check for esbuild environments ---
-    const viteBackendUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_BACKEND_URL : undefined;
-    const procBackendUrl = (typeof process === 'object' && process.env) ? process.env.VITE_BACKEND_URL : undefined;
-    const backendUrl = viteBackendUrl || procBackendUrl || window.location.origin.replace(':5173', ':8000');
-    
-    const viteApiUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_API_V1_STR : undefined;
-    const procApiUrl = (typeof process === 'object' && process.env) ? process.env.VITE_API_V1_STR : undefined;
-    const apiUrl = viteApiUrl || procApiUrl || '/api/v1';
-    // --- END FIX ---
-    
-    const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
-    
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-      setWsConnected(true);
-    };
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('Received WebSocket message:', data);
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    const maxRetries = 5;
+    const baseDelay = 1000; // 1 second
+
+    const connectWebSocket = () => {
+      // --- IMPROVED: More robust WebSocket URL construction ---
+      // Check for environment variables first
+      const viteBackendUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_BACKEND_URL : undefined;
+      const procBackendUrl = (typeof process === 'object' && process.env) ? process.env.VITE_BACKEND_URL : undefined;
+      let backendUrl = viteBackendUrl || procBackendUrl;
+      
+      // If no environment variable is set, construct from current location
+      if (!backendUrl) {
+        // Get the current origin (e.g., http://localhost:5173)
+        const currentOrigin = window.location.origin;
         
-        if (data.type === 'command_response' && data.message_id === commandMessageIdRef.current) {
-          
-          if (commandTimeoutIdRef.current) {
-            clearTimeout(commandTimeoutIdRef.current);
-            commandTimeoutIdRef.current = null;
-          }
-          
-          if (data.status === 'ok' || data.status === 'success') {
-            setCommandStatus({ status: 'success', message: 'Command confirmed' }); 
-          } else {
-            setCommandStatus({ status: 'failed', message: `Command failed: ${data.error || 'Unknown error'}` });
-          }
-          
-          commandMessageIdRef.current = null;
-          
-          setTimeout(() => {
-            setCommandStatus({ status: 'idle' });
-          }, 3000);
-        } else if (data.type === 'command_response') {
-          console.warn(`Ignored command response for old/mismatched message_id: ${data.message_id}`);
+        // Replace common frontend ports with backend port
+        if (currentOrigin.includes(':5173')) {
+          backendUrl = currentOrigin.replace(':5173', ':8000');
+        } else if (currentOrigin.includes(':3000')) {
+          backendUrl = currentOrigin.replace(':3000', ':800');
+        } else if (currentOrigin.includes(':80')) {
+          // For cases where frontend is on port 80 (standard HTTP)
+          backendUrl = currentOrigin.replace(':80', ':8000');
+        } else if (currentOrigin.includes(':443')) {
+          // For cases where frontend is on port 443 (standard HTTPS)
+          backendUrl = currentOrigin.replace(':443', ':8000');
+        } else {
+          // Default fallback: just replace the port with 8000
+          const url = new URL(currentOrigin);
+          url.port = '8000';
+          backendUrl = url.origin;
         }
+      }
+      
+      const viteApiUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_API_V1_STR : undefined;
+      const procApiUrl = (typeof process === 'object' && process.env) ? process.env.VITE_API_V1_STR : undefined;
+      const apiUrl = viteApiUrl || procApiUrl || '/api/v1';
+      // --- END IMPROVED FIX ---
+      
+      const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
+      
+      try {
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log('WebSocket connected');
+          setWsConnected(true);
+          setWsRetryCount(0); // Reset retry count on successful connection
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Received WebSocket message:', data);
+            
+            if (data.type === 'command_response' && data.message_id === commandMessageIdRef.current) {
+              
+              if (commandTimeoutIdRef.current) {
+                clearTimeout(commandTimeoutIdRef.current);
+                commandTimeoutIdRef.current = null;
+              }
+              
+              if (data.status === 'ok' || data.status === 'success') {
+                setCommandStatus({ status: 'success', message: 'Command confirmed' }); 
+              } else {
+                setCommandStatus({ status: 'failed', message: `Command failed: ${data.error || 'Unknown error'}` });
+              }
+              
+              commandMessageIdRef.current = null;
+              
+              setTimeout(() => {
+                setCommandStatus({ status: 'idle' });
+              }, 3000);
+            } else if (data.type === 'command_response') {
+              console.warn(`Ignored command response for old/mismatched message_id: ${data.message_id}`);
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+        
+        ws.onclose = (event) => {
+          console.log('WebSocket disconnected:', event.code, event.reason);
+          setWsConnected(false);
+          
+          // Only attempt to reconnect if the connection was closed unexpectedly (not by the client)
+          if (event.code !== 1000 && wsRetryCount < maxRetries) { // 1000 = normal closure
+            const delay = baseDelay * Math.pow(2, wsRetryCount); // Exponential backoff
+            console.log(`Attempting to reconnect in ${delay}ms, retry #${wsRetryCount + 1}`);
+            setWsRetryCount(prev => prev + 1);
+            
+            reconnectTimeout = setTimeout(() => {
+              connectWebSocket();
+            }, delay);
+          } else if (wsRetryCount >= maxRetries) {
+            console.error('Max reconnection attempts reached');
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          setWsConnected(false);
+        };
+        
+        setWsConnection(ws);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('Error creating WebSocket connection:', error);
+        setWsConnected(false);
       }
     };
-    
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setWsConnected(false);
-    };
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setWsConnected(false);
-    };
-    
-    setWsConnection(ws);
-    
+
+    connectWebSocket();
+
     return () => {
       if (ws) {
-        ws.close();
+        ws.close(1000, "Component unmounting"); // Close with normal closure code
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
       if (commandTimeoutIdRef.current) {
         clearTimeout(commandTimeoutIdRef.current);
