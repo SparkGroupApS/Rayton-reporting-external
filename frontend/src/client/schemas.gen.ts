@@ -188,6 +188,12 @@ export const ElectricityCostRowSchema = {
     title: 'ElectricityCostRow'
 } as const;
 
+export const ExportGranularitySchema = {
+    type: 'string',
+    enum: ['hourly'],
+    title: 'ExportGranularity'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {

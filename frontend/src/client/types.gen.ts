@@ -43,6 +43,8 @@ export type ElectricityCostRow = {
     id: number;
 };
 
+export type ExportGranularity = 'hourly';
+
 export type HistoricalDataGroupedResponse = {
     series: Array<TimeSeriesData>;
 };
@@ -276,6 +278,27 @@ export type HistoricalDataReadHistoricalDetailsData = {
 };
 
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
+
+export type HistoricalDataExportHistoricalDataData = {
+    /**
+     * End timestamp
+     */
+    end?: (string | null);
+    /**
+     * Granularity for exported data (e.g., hourly)
+     */
+    exportGranularity: ExportGranularity;
+    /**
+     * Start timestamp
+     */
+    start?: (string | null);
+    /**
+     * Tenant ID for plant lookup
+     */
+    tenantId: string;
+};
+
+export type HistoricalDataExportHistoricalDataResponse = (HistoricalDataGroupedResponse);
 
 export type ItemsReadItemsData = {
     /**
