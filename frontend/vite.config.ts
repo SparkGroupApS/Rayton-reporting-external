@@ -25,7 +25,14 @@ export default defineConfig({
         // to your now-private backend
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
+        ws: true
+      },
+	// --- ADD THIS BLOCK ---
+      '/webhook-pull-a8d9f': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
       }
+      // ----------------------
     }
   }
 })

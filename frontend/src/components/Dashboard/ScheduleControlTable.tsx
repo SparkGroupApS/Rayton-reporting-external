@@ -111,15 +111,8 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   useEffect(() => {
     if (!tenantId) return;
 
-    // --- FIX for import.meta: More robust check for esbuild environments ---
-    const viteBackendUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_BACKEND_URL : undefined;
-    const procBackendUrl = (typeof process === 'object' && process.env) ? process.env.VITE_BACKEND_URL : undefined;
-    const backendUrl = viteBackendUrl || procBackendUrl || window.location.origin.replace(':5173', ':8000');
-    
-    const viteApiUrl = (typeof import.meta === 'object' && import.meta.env) ? import.meta.env.VITE_API_V1_STR : undefined;
-    const procApiUrl = (typeof process === 'object' && process.env) ? process.env.VITE_API_V1_STR : undefined;
-    const apiUrl = viteApiUrl || procApiUrl || '/api/v1';
-    // --- END FIX ---
+    // Use relative path for API, matching VITE_API_URL=""
+    const apiUrl = '/api/v1';
     
     let ws: WebSocket | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -133,8 +126,10 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
         ws.close(1000, "New connection requested");
       }
       
-      const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
+      // const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
+      // const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}${apiUrl}/ws/${tenantId}`;
       
       try {
         ws = new WebSocket(wsUrl);
