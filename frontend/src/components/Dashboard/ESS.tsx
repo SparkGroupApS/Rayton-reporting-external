@@ -1,25 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import GetDeviceData from "./GetDeviceData";
 import GetDeviceTree from "./GetDeviceTree"; // ✅ новое подключение
+import { useGetPlantConfig } from "@/hooks/usePlantConfigQueries";
 
 type PlantConfigDevice = {
-  device_id: number;
+ device_id: number;
   parent_id: number;
   name: string;
-  class_id: number;
+ class_id: number;
   plant_id?: number | string;
   children?: PlantConfigDevice[];
 };
 
-type PlantConfigResponse = {
-  devices: PlantConfigDevice[];
-};
-
-interface ESSProps {
+interface SmartloggerProps {
   tenantId: string;
 }
-const REFRESH_INTERVAL = 60;
 
 const DEVICE_IDS = [
   20, 21, 22, 23, 24, // SmartLoggers
@@ -39,12 +35,11 @@ const DEVICE_IDS = [
   241201, 241202, 241203, 241204, 241205, // SmartLogger 5 inverters
 ];
 
-export default function ESS({ tenantId }: ESSProps) {
-  const [deviceTree, setDeviceTree] = useState<PlantConfigDevice[]>([]);
+export default function Smartlogger({ tenantId }: SmartloggerProps) {
   const [selectedDevice, setSelectedDevice] = useState<PlantConfigDevice | null>(null);
   const [plantId, setPlantId] = useState<number | string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data, isLoading, error } = useGetPlantConfig({ tenantId });
 
   const buildTree = (devices: PlantConfigDevice[]): PlantConfigDevice[] => {
     const map: Record<number, PlantConfigDevice> = {};
@@ -58,43 +53,21 @@ export default function ESS({ tenantId }: ESSProps) {
     return tree;
   };
 
-  const fetchPlantConfig = async (tenantId: string, token: string) => {
-    const res = await fetch(`http://localhost:8000/api/v1/plant-config?tenant_id=${tenantId}`, {
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error("Помилка при отриманні PLANT_CONFIG");
-    const data: PlantConfigResponse = await res.json();
+  // Process the API response data to filter and build the tree
+  const deviceTree = React.useMemo(() => {
+    if (!data?.devices) return [];
+    
     const detectedPlantId = data.devices.find(d => d.plant_id)?.plant_id ?? tenantId;
     setPlantId(detectedPlantId);
+    
     const filtered = data.devices
       .filter(d => DEVICE_IDS.includes(d.device_id))
       .map(d => ({ ...d, plant_id: d.plant_id ?? detectedPlantId }));
-    setDeviceTree(buildTree(filtered));
-  };
+      
+    return buildTree(filtered);
+  }, [data, tenantId]);
 
-  const fetchDevices = async () => {
-    if (!tenantId) return;
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("access_token");
-      if (!token) throw new Error("Немає токена авторизації.");
-      await fetchPlantConfig(tenantId, token);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      setDeviceTree([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDevices();
-    const interval = setInterval(fetchDevices, REFRESH_INTERVAL * 1000);
-    return () => clearInterval(interval);
-  }, [tenantId]);
-
-  if (loading)
+  if (isLoading)
     return (
       <Flex justify="center" align="center" h="100vh">
         <Spinner size="xl" />
@@ -105,7 +78,7 @@ export default function ESS({ tenantId }: ESSProps) {
   if (error)
     return (
       <Flex justify="center" align="center" h="100vh">
-        <Text color="red.500">Ошибка: {error}</Text>
+        <Text color="red.500">Ошибка: {error.message || "Ошибка при загрузке данных"}</Text>
       </Flex>
     );
 
@@ -130,4 +103,4 @@ export default function ESS({ tenantId }: ESSProps) {
       </Box>
     </Flex>
   );
-}
+};
