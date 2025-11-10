@@ -121,62 +121,107 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
     const apiUrl = viteApiUrl || procApiUrl || '/api/v1';
     // --- END FIX ---
     
-    const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
-    
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-      setWsConnected(true);
-    };
-    
-    ws.onmessage = (event) => {
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isUnmounted = false;
+
+    const connectWebSocket = () => {
+      if (isUnmounted) return;
+      
+      // Close any existing connection before creating a new one
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, "New connection requested");
+      }
+      
+      const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${backendUrl.replace(/^https?:\/\//, '')}${apiUrl}/ws/${tenantId}`;
+      
       try {
-        const data = JSON.parse(event.data);
-        console.log('Received WebSocket message:', data);
+        ws = new WebSocket(wsUrl);
+        setWsConnection(ws); // Update the state with the new WebSocket connection
         
-        if (data.type === 'command_response' && data.message_id === commandMessageIdRef.current) {
-          
-          if (commandTimeoutIdRef.current) {
-            clearTimeout(commandTimeoutIdRef.current);
-            commandTimeoutIdRef.current = null;
+        ws.onopen = () => {
+          if (isUnmounted) return;
+          console.log('WebSocket connected');
+          setWsConnected(true);
+        };
+        
+        ws.onmessage = (event) => {
+          if (isUnmounted) return;
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Received WebSocket message:', data);
+            
+            if (data.type === 'command_response' && data.message_id === commandMessageIdRef.current) {
+              
+              if (commandTimeoutIdRef.current) {
+                clearTimeout(commandTimeoutIdRef.current);
+                commandTimeoutIdRef.current = null;
+              }
+              
+              if (data.status === 'ok' || data.status === 'success') {
+                setCommandStatus({ status: 'success', message: 'Command confirmed' }); 
+              } else {
+                setCommandStatus({ status: 'failed', message: `Command failed: ${data.error || 'Unknown error'}` });
+              }
+              
+              commandMessageIdRef.current = null;
+              
+              setTimeout(() => {
+                if (!isUnmounted) {
+                  setCommandStatus({ status: 'idle' }); 
+                }
+              }, 3000);
+            } else if (data.type === 'command_response') {
+              console.warn(`Ignored command response for old/mismatched message_id: ${data.message_id}`);
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
           }
+        };
+        
+        ws.onclose = (event) => {
+          if (isUnmounted) return;
+          console.log('WebSocket disconnected', event.code, event.reason);
+          setWsConnected(false);
           
-          if (data.status === 'ok' || data.status === 'success') {
-            setCommandStatus({ status: 'success', message: 'Command confirmed' }); 
-          } else {
-            setCommandStatus({ status: 'failed', message: `Command failed: ${data.error || 'Unknown error'}` });
+          // Attempt to reconnect after a delay, unless it was a deliberate close
+          if (event.code !== 1000 && !isUnmounted) { // 1000 is normal closure
+            reconnectTimeout = setTimeout(() => {
+              if (!isUnmounted) {
+                connectWebSocket();
+              }
+            }, 3000); // Reconnect after 3 seconds
           }
-          
-          commandMessageIdRef.current = null;
-          
-          setTimeout(() => {
-            setCommandStatus({ status: 'idle' });
-          }, 3000);
-        } else if (data.type === 'command_response') {
-          console.warn(`Ignored command response for old/mismatched message_id: ${data.message_id}`);
-        }
+        };
+        
+        ws.onerror = (error) => {
+          if (isUnmounted) return;
+          console.error('WebSocket error:', error);
+          setWsConnected(false);
+        };
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('Failed to create WebSocket connection:', error);
+        if (!isUnmounted) {
+          // Attempt to reconnect after a delay
+          reconnectTimeout = setTimeout(() => {
+            if (!isUnmounted) {
+              connectWebSocket();
+            }
+          }, 3000);
+        }
       }
     };
-    
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setWsConnected(false);
-    };
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setWsConnected(false);
-    };
-    
-    setWsConnection(ws);
+
+    connectWebSocket();
     
     return () => {
-      if (ws) {
-        ws.close();
+      isUnmounted = true;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, "Component unmounting"); // 1000 indicates normal closure
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
       if (commandTimeoutIdRef.current) {
         clearTimeout(commandTimeoutIdRef.current);
