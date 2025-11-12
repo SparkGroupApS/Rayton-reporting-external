@@ -1,13 +1,9 @@
 // src/components/Dashboard/ScheduleControlTable/RowForm.tsx
 
-import {
-  Table,
-  Input,
-  Checkbox,
-  Field,
-} from "@chakra-ui/react";
+import { Table, Input, Checkbox, Field } from "@chakra-ui/react";
 import type { ScheduleRow } from "@/client";
 import type { ScheduleDisplayRow } from "./types";
+import TimePicker from "@/components/ui/TimePicker";
 
 interface RowFormProps {
   row: ScheduleDisplayRow;
@@ -20,9 +16,7 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
   // --- FIX: Refine Start Time Invalid Condition ---
   // Mark invalid IF the row ID is in the invalid list,
   // UNLESS it's the very first record (rec_no 1) AND its start time is 00:00:00
-  const isStartTimeInvalid =
-    isInvalid &&
-    !(row.rec_no === 1 && row.start_time === "00:00:00");
+  const isStartTimeInvalid = isInvalid && !(row.rec_no === 1 && row.start_time === "00:00:00");
   // --- END FIX ---
 
   return (
@@ -32,8 +26,7 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
       // Only make the row background red if the START TIME is truly invalid
       bg={isStartTimeInvalid ? "red.50" : "white"}
       // --- END FIX ---
-      _hover={{ bg: "gray.50" }}
-    >
+      _hover={{ bg: "gray.50" }}>
       <Table.Cell>{row.rec_no}</Table.Cell>
       <Table.Cell>
         <Field.Root
@@ -57,90 +50,44 @@ const RowForm = ({ row, invalidRows, handleChange }: RowFormProps) => {
               row.rec_no === 1 && row.start_time === "00:00:00"
             }
             bg={
-              row.rec_no === 1 && row.start_time === "00:00:00"
+              isStartTimeInvalid ? "red.100" :
+              (row.rec_no === 1 && row.start_time === "00:00:00"
                 ? "gray.100"
-                : "white"
+                : "white")
             }
           />
+          {/* <TimePicker
+            size="sm"
+            value={row.start_time.slice(0, 5)} // Only pass HH:mm part
+            onChange={(time) => handleChange(row.id, "start_time", time)}
+            readOnly={row.rec_no === 1 && row.start_time === "00:00:00"}
+            bg={row.rec_no === 1 && row.start_time === "00:00:0" ? "gray.100" : "white"}
+          /> */}
         </Field.Root>
       </Table.Cell>
       <Table.Cell>
-        <Input
-          type="time"
-          size="sm"
-          value={row.displayEndTime.slice(0, 5)}
-          readOnly
-          bg="gray.100"
-        />
+        <Input type="time" size="sm" value={row.displayEndTime.slice(0, 5)} readOnly bg="gray.100" />
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Checkbox.Root
-          variant="outline"
-          checked={row.charge_from_grid}
-          onCheckedChange={(e) =>
-            handleChange(row.id, "charge_from_grid", e.checked)
-          }
-        >
+        <Checkbox.Root variant="outline" checked={row.charge_from_grid} onCheckedChange={(e) => handleChange(row.id, "charge_from_grid", e.checked)}>
           <Checkbox.HiddenInput />
           <Checkbox.Control />
         </Checkbox.Root>
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Checkbox.Root
-          variant="outline"
-          checked={row.allow_to_sell}
-          onCheckedChange={(e) =>
-            handleChange(row.id, "allow_to_sell", e.checked)
-          }
-        >
+        <Checkbox.Root variant="outline" checked={row.allow_to_sell} onCheckedChange={(e) => handleChange(row.id, "allow_to_sell", e.checked)}>
           <Checkbox.HiddenInput />
           <Checkbox.Control />
         </Checkbox.Root>
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Input
-          type="number"
-          size="sm"
-          w="80px"
-          value={row.charge_power}
-          onChange={(e) =>
-            handleChange(
-              row.id,
-              "charge_power",
-              Number(e.target.value),
-            )
-          }
-        />
+        <Input type="number" size="sm" w="80px" value={row.charge_power} onChange={(e) => handleChange(row.id, "charge_power", Number(e.target.value))} />
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Input
-          type="number"
-          size="sm"
-          w="80px"
-          value={row.charge_limit}
-          onChange={(e) =>
-            handleChange(
-              row.id,
-              "charge_limit",
-              Number(e.target.value),
-            )
-          }
-        />
+        <Input type="number" size="sm" w="80px" value={row.charge_limit} onChange={(e) => handleChange(row.id, "charge_limit", Number(e.target.value))} />
       </Table.Cell>
       <Table.Cell textAlign="end">
-        <Input
-          type="number"
-          size="sm"
-          w="80px"
-          value={row.discharge_power}
-          onChange={(e) =>
-            handleChange(
-              row.id,
-              "discharge_power",
-              Number(e.target.value),
-            )
-          }
-        />
+        <Input type="number" size="sm" w="80px" value={row.discharge_power} onChange={(e) => handleChange(row.id, "discharge_power", Number(e.target.value))} />
       </Table.Cell>
     </Table.Row>
   );

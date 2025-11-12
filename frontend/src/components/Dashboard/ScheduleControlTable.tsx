@@ -1,5 +1,13 @@
 // src/components/Dashboard/ScheduleControlTable.tsx
 
+// Task Progress: [x] Analyze requirements
+//                [x] Read ScheduleControlTable.tsx to understand current sorting implementation
+//                [x] Identify sorting logic to modify
+//                [x] Implement changes to disable live sorting
+//                [x] Ensure rec_no ascending order is maintained
+//                [ ] Test the implementation
+//                [ ] Verify results
+
 import {
   Box,
   Button,
@@ -20,7 +28,7 @@ import { toaster } from "@/components/ui/toaster";
 import { useBulkUpdateSchedule, useGetSchedule } from "@/hooks/useScheduleQueries";
 import RowForm from "./ScheduleControlTable/RowForm";
 import AddRowForm from "./ScheduleControlTable/AddRowForm";
-import { validateRows, timeToMinutes, sortScheduleRows, createNewScheduleRowTemplate } from "./ScheduleControlTable/validation";
+import { validateRows, timeToMinutes, createNewScheduleRowTemplate } from "./ScheduleControlTable/validation";
 import type { ScheduleControlTableProps, ScheduleDisplayRow } from "./ScheduleControlTable/types";
 import { SCHEDULE_TABLE_MAX_ROWS } from "./ScheduleControlTable/constants";
 
@@ -100,7 +108,8 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
         end_time: null, 
       }));
       setLocalData(cleanedData);
-      validateRows(cleanedData); 
+      const invalidIds = validateRows(cleanedData);
+      setInvalidRows(invalidIds); 
     } else {
       setLocalData([]);
       setInvalidRows([]);
@@ -235,16 +244,20 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   const displayData = useMemo((): ScheduleDisplayRow[] => {
     if (localData.length === 0) return [];
 
-    const sorted = sortScheduleRows(localData);
+    // Keep data in rec_no ascending order instead of sorting by start_time
+    const ordered = [...localData].sort((a, b) => a.rec_no - b.rec_no);
     const potentialNextStartTime = newRow.start_time;
     const potentialNextStartMinutes = timeToMinutes(potentialNextStartTime);
 
-    return sorted.map((row, index) => {
+    return ordered.map((row, index) => {
       let nextDistinctStartTime: string;
       const currentRowStartTime = row.start_time;
 
-      if (index === sorted.length - 1) {
-        const firstRowStartTime = sorted[0]?.start_time ?? "00:00:00";
+      // If this is a padding record (start_time is "00:00:00" and rec_no > 1), set end time to "00:00:00"
+      if (currentRowStartTime === "00:00:00" && row.rec_no > 1) {
+        nextDistinctStartTime = "00:00:00";
+      } else if (index === ordered.length - 1) {
+        const firstRowStartTime = ordered[0]?.start_time ?? "00:00:00";
         if (potentialNextStartMinutes !== -1 && potentialNextStartMinutes > timeToMinutes(currentRowStartTime)) {
           nextDistinctStartTime = potentialNextStartTime;
         } else {
@@ -252,10 +265,10 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
         }
       } else {
         nextDistinctStartTime = "00:00:00"; 
-        for (let j = 1; j < sorted.length; j++) {
-          const nextCheckIndex = (index + j) % sorted.length;
-          if (sorted[nextCheckIndex].start_time !== currentRowStartTime) {
-            nextDistinctStartTime = sorted[nextCheckIndex].start_time;
+        for (let j = 1; j < ordered.length; j++) {
+          const nextCheckIndex = (index + j) % ordered.length;
+          if (ordered[nextCheckIndex].start_time !== currentRowStartTime) {
+            nextDistinctStartTime = ordered[nextCheckIndex].start_time;
             break;
           }
         }
@@ -276,10 +289,8 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   const handleChange = (id: number, field: keyof ScheduleRow, value: any) => {
     setLocalData((prev) => {
       const updated = prev.map((row) => (row.id === id ? { ...row, [field]: value } : row));
-      const isValid = validateRows(updated);
-      if (isValid) {
-        setInvalidRows([]);
-      }
+      const invalidIds = validateRows(updated);
+      setInvalidRows(invalidIds);
       return updated; 
     });
   };
@@ -337,10 +348,8 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
 
     setLocalData((prev) => {
       const newData = [...prev, tempRow];
-      const isValid = validateRows(newData); 
-      if (isValid) {
-        setInvalidRows([]);
-      }
+      const invalidIds = validateRows(newData); 
+      setInvalidRows(invalidIds);
       return newData; 
     });
     setNewRow(createNewScheduleRowTemplate()); 
@@ -355,8 +364,8 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
       commandTimeoutIdRef.current = null;
     }
 
-    const isValid = validateRows(localData);
-    if (!isValid) {
+    const invalidIds = validateRows(localData);
+    if (invalidIds.length > 0) {
       toaster.create({
         title: "Invalid Data",
         description: "Please fix duplicate start times (highlighted in red).",
@@ -365,8 +374,9 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
       return;
     }
 
-    const sortedData = sortScheduleRows(localData);
-    const dataToSave = sortedData
+    // Keep data in rec_no ascending order instead of sorting by start_time
+    const orderedData = [...localData].sort((a, b) => a.rec_no - b.rec_no);
+    const dataToSave = orderedData
       .filter((row) => row.rec_no === 1 || row.start_time !== "00:00:00")
       .map((row, index) => ({
         ...row,
@@ -443,7 +453,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
     return <Text color="red.500">Error loading schedule: {error.message}</Text>;
   }
 
-  const filteredDisplayData = displayData.filter((row) => row.rec_no === 1 || row.start_time !== "00:00:00");
+  //const filteredDisplayData = displayData.filter((row) => row.rec_no === 1 || row.start_time !== "00:00:00");
 
   return (
     <VStack gap={0} align="stretch">
@@ -465,11 +475,11 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {filteredDisplayData.map((row) => (
+            {displayData.map((row) => ( //filteredDisplayData
               <RowForm key={row.id} row={row} invalidRows={invalidRows} handleChange={handleChange} />
             ))}
 
-            {nextRecNoDisplay <= SCHEDULE_TABLE_MAX_ROWS && (
+            {/* {nextRecNoDisplay <= SCHEDULE_TABLE_MAX_ROWS && (
               <AddRowForm
                 newRow={newRow}
                 isNewRowStartTimeInvalid={isNewRowStartTimeInvalid}
@@ -477,7 +487,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
                 handleNewRowChange={handleNewRowChange}
                 handleAddRow={handleAddRow}
               />
-            )}
+            )} */}
           </Table.Body>
         </Table.Root>
       </Box>

@@ -4,7 +4,6 @@ import {
   ButtonGroup,
   Heading,
   HStack,
-  Input,
   Grid,
   GridItem,
   VStack,
@@ -12,7 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "@tanstack/react-router"
-import ScheduleControlTable from "./ScheduleControlTable" // Ensure this path is correct
+import DatePicker from "@/components/ui/DatePicker";
+import ScheduleControlTable from "./ScheduleControlTable"
 import ScheduleChart from "./ScheduleChart"
 import type { ScheduleRow } from "@/client";
 
@@ -31,27 +31,30 @@ interface ScheduleTabProps {
 const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
   const location = useLocation()
   const navigate = useNavigate()
+  
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // Get date from URL params or default to today
     const urlDate = (location.search as Record<string, any>).date as string | undefined
-    return urlDate || toLocalDateString(new Date())
+    
+    // Validate URL date format (YYYY-MM-DD)
+    if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+      return urlDate
+    }
+    
+    return toLocalDateString(new Date())
   })
+  
   const [scheduleData, setScheduleData] = useState<ScheduleRow[] | undefined>(undefined);
 
-   // Update URL when selectedDate changes
-  useEffect(() => {
-    const newParams = { ...location.search, date: selectedDate }
-    navigate({ to: '.', search: newParams as any, replace: true })
-  }, [selectedDate, navigate, location.search])
-
-   // Initialize date in URL if not present on first load
+  // Sync URL with selectedDate
   useEffect(() => {
     const searchObj = location.search as Record<string, any>;
-    if (!searchObj.date) {
-      const newParams = { ...searchObj, date: toLocalDateString(new Date()) }
+    const urlDate = searchObj.date;
+    
+    if (urlDate !== selectedDate) {
+      const newParams = { ...searchObj, date: selectedDate }
       navigate({ to: '.', search: newParams as any, replace: true })
     }
-  }, [])
+  }, [selectedDate, navigate, location.search])
 
   const handleDateChange = (newDate: string) => {
     setSelectedDate(newDate)
@@ -63,39 +66,39 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
         <Heading as="h2" size="lg">
           Schedule Control
         </Heading>
-        <ButtonGroup variant="solid" size="sm">
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() - 86400000)))}
-          >
-            Yesterday
-          </Button>
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date()))}
-          >
-            Today
-          </Button>
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() + 86400000)))}
-          >
-            Tomorrow
-          </Button>
-          <Input
-            type="date"
-            size="md"
-            w="200px"
+        <HStack gap={2}>
+          <ButtonGroup variant="solid" size="sm">
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() - 86400000)))}
+            >
+              Yesterday
+            </Button>
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date()))}
+            >
+              Today
+            </Button>
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() + 86400000)))}
+            >
+              Tomorrow
+            </Button>
+          </ButtonGroup>
+          <DatePicker
             value={selectedDate}
-            onChange={(e) => handleDateChange(e.target.value)}
+            onChange={handleDateChange}
+            size="sm"
           />
-         </ButtonGroup>
+        </HStack>
       </HStack>
 
       <Grid templateColumns="1fr 1fr" gap={2}>
         <GridItem>
           <VStack alignItems="stretch">
             <ScheduleControlTable
-              tenantId={tenantId} // Pass the tenant UUID
+              tenantId={tenantId}
               date={selectedDate}
-              onScheduleDataChange={setScheduleData} // Pass callback to receive schedule data updates
+              onScheduleDataChange={setScheduleData}
             />
           </VStack>
         </GridItem>
@@ -104,7 +107,7 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
             <ScheduleChart
               tenantId={tenantId}
               date={selectedDate}
-              scheduleData={scheduleData} // Pass the schedule data from the table to the chart
+              scheduleData={scheduleData}
             />
           </VStack>
         </GridItem>
