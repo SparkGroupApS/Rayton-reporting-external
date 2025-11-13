@@ -28,6 +28,7 @@ export const useGetSchedule = (params: ScheduleParams) => {
     // --- CHANGE: Use tenantId in enabled check ---
     enabled: !!tenantId && !!date,
     staleTime: 0,
+    refetchOnWindowFocus: false, // Prevents data from resetting on tab change
   })
 }
 

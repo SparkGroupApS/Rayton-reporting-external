@@ -83,6 +83,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
     data: serverData,
     isLoading: loadingSchedule,
     error,
+    dataUpdatedAt,
   } = useGetSchedule({ tenantId, date });
 
   const { mutate: bulkUpdateSchedule, isPending: isSaving } = useBulkUpdateSchedule({ tenantId, date });
@@ -115,7 +116,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
       setInvalidRows([]);
     }
     setNewRow(createNewScheduleRowTemplate());
-  }, [serverData]);
+  }, [serverData, dataUpdatedAt]);
 
   useEffect(() => {
     if (!tenantId) return;

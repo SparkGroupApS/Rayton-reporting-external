@@ -14,6 +14,7 @@ from app.api.routes import (
     realtime_data,
     electricity_cost,
     plant_config,
+    plc_data_settings,
 )
 from app.core.config import settings
 
@@ -30,6 +31,7 @@ api_router.include_router(electricity_cost.router)
 api_router.include_router(plants.router) 
 api_router.include_router(realtime_data.router) 
 api_router.include_router(plant_config.router) 
+api_router.include_router(plc_data_settings.router) 
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

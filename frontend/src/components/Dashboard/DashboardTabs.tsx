@@ -13,6 +13,7 @@ import KpiSection from "./KpiSection"
 import ScheduleTab from "./ScheduleTab"
 import Smartlogger from "./Smartlogger"
 import ESS from "./ESS"
+import PLCDataSettingsTable from "./PLCDataSettingsTable"
 import { useEffect, useState } from "react"
 
 // Define the props this component needs
@@ -136,9 +137,8 @@ const DashboardTabs = ({
       </Tabs.Content>
 
       <Tabs.Content value="settings">
-       <Box p={4}>
-          <p>Settings content will go here!</p>
-        </Box>
+        <PLCDataSettingsTable tenantId={selectedTenant} />
+          {/* <p>Control content will go here!</p> */}
       </Tabs.Content>
 
     </Tabs.Root>

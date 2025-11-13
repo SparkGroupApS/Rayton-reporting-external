@@ -90,6 +90,24 @@ export type PlantConfigResponse = {
     devices: Array<DeviceInfo>;
 };
 
+export type PlcDataSettingsExtendedRow = {
+    id: number;
+    plant_id: number;
+    device_id: number;
+    data_id: number;
+    data: (number | null);
+    updated_at: (string | null);
+    updated_by: (string | null);
+    device_text: (string | null);
+    data_text: (string | null);
+};
+
+export type PlcDataSettingsUpdate = {
+    id: number;
+    data?: (number | null);
+    updated_by?: (string | null);
+};
+
 export type PrivateUserCreateInput = {
     email: string;
     password: string;
@@ -281,15 +299,15 @@ export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGrouped
 
 export type HistoricalDataExportHistoricalDataData = {
     /**
-     * End timestamp
+     * End timestamp (local time)
      */
     end?: (string | null);
     /**
-     * Granularity for exported data (e.g., hourly)
+     * Granularity for exported data (e..g, 'hourly')
      */
     exportGranularity: ExportGranularity;
     /**
-     * Start timestamp
+     * Start timestamp (local time)
      */
     start?: (string | null);
     /**
@@ -416,6 +434,33 @@ export type ScheduleBulkUpdateScheduleData = {
 };
 
 export type ScheduleBulkUpdateScheduleResponse = (CommandResponse);
+
+export type SettingsGetPlcDataSettingsData = {
+    /**
+     * Optional list of DEVICE_IDs to fetch
+     */
+    deviceIds?: Array<number>;
+    /**
+     * Optional list of PLANT_IDs to fetch
+     */
+    plantIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type SettingsGetPlcDataSettingsResponse = (Array<PlcDataSettingsExtendedRow>);
+
+export type SettingsUpdatePlcDataSettingsData = {
+    requestBody: Array<PlcDataSettingsUpdate>;
+    /**
+     * Tenant ID to update settings for
+     */
+    tenantId: string;
+};
+
+export type SettingsUpdatePlcDataSettingsResponse = (CommandResponse);
 
 export type TenantsCreateTenantData = {
     requestBody: TenantCreate;

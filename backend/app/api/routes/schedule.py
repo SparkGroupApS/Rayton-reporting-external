@@ -166,7 +166,7 @@ async def bulk_update_schedule(
         mqtt_client.publish(
             topic, 
             schedule_payload.model_dump_json(), 
-            qos=1 # Use QoS 1 for commands to ensure they arrive
+            qos=0 # Use QoS 1 for commands to ensure they arrive
         )
         
         # 3d. Return the 202 response with the tracking ID
