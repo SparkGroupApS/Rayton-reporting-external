@@ -392,6 +392,120 @@ export const PlantConfigResponseSchema = {
     title: 'PlantConfigResponse'
 } as const;
 
+export const PlcDataSettingsExtendedRowSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        },
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        data: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        updated_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated At'
+        },
+        updated_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated By'
+        },
+        device_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Device Text'
+        },
+        data_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Text'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plant_id', 'device_id', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text'],
+    title: 'PlcDataSettingsExtendedRow'
+} as const;
+
+export const PlcDataSettingsUpdateSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        data: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        updated_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated By'
+        }
+    },
+    type: 'object',
+    required: ['id'],
+    title: 'PlcDataSettingsUpdate'
+} as const;
+
 export const PrivateUserCreateInputSchema = {
     properties: {
         email: {

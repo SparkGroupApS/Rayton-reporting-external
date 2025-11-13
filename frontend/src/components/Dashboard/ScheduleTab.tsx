@@ -4,7 +4,6 @@ import {
   ButtonGroup,
   Heading,
   HStack,
-  Input,
   Grid,
   GridItem,
   VStack,
@@ -12,9 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "@tanstack/react-router"
-import ScheduleControlTable from "./ScheduleControlTable" // Ensure this path is correct
+import DatePicker from "@/components/ui/DatePicker";
+import ScheduleControlTable from "./ScheduleControlTable"
 import ScheduleChart from "./ScheduleChart"
 import type { ScheduleRow } from "@/client";
+import { useQueryClient } from "@tanstack/react-query"; // <-- 2. Import useQueryClient
+import { FiRefreshCw } from "react-icons/fi"; // <-- 3. Import a refresh icon
 
 // --- Helper function to format date ---
 const toLocalDateString = (date: Date) => {
@@ -31,71 +33,100 @@ interface ScheduleTabProps {
 const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient(); // <-- 4. Get query client instance
+  
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // Get date from URL params or default to today
     const urlDate = (location.search as Record<string, any>).date as string | undefined
-    return urlDate || toLocalDateString(new Date())
+    
+    // Validate URL date format (YYYY-MM-DD)
+    if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+      return urlDate
+    }
+    
+    return toLocalDateString(new Date())
   })
+  
   const [scheduleData, setScheduleData] = useState<ScheduleRow[] | undefined>(undefined);
 
-   // Update URL when selectedDate changes
-  useEffect(() => {
-    const newParams = { ...location.search, date: selectedDate }
-    navigate({ to: '.', search: newParams as any, replace: true })
-  }, [selectedDate, navigate, location.search])
-
-   // Initialize date in URL if not present on first load
+  // Sync URL with selectedDate
   useEffect(() => {
     const searchObj = location.search as Record<string, any>;
-    if (!searchObj.date) {
-      const newParams = { ...searchObj, date: toLocalDateString(new Date()) }
+    const urlDate = searchObj.date;
+    
+    if (urlDate !== selectedDate) {
+      const newParams = { ...searchObj, date: selectedDate }
       navigate({ to: '.', search: newParams as any, replace: true })
     }
-  }, [])
+  }, [selectedDate, navigate, location.search])
 
   const handleDateChange = (newDate: string) => {
     setSelectedDate(newDate)
   }
 
+  // <-- 5. Add refresh handler
+  const handleRefresh = () => {
+    // Invalidate the query used by ScheduleControlTable
+    // This assumes the query key is ['schedule', tenantId, selectedDate]
+    // which is a standard pattern.
+    queryClient.invalidateQueries({
+      queryKey: ["schedule", { tenantId: tenantId, date: selectedDate }],
+    });
+  }
+
   return (
     <Box bg="white" shadow="sm" rounded="lg" p={4} borderWidth="1px">
       <HStack justify="space-between" mb={2}>
-        <Heading as="h2" size="lg">
-          Schedule Control
-        </Heading>
-        <ButtonGroup variant="solid" size="sm">
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() - 86400000)))}
-          >
-            Yesterday
-          </Button>
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date()))}
-          >
-            Today
-          </Button>
-          <Button
-            onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() + 86400000)))}
-          >
-            Tomorrow
-          </Button>
-          <Input
-            type="date"
-            size="md"
-            w="200px"
+       <HStack gap="2">
+          <Heading as="h2" size="lg">
+            Schedule Control
+          </Heading>
+          <Button size="sm"
+              onClick={() => handleRefresh()}
+            >
+              <FiRefreshCw /> Refresh
+            </Button>
+
+          {/* <IconButton
+            icon={<FiRefreshCw />}
+            aria-label="Refresh Data"
+            onClick={handleRefresh}
+            size="sm"
+            variant="ghost"
+          /> */}
+        </HStack>
+        <HStack gap={2}>
+          <ButtonGroup variant="solid" size="sm">
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() - 86400000)))}
+            >
+              Yesterday
+            </Button>
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date()))}
+            >
+              Today
+            </Button>
+            <Button
+              onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() + 86400000)))}
+            >
+              Tomorrow
+            </Button>
+          </ButtonGroup>
+          <DatePicker
             value={selectedDate}
-            onChange={(e) => handleDateChange(e.target.value)}
+            onChange={handleDateChange}
+            size="sm"
           />
-         </ButtonGroup>
+        </HStack>
       </HStack>
 
       <Grid templateColumns="1fr 1fr" gap={2}>
         <GridItem>
           <VStack alignItems="stretch">
             <ScheduleControlTable
-              tenantId={tenantId} // Pass the tenant UUID
+              tenantId={tenantId}
               date={selectedDate}
-              onScheduleDataChange={setScheduleData} // Pass callback to receive schedule data updates
+              onScheduleDataChange={setScheduleData}
             />
           </VStack>
         </GridItem>
@@ -104,7 +135,7 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
             <ScheduleChart
               tenantId={tenantId}
               date={selectedDate}
-              scheduleData={scheduleData} // Pass the schedule data from the table to the chart
+              scheduleData={scheduleData}
             />
           </VStack>
         </GridItem>

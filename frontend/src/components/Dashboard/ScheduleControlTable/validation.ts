@@ -27,8 +27,8 @@ export const sortScheduleRows = (rows: ScheduleRow[]): ScheduleRow[] => {
 export const validateRows = (
   rows: ScheduleRow[],
   timeToMinutesFn: (t: string | null | undefined) => number = timeToMinutes,
-): boolean => {
-  const invalidIds: number[] = [];
+): number[] => {
+ const invalidIds: number[] = [];
   const startTimeCounts = new Map<string, number[]>(); // Map: startTime -> array of row IDs
 
   // --- FIX: Only validate "active" rows ---
@@ -53,7 +53,7 @@ export const validateRows = (
   }
   
   // Second pass: Identify duplicates and add to invalid list, excluding the first "00:00:00"
-  for (const [time, ids] of startTimeCounts.entries()) {
+ for (const [time, ids] of startTimeCounts.entries()) {
     if (ids.length > 1) {
       // Found a duplicate start time
       // --- FIX: Exclude the first record if the duplicate is "00:00:00" ---
@@ -74,7 +74,7 @@ export const validateRows = (
     }
   }
 
-  return invalidIds.length === 0; // Return true if valid
+  return invalidIds; // Return the array of invalid IDs
 };
 
 // --- Default values for a new row ---

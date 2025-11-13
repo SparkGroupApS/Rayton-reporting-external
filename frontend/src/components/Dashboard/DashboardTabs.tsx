@@ -13,6 +13,7 @@ import KpiSection from "./KpiSection"
 import ScheduleTab from "./ScheduleTab"
 import Smartlogger from "./Smartlogger"
 import ESS from "./ESS"
+import PLCDataSettingsTable from "./PLCDataSettingsTable"
 import { useEffect, useState } from "react"
 
 // Define the props this component needs
@@ -79,6 +80,7 @@ const DashboardTabs = ({
         <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
         <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
         <Tabs.Trigger value="control" onClick={() => handleTabChange("control")}>Керування</Tabs.Trigger>
+        <Tabs.Trigger value="settings" onClick={() => handleTabChange("settings")}>Налаштування</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 
@@ -129,9 +131,14 @@ const DashboardTabs = ({
 
       <Tabs.Content value="control">
        <Box p={4}>
-          <p>Settings content will go here!</p>
+          <p>Control content will go here!</p>
           <p>Control and management features coming soon.</p>
         </Box>
+      </Tabs.Content>
+
+      <Tabs.Content value="settings">
+        <PLCDataSettingsTable tenantId={selectedTenant} />
+          {/* <p>Control content will go here!</p> */}
       </Tabs.Content>
 
     </Tabs.Root>

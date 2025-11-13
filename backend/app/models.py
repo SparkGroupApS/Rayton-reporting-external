@@ -511,33 +511,57 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     TEXT_L2: str | None = Field(default=None, max_length=100)
 
 
-# --- ADD THESE MODELS ---
-# These are the API Schema Models for the Schedule table.
-# They bridge the (UPPER_CASE) DB fields to the (snake_case) frontend fields.
+class PlcDataSettings(SQLModel, table=True, metadata=external_metadata):
+    __tablename__ = "PLC_DATA_SETTINGS"
 
-# class ScheduleBase(SQLModel):
-#     # We define the API model with snake_case
-#     # We use Field(alias=...) to map to the UPPER_CASE DB columns
-#     rec_no: int = Field(alias="REC_NO")
-#     start_time: datetime.time = Field(alias="START_TIME")
-#     charge_enable: bool = Field(alias="CHARGE_ENABLE")
-#     charge_from_grid: bool = Field(alias="CHARGE_FROM_GRID")
-#     discharge_enable: bool = Field(alias="DISCHARGE_ENABLE")
-#     allow_to_sell: bool = Field(alias="ALLOW_TO_SELL")
-#     charge_power: float = Field(alias="CHARGE_POWER")
-#     charge_limit: float = Field(alias="CHARGE_LIMIT")
-#     discharge_power: float = Field(alias="DISCHARGE_POWER")
-#     source: int = Field(alias="SOURCE")
+    ID: int | None = Field(
+        default=None, primary_key=True, sa_column_kwargs={"name": "ID"}
+    )
+    PLANT_ID: int = Field(nullable=False, sa_column_kwargs={"name": "PLANT_ID"})  # Part of unique key
+    DEVICE_ID: int = Field(nullable=False, sa_column_kwargs={"name": "DEVICE_ID"})  # Part of unique key
+    DATA_ID: int = Field(nullable=False, sa_column_kwargs={"name": "DATA_ID"})  # Part of unique key
+    DATA: float | None = Field(default=None, sa_column_kwargs={"name": "DATA"})
+    UPDATED_AT: datetime.datetime | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_AT"})
+    UPDATED_BY: str | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100)
 
-#     class Config:
-#         validate_by_name = True # Allows using both 'rec_no' and 'REC_NO'
-#         from_attributes = True # Allows reading data from the DB model
 
-# class ScheduleRow(ScheduleBase):
-#     # This is the public-facing model that matches your frontend
-#     # It's what will be imported as `ScheduleRow` in the client
-#     id: int = Field(alias="ID")
-#     updated_at: datetime.datetime = Field(alias="UPDATED_AT")
+# --- API Schema Models for PLC Data Settings ---
+# These bridge the (UPPER_CASE) DB fields to the (snake_case) frontend fields.
+
+
+class PlcDataSettingsBase(SQLModel):
+    # Define fields using snake_case for API consistency
+    plant_id: int = Field(alias="PLANT_ID")
+    device_id: int = Field(alias="DEVICE_ID")
+    data_id: int = Field(alias="DATA_ID")
+    data: float | None = Field(default=None, alias="DATA")
+    updated_at: datetime.datetime | None = Field(default=None, alias="UPDATED_AT")
+    updated_by: str | None = Field(default=None, alias="UPDATED_BY")
+
+
+class PlcDataSettingsRow(PlcDataSettingsBase):
+    # Public model for API responses, including ID
+    id: int = Field(alias="ID")
+
+    # Pydantic v2 configuration
+    model_config = {
+        "from_attributes": True,  # Equivalent to orm_mode=True in Pydantic v1
+    }
+
+
+class PlcDataSettingsCreate(PlcDataSettingsBase):
+    # Fields required for creating a new setting
+    plant_id: int = Field(alias="PLANT_ID")
+    device_id: int = Field(alias="DEVICE_ID")
+    data_id: int = Field(alias="DATA_ID")
+    data: float | None = Field(default=None, alias="DATA")
+
+
+class PlcDataSettingsUpdate(SQLModel):
+    # Fields that can be updated (all optional)
+    id: int = Field(alias="ID")  # Need ID to identify which setting to update
+    data: float | None = Field(default=None, alias="DATA")
+    updated_by: str | None = Field(default=None, alias="UPDATED_BY")
 
 
 # Base class defining the structure and aliases
@@ -619,6 +643,13 @@ class ScheduleMqttPayload(BaseModel):
     plant_id: int
     date: datetime.date
     schedule: list[ScheduleRow]
+    updated_by: Optional[str] = None
+
+# This is the payload for the "cmd/cloud-to-site/{plant_id}/plc-settings" topic
+class PlcDataSettingsMqttPayload(BaseModel):
+    message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    plant_id: int
+    settings: list[dict]  # Each dict contains data_id and data
     updated_by: Optional[str] = None
 
 # This is the "envelope" for the "cmd/cloud-to-site/{plant_id}/action" topic
