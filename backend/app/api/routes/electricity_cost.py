@@ -3,7 +3,6 @@ import datetime
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession  # Import AsyncSession
 
@@ -43,7 +42,7 @@ async def get_plant_id_for_tenant(
 
 # --- End Helper ---
 
-@router.get("/", response_model=List[ElectricityCostRow])
+@router.get("/", response_model=list[ElectricityCostRow])
 async def read_electricity_cost(
     current_user: CurrentUser,
     primary_session: SessionDep,
@@ -78,7 +77,7 @@ async def read_electricity_cost(
             # Check if db_row is None before accessing its attributes
             if db_row is None:
                 continue  # Skip None rows
-            
+
             # Create a dictionary mapping Pydantic field names to the values from the ORM object
             row_dict = {
                 "id": db_row.id,

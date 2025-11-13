@@ -1,15 +1,14 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-import subprocess
-import hmac
 import hashlib
-import os
+import hmac
+import subprocess
 
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic.networks import EmailStr
 
 from app.api.deps import get_current_active_superuser
+from app.core.config import settings
 from app.models import Message
 from app.utils import generate_test_email, send_email
-from app.core.config import settings
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
@@ -71,7 +70,7 @@ async def webhook_pull(request: Request):
         print("Valid signature for 'dev' branch. Initiating pull script...")
         subprocess.Popen(["/home/webapp/git_pull.sh"])
         return {"message": "Pull script initiated for dev branch"}
-    
+
     # If it's any other branch, do nothing
     return {"message": "Push received, but not for 'dev' branch. No action taken."}
 

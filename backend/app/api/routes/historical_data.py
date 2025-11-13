@@ -1,20 +1,19 @@
 # In backend/app/api/routes/historical_data.py
 
 import datetime
-import uuid
 import logging
-#import pytz
-
-from typing import List, Optional, Dict, Any, Literal
+import uuid
 from collections import defaultdict
-from enum import Enum, StrEnum
+from datetime import date, datetime, time, timedelta
+from enum import StrEnum
+
+#import pytz
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import *
-from sqlmodel import select, col, func
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from datetime import datetime, date, time, timedelta
-
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import get_data_async_session
@@ -84,7 +83,7 @@ async def read_historical_details(
     # 1. Permission Check
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized for this tenant"
         )
 
@@ -116,9 +115,9 @@ async def read_historical_details(
             query = query.where(col(PlcDataHistorical.TIMESTAMP) >= start)
         if end:
             query = query.where(col(PlcDataHistorical.TIMESTAMP) <= end)
-        
+
         query = query.order_by(PlcDataHistorical.DATA_ID.asc(), PlcDataHistorical.TIMESTAMP.asc())
-        
+
         results = await data_session.exec(query)
         rows = results.all()
 
@@ -128,24 +127,24 @@ async def read_historical_details(
             if data_id not in grouped_data:
                 series_name = label_local or label or f"Data ID {data_id}"
                 grouped_data[data_id] = TimeSeriesData(data_id=data_id, name=series_name, data=[])
-            
+
             timestamp_ms = int(timestamp.timestamp() * 1000)
             grouped_data[data_id].data.append(
                 TimeSeriesPoint(x=timestamp_ms, y=round(value, 3) if value is not None else 0)
             )
-        
+
         series_list = list(grouped_data.values())
         return HistoricalDataGroupedResponse(series=series_list)
 
     # --- Logic for aggregated data (day, month, year) ---
-    
+
     # 3. Determine bucket expression for aggregation
     if aggregate_by == "day":
         bucket_expr = func.date(PlcDataHistorical.TIMESTAMP)
     elif aggregate_by == "month":
         bucket_expr = func.concat(
-            func.year(PlcDataHistorical.TIMESTAMP), 
-            '-', 
+            func.year(PlcDataHistorical.TIMESTAMP),
+            '-',
             func.lpad(func.month(PlcDataHistorical.TIMESTAMP), 2, '0')
         )
     elif aggregate_by == "year":
@@ -158,10 +157,10 @@ async def read_historical_details(
     extended_start = start
     if aggregate_by == "day" and start:
         extended_start = start - timedelta(days=1)
-    
+
     import time as time_module
     query_start = time_module.time()
-    
+
     # OPTIMIZATION: First, find which DATA_IDs actually have data in the time range
     # This avoids scanning empty ranges for DATA_IDs that don't exist
     data_id_query = select(PlcDataHistorical.DATA_ID.distinct()).where(
@@ -172,11 +171,11 @@ async def read_historical_details(
             col(PlcDataHistorical.TIMESTAMP) <= end if end else True,
         )
     )
-    
+
     data_id_result = await data_session.exec(data_id_query)
     active_data_ids = list(data_id_result.all())
     logger.info(f"Found {len(active_data_ids)} active DATA_IDs: {active_data_ids}")
-    
+
     if not active_data_ids:
         # No data found
         query_time = time_module.time() - query_start
@@ -200,12 +199,12 @@ async def read_historical_details(
     ).order_by(
         PlcDataHistorical.DATA_ID.asc(), "bucket"
     )
-    
+
     # Log the generated SQL for debugging
     from sqlalchemy.dialects import mysql
     compiled_query = query.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True})
     logger.info(f"Generated SQL: {compiled_query}")
-    
+
     results = await data_session.exec(query)
     rows = results.all()
 
@@ -216,11 +215,11 @@ async def read_historical_details(
     label_start = time_module.time()
     unique_data_ids = set()
     by_id = defaultdict(list)
-    
+
     for data_id, bucket, latest_ts, value in rows:
         unique_data_ids.add(data_id)
         by_id[data_id].append({"bucket": bucket, "timestamp": latest_ts, "value": value})
-    
+
     # Fetch labels for all unique DATA_IDs in a single, simple query
     id_metadata = {}
     if unique_data_ids:
@@ -234,31 +233,31 @@ async def read_historical_details(
         )
         label_results = await data_session.exec(label_query)
         label_rows = label_results.all()
-        
+
         for data_id, label, label_local in label_rows:
             id_metadata[data_id] = {"label": label, "label_local": label_local}
-    
+
     label_time = time_module.time() - label_start
     logger.info(f"Label query took {label_time:.3f}s for {len(unique_data_ids)} unique IDs")
 
     # 6. Calculate deltas and build response
     grouped_data: dict[int, TimeSeriesData] = {}
-    
+
     for data_id, entries in by_id.items():
         entries.sort(key=lambda x: x["bucket"])
-        
+
         metadata = id_metadata.get(data_id, {})
         series_name = metadata.get("label_local") or metadata.get("label") or f"Data ID {data_id}"
-        
+
         if data_id not in grouped_data:
             grouped_data[data_id] = TimeSeriesData(data_id=data_id, name=series_name, data=[])
-        
+
         # Process all entries to calculate deltas, but only include results within the original requested date range
         # Also handle the case where the first entry in the requested range doesn't have a previous value
         for i in range(1, len(entries)):
             prev, curr = entries[i - 1], entries[i]
             delta = (curr["value"] or 0) - (prev["value"] or 0)
-            
+
             # Check if the current bucket (date) is within the original requested range
             include_in_result = True
             if start and isinstance(curr["bucket"], date):
@@ -275,7 +274,7 @@ async def read_historical_details(
                 curr_year = int(curr["bucket"])
                 if curr_year < start.year:
                     include_in_result = False
-            
+
             if include_in_result:
                 if isinstance(curr["bucket"], date):
                     timestamp_dt = datetime.combine(curr["bucket"], time.min)
@@ -287,13 +286,13 @@ async def read_historical_details(
                         timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                 else:
                     timestamp_dt = curr["timestamp"]
-                
+
                 timestamp_ms = int(timestamp_dt.timestamp() * 1000)
-                
+
                 grouped_data[data_id].data.append(
                     TimeSeriesPoint(x=timestamp_ms, y=round(delta, 3))
                 )
-        
+
         # Handle the case where the first day in the requested range exists but there's no previous day to calculate delta from
         # If the first entry in entries is within the requested range but there's no previous entry to calculate delta with
         if len(entries) > 0 and start:
@@ -314,7 +313,7 @@ async def read_historical_details(
                     is_in_range = start.year <= entry_year <= end_year
                 else:
                     is_in_range = True
-                
+
                 # If this entry is in the requested range, but we don't have a previous entry to calculate delta (i.e., i == 0)
                 # and it's the first entry in the extended range, we need special handling
                 if is_in_range and i == 0:
@@ -329,7 +328,7 @@ async def read_historical_details(
                     prev = entries[i - 1]
                     curr = entries[i]
                     delta = (curr["value"] or 0) - (prev["value"] or 0)
-                    
+
                     if isinstance(curr["bucket"], date):
                         timestamp_dt = datetime.combine(curr["bucket"], time.min)
                     elif isinstance(curr["bucket"], str):
@@ -340,9 +339,9 @@ async def read_historical_details(
                             timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                     else:
                         timestamp_dt = curr["timestamp"]
-                    
+
                     timestamp_ms = int(timestamp_dt.timestamp() * 1000)
-                    
+
                     grouped_data[data_id].data.append(
                         TimeSeriesPoint(x=timestamp_ms, y=round(delta, 3))
                     )
@@ -405,7 +404,7 @@ async def export_historical_data(
         adjusted_end = end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         logger.info(f"Original end='{end}', adjusted end for query='{adjusted_end}'")
     # -------------------------------------------------------------------
-    
+
     query_end = adjusted_end or datetime.now() # Використовуємо скориговану дату кінця
 
     # 6. MariaDB CTE: closest reading to :00:00 per hour

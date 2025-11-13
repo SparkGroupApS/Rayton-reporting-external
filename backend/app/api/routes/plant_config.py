@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Query, Depends, HTTPException, status
-from typing import List
 from uuid import UUID
-from sqlmodel import select
-from app.api.deps import CurrentUser, SessionDep
-from app.models import PlantConfig, Tenant, PlantConfigResponse, DeviceInfo
-from sqlmodel.ext.asyncio.session import AsyncSession
-from app.core.db import get_data_async_session
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.api.deps import CurrentUser, SessionDep
+from app.core.db import get_data_async_session
+from app.models import DeviceInfo, PlantConfig, PlantConfigResponse, Tenant
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ async def get_plant_config(
     primary_session: SessionDep,
     data_session: AsyncSession = Depends(get_data_async_session),
     tenant_id: UUID = Query(..., description="Tenant ID to fetch data for"),
-    device_ids: List[int] = Query(None, description="Optional list of DEVICE_IDs to fetch"),
+    device_ids: list[int] = Query(None, description="Optional list of DEVICE_IDs to fetch"),
 ):
     # Проверяем существование тенанта
     tenant = await primary_session.get(Tenant, tenant_id)
