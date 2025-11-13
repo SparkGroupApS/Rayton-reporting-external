@@ -100,6 +100,10 @@ export type PlcDataSettingsExtendedRow = {
     updated_by: (string | null);
     device_text: (string | null);
     data_text: (string | null);
+    input_type: string;
+    textlist_entries?: ({
+    [key: string]: string;
+} | null);
 };
 
 export type PlcDataSettingsUpdate = {

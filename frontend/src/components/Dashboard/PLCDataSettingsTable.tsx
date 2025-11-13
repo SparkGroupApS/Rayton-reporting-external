@@ -14,6 +14,8 @@ import {
   Input as ChakraInput,
   Card,
   NumberInput,
+  NativeSelect,
+  Switch,
 } from "@chakra-ui/react";
 
 // --- NEW: Import icons from react-icons ---
@@ -99,6 +101,33 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
 
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
+
+  const handleChange = (id: number, value: string | boolean) => {
+    setLocalData((prev) => {
+      return prev.map((row) => {
+        if (row.id === id) {
+          let newValue: number | null;
+          if (typeof value === 'boolean') {
+            // For boolean inputs, convert to 1/0
+            newValue = value ? 1 : 0;
+          } else {
+            // For textlist and number inputs
+            if (row.input_type === "textlist" && row.textlist_entries) {
+              // For textlist inputs, find the numeric value that corresponds to the selected text
+              const textToValue = Object.entries(row.textlist_entries).find(([key, text]) => text === value);
+              newValue = textToValue ? parseFloat(textToValue[0]) : null;
+            } else {
+              // For number inputs
+              newValue = value === "" ? null : parseFloat(value);
+            }
+          }
+          const isModified = newValue !== row.originalData;
+          return { ...row, data: newValue, isModified };
+        }
+        return row;
+      });
+    });
+  };
 
   useEffect(() => {
     if (serverData) {
@@ -229,19 +258,6 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
     };
   }, [tenantId]);
 
-  const handleChange = (id: number, value: string) => {
-    setLocalData((prev) => {
-      return prev.map((row) => {
-        if (row.id === id) {
-          const newValue = value === "" ? null : parseFloat(value);
-          const isModified = newValue !== row.originalData;
-          return { ...row, data: newValue, isModified };
-        }
-        return row;
-      });
-    });
-  };
-
   const handleRevert = (id: number) => {
     setLocalData((prev) => {
       return prev.map((row) => {
@@ -313,7 +329,7 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
         setCommandStatus({ status: "failed", message: "Command failed to send" });
         setTimeout(() => {
           setCommandStatus({ status: "idle" });
-        }, 300);
+        }, 30);
 
         toaster.create({
           title: "Save Failed",
@@ -343,7 +359,7 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
           <Card.Root key={row.id} variant="outline" size="sm">
             <Card.Header pb={2}>
               <Heading size="sm" whiteSpace="normal" textOverflow="ellipsis" overflow="hidden">
-                {row.data_text || `Data ${row.data_id}`} (ID: {row.id})
+                {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id})
               </Heading>
             </Card.Header>
             <Card.Body pt={0}>
@@ -352,17 +368,53 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
                   ID: {row.id}
                 </Field.Label> */}
                 <Flex alignItems="center" justifyContent="space-between" gap={2}>
-                  <NumberInput.Root
-                    flex="1"
-                    value={row.data !== null && row.data !== undefined ? row.data.toString() : ""}
-                    onValueChange={(details) => handleChange(row.id, details.value)}
-                    min={0}>
-                    <NumberInput.Input as={ChakraInput} />
-                    <NumberInput.Control>
-                      <NumberInput.IncrementTrigger />
-                      <NumberInput.DecrementTrigger />
-                    </NumberInput.Control>
-                  </NumberInput.Root>
+                  {row.input_type === "textlist" && row.textlist_entries ? (
+                    // Render NativeSelect component for textlist input type
+                    <NativeSelect.Root flex="1">
+                      <NativeSelect.Field
+                        value={
+                          row.data !== null && row.data !== undefined
+                            ? row.textlist_entries[row.data.toString()] || ""
+                            : ""
+                        }
+                        onChange={(e) => handleChange(row.id, e.target.value)}
+                      >
+                        <option value="">Select an option</option>
+                        {Object.entries(row.textlist_entries).map(([value, text]) => (
+                          <option key={value} value={text}>
+                            {text}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                    </NativeSelect.Root>
+                  ) : row.input_type === "boolean" ? (
+                    // Render Switch component for boolean input type
+                    <Flex alignItems="center" justifyContent="space-between" gap={2} flex="1">
+                      <Text flex="1">{row.data ? "Enabled" : "Disabled"}</Text>
+                      <Switch.Root
+                        checked={!!row.data}
+                        onCheckedChange={(details) => handleChange(row.id, details.checked)}
+                      >
+                        <Switch.HiddenInput />
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                      </Switch.Root>
+                    </Flex>
+                  ) : (
+                    // Render NumberInput for number input type (default)
+                    <NumberInput.Root
+                      flex="1"
+                      value={row.data !== null && row.data !== undefined ? row.data.toString() : ""}
+                      onValueChange={(details) => handleChange(row.id, details.value)}
+                      min={0}>
+                      <NumberInput.Input as={ChakraInput} />
+                      <NumberInput.Control>
+                        <NumberInput.IncrementTrigger />
+                        <NumberInput.DecrementTrigger />
+                      </NumberInput.Control>
+                    </NumberInput.Root>
+                  )}
                   {row.isModified && (
                     <Icon as={FaUndo} boxSize={4} color="gray.500" cursor="pointer" onClick={() => handleRevert(row.id)} _hover={{ color: "blue.500" }} />
                   )}

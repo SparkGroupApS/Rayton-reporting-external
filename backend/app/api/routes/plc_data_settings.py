@@ -1,24 +1,28 @@
-from fastapi import APIRouter, Query, Depends, HTTPException, status
 import datetime
-from typing import List
 from uuid import UUID
-from sqlmodel import select
-from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
-from app.models import PlcDataSettings, Tenant, PlcDataSettingsRow, PlcDataSettingsCreate, PlcDataSettingsUpdate, PlantConfig, TextList
-from sqlmodel.ext.asyncio.session import AsyncSession
-from app.core.db import get_data_async_session
-from pydantic import BaseModel
 
-# Import MQTT-related models and WebSocket manager
-from app.models import (
-    PlcDataSettingsMqttPayload,
-    CommandResponse
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_mqtt import FastMQTT
-from app.mqtt_handlers import mqtt
+from pydantic import BaseModel
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.api.deps import CurrentUser, SessionDep, get_mqtt_client
 
 # Import WebSocket manager to register message-tenant mappings
 from app.api.routes.ws import manager
+from app.core.db import get_data_async_session
+
+# Import MQTT-related models and WebSocket manager
+from app.models import (
+    CommandResponse,
+    PlantConfig,
+    PlcDataSettings,
+    PlcDataSettingsMqttPayload,
+    PlcDataSettingsUpdate,
+    Tenant,
+    TextList,
+)
 
 
 # Extended response model that includes text values from related tables
@@ -31,63 +35,113 @@ class PlcDataSettingsExtendedRow(BaseModel):
     updated_at: datetime.datetime | None
     updated_by: str | None
     device_text: str | None  # TEXT_L2 from PLANT_CONFIG
-    data_text: str | None    # TEXT_L2 from TEXT_LIST where CLASS_ID = 130
+    data_text: str | None  # TEXT_L2 from TEXT_LIST where CLASS_ID = 130
+    input_type: str  # "number", "textlist", or "boolean"
+    textlist_entries: dict[str, str] | None = None  # Only for textlist input_type
 
 
 # Helper function to get device text from PLANT_CONFIG table
-async def get_device_text(data_session: AsyncSession, plant_id: int, device_id: int) -> str | None:
+async def get_device_text(
+    data_session: AsyncSession, plant_id: int, device_id: int
+) -> str | None:
     stmt = select(PlantConfig.TEXT_L2).where(
-        PlantConfig.PLANT_ID == plant_id,
-        PlantConfig.DEVICE_ID == device_id
+        PlantConfig.PLANT_ID == plant_id, PlantConfig.DEVICE_ID == device_id
     )
     result = await data_session.exec(stmt)
     return result.first()
 
 
-# Helper function to get data text from TEXT_LIST table where CLASS_ID = 130
-async def get_data_text(data_session: AsyncSession, data_id: int) -> str | None:
-    stmt = select(TextList.TEXT_L2).where(
-        TextList.DATA_ID == data_id,
-        TextList.CLASS_ID == 130
-    )
+# Helper function to get data text and check for CHILD_CLASS_ID from TEXT_LIST table
+async def get_data_info(
+    data_session: AsyncSession, data_id: int
+) -> tuple[str | None, str | None, int | None, dict[str, str] | None]:
+    # First, get the main entry for this DATA_ID to check if it has CHILD_CLASS_ID
+    stmt = (
+        select(TextList)
+        .where(TextList.DATA_ID == data_id, TextList.CLASS_ID == 130)
+        .limit(1)
+    )  # Get any entry for this DATA_ID to check CHILD_CLASS_ID
     result = await data_session.exec(stmt)
-    return result.first()
+    main_entry = result.first()
+
+    if (
+        main_entry
+        and main_entry.CHILD_CLASS_ID is not None
+        and main_entry.CHILD_CLASS_ID != 0
+    ):
+        # This data_id has a CHILD_CLASS_ID, so we need to fetch the textlist entries
+        child_class_id = main_entry.CHILD_CLASS_ID
+        # Fetch all entries where CLASS_ID = CHILD_CLASS_ID
+        child_stmt = select(TextList).where(TextList.CLASS_ID == child_class_id)
+        child_results = await data_session.exec(child_stmt)
+        child_entries = child_results.all()
+
+        # Create a mapping of DATA_ID to TEXT_L2 for the textlist entries
+        textlist_entries = {}
+        for entry in child_entries:
+            if entry.DATA_ID is not None and entry.TEXT_L2 is not None:
+                textlist_entries[str(entry.DATA_ID)] = entry.TEXT_L2
+
+        # Use the main entry's TEXT_L2 as the data_text
+        data_text = main_entry.TEXT_L2
+        return data_text, data_text, child_class_id, textlist_entries
+    else:
+        # No CHILD_CLASS_ID, so it's a regular entry
+        stmt = select(TextList.TEXT_L2).where(
+            TextList.DATA_ID == data_id, TextList.CLASS_ID == 130
+        )
+        result = await data_session.exec(stmt)
+        data_text = result.first()
+        return data_text, data_text, None, None
 
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
+
 # New endpoint that returns extended data with text values from related tables
-@router.get("/plc-data-settings", response_model=List[PlcDataSettingsExtendedRow])
+@router.get("/plc-data-settings", response_model=list[PlcDataSettingsExtendedRow])
 async def get_plc_data_settings(
     current_user: CurrentUser,
     primary_session: SessionDep,
     data_session: AsyncSession = Depends(get_data_async_session),
     tenant_id: UUID = Query(..., description="Tenant ID to fetch data for"),
-    plant_ids: List[int] = Query(None, description="Optional list of PLANT_IDs to fetch"),
-    device_ids: List[int] = Query(None, description="Optional list of DEVICE_IDs to fetch"),
+    plant_ids: list[int] = Query(
+        None, description="Optional list of PLANT_IDs to fetch"
+    ),
+    device_ids: list[int] = Query(
+        None, description="Optional list of DEVICE_IDs to fetch"
+    ),
 ):
     # Проверяем существование тенанта
     tenant = await primary_session.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found"
+            detail=f"Tenant {tenant_id} not found",
         )
 
     if tenant.plant_id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No plant_id configured for tenant {tenant_id}"
+            detail=f"No plant_id configured for tenant {tenant_id}",
         )
 
-    # Получаем настройки для plant_id
-    stmt = select(PlcDataSettings).where(PlcDataSettings.PLANT_ID == tenant.plant_id, PlcDataSettings.DEVICE_ID == 0) 
+    # Build a list of query conditions dynamically
+    conditions = [PlcDataSettings.PLANT_ID == tenant.plant_id]
 
     if plant_ids:
-        stmt = stmt.where(PlcDataSettings.PLANT_ID.in_(plant_ids))
-    
+        # This adds an additional constraint if plant_ids are specified
+        conditions.append(PlcDataSettings.PLANT_ID.in_(plant_ids))  # type: ignore
+
     if device_ids:
-        stmt = stmt.where(PlcDataSettings.DEVICE_ID.in_(device_ids))
+        # If specific device_ids are provided, filter by that list
+        conditions.append(PlcDataSettings.DEVICE_ID.in_(device_ids))  # type: ignore
+    else:
+        # Otherwise, fall back to the default of DEVICE_ID = 0
+        conditions.append(PlcDataSettings.DEVICE_ID == 0)
+
+    # Construct the final statement from all conditions
+    stmt = select(PlcDataSettings).where(*conditions)
 
     results = (await data_session.exec(stmt)).all()
     if not results:
@@ -102,8 +156,24 @@ async def get_plc_data_settings(
                 continue
 
             # Get the text values from related tables
-            device_text = await get_device_text(data_session, db_row.PLANT_ID, db_row.DEVICE_ID)
-            data_text = await get_data_text(data_session, db_row.DATA_ID)
+            device_text = await get_device_text(
+                data_session, db_row.PLANT_ID, db_row.DEVICE_ID
+            )
+            data_info = await get_data_info(data_session, db_row.DATA_ID)
+            data_text, _, child_class_id, textlist_entries = data_info
+
+            # Determine the input type based on the presence of child_class_id and other factors
+            if child_class_id is not None and textlist_entries:
+                input_type = "textlist"
+            elif (
+                textlist_entries
+                and len(textlist_entries) == 2
+                and all(k in ["0", "1"] for k in textlist_entries.keys())
+            ):
+                # If there are only 2 entries with keys '0' and '1', treat as boolean
+                input_type = "boolean"
+            else:
+                input_type = "number"
 
             # Create a dictionary to map DB attributes to Pydantic model fields
             row_dict = {
@@ -116,6 +186,10 @@ async def get_plc_data_settings(
                 "updated_by": db_row.UPDATED_BY,
                 "device_text": device_text,
                 "data_text": data_text,
+                "input_type": input_type,
+                "textlist_entries": textlist_entries
+                if input_type == "textlist"
+                else None,
             }
             validated_row = PlcDataSettingsExtendedRow.model_validate(row_dict)
             response_data.append(validated_row)
@@ -131,30 +205,37 @@ async def get_plc_data_settings(
     return response_data
 
 
-@router.put("/plc-data-settings", response_model=CommandResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.put(
+    "/plc-data-settings",
+    response_model=CommandResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def update_plc_data_settings(
-    settings: List[PlcDataSettingsUpdate],
+    settings: list[PlcDataSettingsUpdate],
     current_user: CurrentUser,
     primary_session: SessionDep,
     data_session: AsyncSession = Depends(get_data_async_session),
     tenant_id: UUID = Query(..., description="Tenant ID to update settings for"),
-    mqtt_client: FastMQTT = Depends(get_mqtt_client)
+    mqtt_client: FastMQTT = Depends(get_mqtt_client),
 ):
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
-         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for this tenant",
+        )
 
     # Get plant_id for the tenant
     tenant = await primary_session.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found"
+            detail=f"Tenant {tenant_id} not found",
         )
 
     if tenant.plant_id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No plant_id configured for tenant {tenant_id}"
+            detail=f"No plant_id configured for tenant {tenant_id}",
         )
 
     plant_id = tenant.plant_id
@@ -165,21 +246,24 @@ async def update_plc_data_settings(
         # Find the existing setting to get the actual data_id from the database
         stmt = select(PlcDataSettings).where(
             PlcDataSettings.PLANT_ID == plant_id,
-            PlcDataSettings.ID == setting.id  # Using the ID from the frontend as the database ID
+            PlcDataSettings.ID
+            == setting.id,  # Using the ID from the frontend as the database ID
         )
         result = await data_session.exec(stmt)
         db_setting = result.first()
-        
+
         if not db_setting:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Setting with ID {setting.id} not found for plant {plant_id}"
+                detail=f"Setting with ID {setting.id} not found for plant {plant_id}",
             )
-        
-        settings_for_mqtt.append({
-            "data_id": db_setting.DATA_ID,  # Use the actual DATA_ID from the database
-            "data": setting.data
-        })
+
+        settings_for_mqtt.append(
+            {
+                "data_id": db_setting.DATA_ID,  # Use the actual DATA_ID from the database
+                "data": setting.data,
+            }
+        )
 
     # --- PUBLISH TO MQTT ---
     try:
@@ -187,32 +271,36 @@ async def update_plc_data_settings(
         # Include current user's email in the payload, with fallback to user ID if email is None
         updated_by_info = current_user.email or str(current_user.id)
         plc_settings_payload = PlcDataSettingsMqttPayload(
-            plant_id=plant_id,
-            settings=settings_for_mqtt,
-            updated_by=updated_by_info
+            plant_id=plant_id, settings=settings_for_mqtt, updated_by=updated_by_info
         )
-                
+
         # Define the specific topic for PLC data settings
         topic = f"cmd/cloud-to-site/{plant_id}/plc-settings"
-        
-        print(f"Publishing PLC data settings to MQTT topic: {topic} (MsgID: {plc_settings_payload.message_id})")
-        
+
+        print(
+            f"Publishing PLC data settings to MQTT topic: {topic} (MsgID: {plc_settings_payload.message_id})"
+        )
+
         # Register the message-tenant mapping before publishing
-        manager.register_message_tenant_mapping(plc_settings_payload.message_id, str(tenant_id))
-        
+        manager.register_message_tenant_mapping(
+            plc_settings_payload.message_id, str(tenant_id)
+        )
+
         # Publish the JSON of the PLC settings payload
         mqtt_client.publish(
-            topic, 
-            plc_settings_payload.model_dump_json(), 
-            qos=0 # Use QoS 1 for commands to ensure they arrive
+            topic,
+            plc_settings_payload.model_dump_json(),
+            qos=0,  # Use QoS 1 for commands to ensure they arrive
         )
-        
+
         # Return the 202 response with the tracking ID
         return CommandResponse(
             message="PLC data settings update sent",
-            message_id=plc_settings_payload.message_id
+            message_id=plc_settings_payload.message_id,
         )
-        
+
     except Exception as e:
-        print(f"CRITICAL: Failed to publish PLC data settings to MQTT for plant {plant_id}: {e}")
+        print(
+            f"CRITICAL: Failed to publish PLC data settings to MQTT for plant {plant_id}: {e}"
+        )
         raise HTTPException(status_code=500, detail="Failed to publish to MQTT")

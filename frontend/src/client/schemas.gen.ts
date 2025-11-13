@@ -465,10 +465,28 @@ export const PlcDataSettingsExtendedRowSchema = {
                 }
             ],
             title: 'Data Text'
+        },
+        input_type: {
+            type: 'string',
+            title: 'Input Type'
+        },
+        textlist_entries: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'string'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Textlist Entries'
         }
     },
     type: 'object',
-    required: ['id', 'plant_id', 'device_id', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text'],
+    required: ['id', 'plant_id', 'device_id', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text', 'input_type'],
     title: 'PlcDataSettingsExtendedRow'
 } as const;
 

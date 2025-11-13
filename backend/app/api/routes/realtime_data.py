@@ -1,28 +1,24 @@
 # backend/app/api/routes/realtime_data.py
 
-import datetime
 import uuid
 from typing import Any
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import case, func
+from sqlalchemy.orm import aliased
 from sqlmodel import and_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy import func
-from sqlalchemy import case
-from sqlalchemy.orm import aliased
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import get_data_async_session
 from app.models import (
+    PlantConfig,
     PlcDataRealtime,
-    Tenant,
-    TextList,
     RealtimeDataPoint,
     RealtimeDataResponse,
-    PlantConfig,
+    Tenant,
+    TextList,
 )
-
 
 
 # --- UPDATED Helper function ---
@@ -91,12 +87,12 @@ async def read_realtime_latest(
 
     # print("target_plant_id:", target_plant_id)
     # print("device_ids:", device_ids)
- 
+
 
 
     # 4. Main query
     # -- Дополнительный alias для второго TextList (если CHILD_CLASS_ID не NULL)
- 
+
 
 
     # CASE: если есть CHILD_CLASS_ID, то берём текст из дочернего TextListChild

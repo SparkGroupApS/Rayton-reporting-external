@@ -1,6 +1,7 @@
 # backend/app/api/routes/plants.py
 
 from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -32,25 +33,25 @@ async def read_plant_by_id(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Tenant not found"
             )
-        
+
         # Check if tenant's plant_id matches requested plant_id
         if tenant.plant_id != plant_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this plant"
             )
-    
+
     # Fetch plant from data database
     statement = select(PlantList).where(PlantList.PLANT_ID == plant_id)
     result = await data_session.exec(statement)
     plant = result.first()
-    
+
     if not plant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plant with ID {plant_id} not found"
         )
-    
+
     # Return plant data as dict
     return {
         "ID": plant.ID,
@@ -81,7 +82,7 @@ async def read_all_plants(
         statement = select(PlantList)
         result = await data_session.exec(statement)
         plants = result.all()
-        
+
         return [
             {
                 "ID": plant.ID,
@@ -96,19 +97,19 @@ async def read_all_plants(
             }
             for plant in plants
         ]
-    
+
     # For regular users, return only their tenant's plant
     tenant = await primary_session.get(Tenant, current_user.tenant_id)
     if not tenant or not tenant.plant_id:
         return []
-    
+
     statement = select(PlantList).where(PlantList.PLANT_ID == tenant.plant_id)
     result = await data_session.exec(statement)
     plant = result.first()
-    
+
     if not plant:
         return []
-    
+
     return [
         {
             "ID": plant.ID,
