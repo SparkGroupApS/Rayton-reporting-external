@@ -1,10 +1,8 @@
 import datetime
 import uuid
 from decimal import Decimal
-from typing import Optional, Dict, Any, Union  # Import Dict
 from enum import Enum
-
-from typing import List
+from typing import Any, Optional  # Import Dict
 
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import MetaData
@@ -235,7 +233,7 @@ external_metadata = MetaData()
 # --- 3. DEFINE YOUR EXTERNALLY MANAGED TABLE MODEL ---
 # This model represents the existing table in your 'MARIADB_DB_DATA' database
 class ClassList(SQLModel, table=True, metadata=external_metadata):
-    __tablename__ = "CLASS_LIST"  # Explicit table name
+    __tablename__ = "CLASS_LIST"
 
     ID: int | None = Field(
         default=None, primary_key=True, sa_column_kwargs={"name": "ID"}
@@ -324,10 +322,10 @@ class DeviceInfo(BaseModel):
     parent_id: int
     plant_id: int
 
+
 class PlantConfigResponse(BaseModel):
     tenant_id: str
-    devices: List[DeviceInfo]
-
+    devices: list[DeviceInfo]
 
 
 class DeviceInfo(BaseModel):
@@ -337,10 +335,10 @@ class DeviceInfo(BaseModel):
     parent_id: int
     plant_id: int
 
+
 class PlantConfigResponse(BaseModel):
     tenant_id: str
-    devices: List[DeviceInfo]
-
+    devices: list[DeviceInfo]
 
 
 class PlantList(SQLModel, table=True, metadata=external_metadata):
@@ -504,7 +502,7 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     CLASS_ID: int | None = Field(
         default=None, index=True
     )  # Part of unique key, also foreign key target
-    CHILD_CLASS_ID: int | None = Field(default=None) 
+    CHILD_CLASS_ID: int | None = Field(default=None)
     DATA_ID: int | None = Field(default=None, index=True)  # Part of unique key
     TEXT_ID: str | None = Field(default=None, max_length=100)
     TEXT_L1: str | None = Field(default=None, max_length=100)
@@ -517,12 +515,22 @@ class PlcDataSettings(SQLModel, table=True, metadata=external_metadata):
     ID: int | None = Field(
         default=None, primary_key=True, sa_column_kwargs={"name": "ID"}
     )
-    PLANT_ID: int = Field(nullable=False, sa_column_kwargs={"name": "PLANT_ID"})  # Part of unique key
-    DEVICE_ID: int = Field(nullable=False, sa_column_kwargs={"name": "DEVICE_ID"})  # Part of unique key
-    DATA_ID: int = Field(nullable=False, sa_column_kwargs={"name": "DATA_ID"})  # Part of unique key
+    PLANT_ID: int = Field(
+        nullable=False, sa_column_kwargs={"name": "PLANT_ID"}
+    )  # Part of unique key
+    DEVICE_ID: int = Field(
+        nullable=False, sa_column_kwargs={"name": "DEVICE_ID"}
+    )  # Part of unique key
+    DATA_ID: int = Field(
+        nullable=False, sa_column_kwargs={"name": "DATA_ID"}
+    )  # Part of unique key
     DATA: float | None = Field(default=None, sa_column_kwargs={"name": "DATA"})
-    UPDATED_AT: datetime.datetime | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_AT"})
-    UPDATED_BY: str | None = Field(default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100)
+    UPDATED_AT: datetime.datetime | None = Field(
+        default=None, sa_column_kwargs={"name": "UPDATED_AT"}
+    )
+    UPDATED_BY: str | None = Field(
+        default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100
+    )
 
 
 # --- API Schema Models for PLC Data Settings ---
@@ -637,20 +645,23 @@ class HistoricalDataGroupedResponse(BaseModel):
 
 # --- 1. Models for COMMANDS (Cloud-to-Site) ---
 
+
 # This is the payload for the "cmd/cloud-to-site/{plant_id}/schedule" topic
 class ScheduleMqttPayload(BaseModel):
     message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     plant_id: int
     date: datetime.date
     schedule: list[ScheduleRow]
-    updated_by: Optional[str] = None
+    updated_by: str | None = None
+
 
 # This is the payload for the "cmd/cloud-to-site/{plant_id}/plc-settings" topic
 class PlcDataSettingsMqttPayload(BaseModel):
     message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     plant_id: int
     settings: list[dict]  # Each dict contains data_id and data
-    updated_by: Optional[str] = None
+    updated_by: str | None = None
+
 
 # This is the "envelope" for the "cmd/cloud-to-site/{plant_id}/action" topic
 class ActionCommand(str, Enum):
@@ -658,24 +669,28 @@ class ActionCommand(str, Enum):
     SET_CHARGE_POWER = "set_charge_power"
     # Add other *instant* actions here
 
+
 class ActionEnvelope(BaseModel):
     message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     command: ActionCommand
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
 
 # --- 2. Models for RESPONSES (Site-to-Cloud) ---
 # This is the payload for "resp/site-to-cloud/{plant_id}/..." topics
 
+
 class MqttResponseStatus(str, Enum):
     OK = "ok"
     ERROR = "error"
 
+
 class MqttResponsePayload(BaseModel):
     message_id: str
     status: MqttResponseStatus
-    error: Optional[Union[str, int]] = None
+    error: str | int | None = None
+
 
 # --- 3. API Response Model (for the 202 Accepted) ---
 # This is used by the API endpoints, not in MQTT

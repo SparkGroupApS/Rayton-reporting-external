@@ -1,32 +1,31 @@
 // src/components/Dashboard/PLCDataSettingsTable.tsx
 
 import {
-  Box,
   Button,
-  Flex,
-  Spinner,
-  Text,
-  VStack,
-  Icon, // Import the Chakra Icon wrapper
-  SimpleGrid,
-  Heading,
-  Field,
-  Input as ChakraInput,
   Card,
-  NumberInput,
+  Input as ChakraInput,
+  Field,
+  Flex,
+  Heading,
+  Icon,
   NativeSelect,
+  NumberInput, // Import the Chakra Icon wrapper
+  SimpleGrid,
+  Spinner,
   Switch,
+  Text,
+  VStack
 } from "@chakra-ui/react";
 
 // --- NEW: Import icons from react-icons ---
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { CgSpinner } from "react-icons/cg";
-import { FaUndo } from "react-icons/fa"; // Import the undo icon for reverting values
+import { FaCheckCircle, FaTimesCircle, FaUndo } from "react-icons/fa";
 // --- END NEW ---
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import type { ApiError, PlcDataSettingsExtendedRow, CommandResponse, SettingsUpdatePlcDataSettingsResponse } from "@/client";
+import type { CommandResponse, PlcDataSettingsExtendedRow } from "@/client";
 import { toaster } from "@/components/ui/toaster";
 import { useBulkUpdatePlcDataSettings, useGetPlcDataSettings } from "@/hooks/usePlcDataSettingsQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 
 // --- NEW: A small component to display command status with icons ---
 const CommandStatusDisplay = ({ status, message }: { status: "idle" | "sending" | "success" | "failed"; message?: string }) => {
@@ -88,6 +87,7 @@ interface ModifiedPlcDataRow extends PlcDataSettingsExtendedRow {
 }
 
 const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
+  const queryClient = useQueryClient();
   const { data: serverData, isLoading: loadingSettings, error, dataUpdatedAt } = useGetPlcDataSettings({ tenantId });
 
   const { mutate: bulkUpdatePlcDataSettings, isPending: isSaving } = useBulkUpdatePlcDataSettings({ tenantId });
@@ -189,6 +189,10 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
 
               if (data.status === "ok" || data.status === "success") {
                 setCommandStatus({ status: "success", message: "Command confirmed" });
+                // Invalidate the query to refetch the updated data from the server
+                queryClient.invalidateQueries({
+                  queryKey: ["plcDataSettings", { tenantId }],
+                });
               } else {
                 setCommandStatus({ status: "failed", message: `Command failed: ${data.error || "Unknown error"}` });
               }

@@ -3,8 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ApiError,
   type PlcDataSettingsExtendedRow,
- SettingsService,
- CommandResponse,
+  SettingsService
 } from "../client"; // Adjust path if needed
 
 interface PlcDataSettingsParams {
@@ -50,10 +49,7 @@ export const useBulkUpdatePlcDataSettings = (params: PlcDataSettingsParams) => {
 
     onSuccess: (_response) => {
       // 'response' is the CommandResponse from backend with message_id
-      // Invalidate the query to refetch after save
-      queryClient.invalidateQueries({
-        queryKey: ["plcDataSettings", { tenantId }],
-      });
+      // Note: Query invalidation is now handled by WebSocket confirmation in the component
       // Optional: Update the query cache directly with the response
       // queryClient.setQueryData(['plcDataSettings', { tenantId }], savedData);
     },
