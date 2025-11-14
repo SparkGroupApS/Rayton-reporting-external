@@ -4,10 +4,10 @@ import { buttonRecipe } from "./theme/button.recipe"
 export const system = createSystem(defaultConfig, {
   globalCss: {
     html: {
-      fontSize: "18px",
+      fontSize: "16px", // More standard base font size for mobile
     },
     body: {
-      fontSize: "0.75rem",
+      fontSize: "0.875rem", // Slightly larger base font for better readability on mobile
       margin: 0,
       padding: 0,
       fontFamily: "Montserrat, sans-serif",

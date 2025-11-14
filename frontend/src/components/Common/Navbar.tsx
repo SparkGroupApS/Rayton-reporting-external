@@ -1,11 +1,11 @@
 import { Flex, Image, useBreakpointValue } from "@chakra-ui/react"
 import { Link } from "@tanstack/react-router"
 
-import Logo from "/assets/images/rayton_black.png"
 import UserMenu from "./UserMenu"
+import Logo from "/assets/images/rayton_black.png"
 
 function Navbar() {
-  const display = useBreakpointValue({ base: "none", md: "flex" })
+  const display = useBreakpointValue({ base: "flex", md: "flex" })
 
   return (
     <Flex
