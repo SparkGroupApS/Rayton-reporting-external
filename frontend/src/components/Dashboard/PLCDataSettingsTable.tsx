@@ -1,32 +1,31 @@
 // src/components/Dashboard/PLCDataSettingsTable.tsx
 
 import {
-  Box,
   Button,
-  Flex,
-  Spinner,
-  Text,
-  VStack,
-  Icon, // Import the Chakra Icon wrapper
-  SimpleGrid,
-  Heading,
-  Field,
-  Input as ChakraInput,
   Card,
-  NumberInput,
+  Input as ChakraInput,
+  Field,
+  Flex,
+  Heading,
+  Icon,
   NativeSelect,
+  NumberInput, // Import the Chakra Icon wrapper
+  SimpleGrid,
+  Spinner,
   Switch,
+  Text,
+  VStack
 } from "@chakra-ui/react";
 
 // --- NEW: Import icons from react-icons ---
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { CgSpinner } from "react-icons/cg";
-import { FaUndo } from "react-icons/fa"; // Import the undo icon for reverting values
+import { FaCheckCircle, FaTimesCircle, FaUndo } from "react-icons/fa";
 // --- END NEW ---
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import type { ApiError, PlcDataSettingsExtendedRow, CommandResponse, SettingsUpdatePlcDataSettingsResponse } from "@/client";
+import type { CommandResponse, PlcDataSettingsExtendedRow } from "@/client";
 import { toaster } from "@/components/ui/toaster";
 import { useBulkUpdatePlcDataSettings, useGetPlcDataSettings } from "@/hooks/usePlcDataSettingsQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 
 // --- NEW: A small component to display command status with icons ---
 const CommandStatusDisplay = ({ status, message }: { status: "idle" | "sending" | "success" | "failed"; message?: string }) => {
@@ -88,6 +87,7 @@ interface ModifiedPlcDataRow extends PlcDataSettingsExtendedRow {
 }
 
 const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
+  const queryClient = useQueryClient();
   const { data: serverData, isLoading: loadingSettings, error, dataUpdatedAt } = useGetPlcDataSettings({ tenantId });
 
   const { mutate: bulkUpdatePlcDataSettings, isPending: isSaving } = useBulkUpdatePlcDataSettings({ tenantId });
@@ -189,6 +189,10 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
 
               if (data.status === "ok" || data.status === "success") {
                 setCommandStatus({ status: "success", message: "Command confirmed" });
+                // Invalidate the query to refetch the updated data from the server
+                queryClient.invalidateQueries({
+                  queryKey: ["plcDataSettings", { tenantId }],
+                });
               } else {
                 setCommandStatus({ status: "failed", message: `Command failed: ${data.error || "Unknown error"}` });
               }
@@ -354,11 +358,11 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
   return (
     <VStack gap={6} align="stretch">
       {/* Dynamic inputs using SimpleGrid */}
-      <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 3, xl: 3 }} gap={{ base: "2", sm: "2", md: "2", lg: "4", xl: "4" }}>
+      <SimpleGrid columns={{ base: 1, sm: 1, md: 2, lg: 3, xl: 3 }} gap={{ base: "2", sm: "2", md: "3", lg: "4", xl: "4" }}>
         {localData.map((row) => (
           <Card.Root key={row.id} variant="outline" size="sm">
             <Card.Header pb={2}>
-              <Heading size="sm" whiteSpace="normal" textOverflow="ellipsis" overflow="hidden">
+              <Heading size="sm" whiteSpace="normal" textOverflow="ellipsis" overflow="hidden" fontSize={{ base: "xs", sm: "sm" }}>
                 {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id})
               </Heading>
             </Card.Header>
@@ -367,56 +371,58 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
                 {/* <Field.Label fontSize="xs" mb={1}>
                   ID: {row.id}
                 </Field.Label> */}
-                <Flex alignItems="center" justifyContent="space-between" gap={2}>
-                  {row.input_type === "textlist" && row.textlist_entries ? (
-                    // Render NativeSelect component for textlist input type
-                    <NativeSelect.Root flex="1">
-                      <NativeSelect.Field
-                        value={
-                          row.data !== null && row.data !== undefined
+                <Flex alignItems="center" justifyContent="space-between" gap={2} flexDir={{ base: "column", md: "row" }}>
+                  <Flex flex="1" w="100%" minW="0"> {/* Ensure flex item doesn't overflow */}
+                    {row.input_type === "textlist" && row.textlist_entries ? (
+                      // Render NativeSelect component for textlist input type
+                      <NativeSelect.Root w="100%">
+                        <NativeSelect.Field
+                          value={
+                            row.data !== null && row.data !== undefined
                             ? row.textlist_entries[row.data.toString()] || ""
                             : ""
-                        }
-                        onChange={(e) => handleChange(row.id, e.target.value)}
-                      >
-                        <option value="">Select an option</option>
-                        {Object.entries(row.textlist_entries).map(([value, text]) => (
-                          <option key={value} value={text}>
-                            {text}
-                          </option>
-                        ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  ) : row.input_type === "boolean" ? (
-                    // Render Switch component for boolean input type
-                    <Flex alignItems="center" justifyContent="space-between" gap={2} flex="1">
-                      <Text flex="1">{row.data ? "Enabled" : "Disabled"}</Text>
-                      <Switch.Root
-                        checked={!!row.data}
-                        onCheckedChange={(details) => handleChange(row.id, details.checked)}
-                      >
-                        <Switch.HiddenInput />
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                      </Switch.Root>
-                    </Flex>
-                  ) : (
-                    // Render NumberInput for number input type (default)
-                    <NumberInput.Root
-                      flex="1"
-                      value={row.data !== null && row.data !== undefined ? row.data.toString() : ""}
-                      onValueChange={(details) => handleChange(row.id, details.value)}
-                      min={0}>
-                      <NumberInput.Input as={ChakraInput} />
-                      <NumberInput.Control>
-                        <NumberInput.IncrementTrigger />
-                        <NumberInput.DecrementTrigger />
-                      </NumberInput.Control>
-                    </NumberInput.Root>
-                  )}
+                          }
+                          onChange={(e) => handleChange(row.id, e.target.value)}
+                        >
+                          <option value="">Select an option</option>
+                          {Object.entries(row.textlist_entries).map(([value, text]) => (
+                            <option key={value} value={text}>
+                              {text}
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                      </NativeSelect.Root>
+                    ) : row.input_type === "boolean" ? (
+                      // Render Switch component for boolean input type
+                      <Flex alignItems="center" justifyContent="space-between" gap={2} w="100%">
+                        <Text flex="1" wordBreak="break-word">{row.data ? "Enabled" : "Disabled"}</Text>
+                        <Switch.Root
+                          checked={!!row.data}
+                          onCheckedChange={(details) => handleChange(row.id, details.checked)}
+                        >
+                          <Switch.HiddenInput />
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                        </Switch.Root>
+                      </Flex>
+                    ) : (
+                      // Render NumberInput for number input type (default)
+                      <NumberInput.Root
+                        w="100%"
+                        value={row.data !== null && row.data !== undefined ? row.data.toString() : ""}
+                        onValueChange={(details) => handleChange(row.id, details.value)}
+                        min={0}>
+                        <NumberInput.Input as={ChakraInput} />
+                        <NumberInput.Control>
+                          <NumberInput.IncrementTrigger />
+                          <NumberInput.DecrementTrigger />
+                        </NumberInput.Control>
+                      </NumberInput.Root>
+                    )}
+                  </Flex>
                   {row.isModified && (
-                    <Icon as={FaUndo} boxSize={4} color="gray.500" cursor="pointer" onClick={() => handleRevert(row.id)} _hover={{ color: "blue.500" }} />
+                    <Icon as={FaUndo} boxSize={4} color="gray.500" cursor="pointer" onClick={() => handleRevert(row.id)} _hover={{ color: "blue.500" }} alignSelf="flex-start" mt={{ base: 2, md: 0 }} />
                   )}
                 </Flex>
               </Field.Root>

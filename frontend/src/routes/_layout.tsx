@@ -22,7 +22,7 @@ function Layout() {
       <Navbar />
       <Flex flex="1" overflow="hidden">
         <Sidebar />
-        <Flex flex="1" direction="column" p={4} overflowY="auto">
+        <Flex flex="1" direction="column" p={{ base: 2, md: 4 }} overflowY="auto">
           <Outlet />
         </Flex>
       </Flex>

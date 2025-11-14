@@ -37,17 +37,18 @@ const Sidebar = () => {
             color="inherit"
             display={{ base: "flex", md: "none" }}
             aria-label="Open Menu"
-            position="absolute"
+            position="fixed"
             zIndex="100"
             m={4}
+            top="calc(65px + 1rem)" // Position below the navbar with additional margin
           >
             <FaBars />
           </IconButton>
         </DrawerTrigger>
         <DrawerContent maxW="xs">
           <DrawerCloseTrigger />
-          <DrawerBody>
-            <Flex flexDir="column" justify="space-between">
+          <DrawerBody pt={12}> {/* Add padding to account for close button */}
+            <Flex flexDir="column" justify="space-between" h="100%">
               <Box>
                 <SidebarItems onClose={() => setOpen(false)} />
                 <Flex
@@ -59,19 +60,19 @@ const Sidebar = () => {
                   gap={4}
                   px={4}
                   py={2}
+                  mt={4}
                 >
                   <FiLogOut />
                   <Text>Log Out</Text>
                 </Flex>
               </Box>
               {currentUser?.email && (
-                <Text fontSize="sm" p={2} truncate maxW="sm">
+                <Text fontSize="sm" p={4} truncate maxW="sm" mt="auto">
                   Logged in as: {currentUser.email}
                 </Text>
               )}
             </Flex>
           </DrawerBody>
-          <DrawerCloseTrigger />
         </DrawerContent>
       </DrawerRoot>
 
@@ -85,7 +86,7 @@ const Sidebar = () => {
         minW="3xs" // Change "xs" to "sm", "md", or a specific value like "250px", "16rem"
         // Optionally add a fixed width:
         // w="250px"
-        h="100vh"
+        h="calc(100vh - 65px)" // Subtract navbar height
         p={4}
       >
         <Box w="100%">
