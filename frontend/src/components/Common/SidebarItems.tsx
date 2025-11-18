@@ -1,10 +1,10 @@
 // frontend/src/components/Common/SidebarItems.tsx
-import { Box, Flex, Icon, Spinner, Text, Separator  } from "@chakra-ui/react"
+import { Box, Flex, Icon, Separator, Spinner, Text } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
 import { useMemo } from "react"
 import { FaBuilding, FaSolarPanel } from "react-icons/fa"
-import { FiHome, FiSettings, FiUsers } from "react-icons/fi"
+import { FiSettings, FiUsers } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
 import type { TenantPublic, UserPublic } from "@/client"
@@ -37,7 +37,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
     {},
     { enabled: !!isPrivilegedUser },
   )
-  
+
   const { data: userTenant, isLoading: isLoadingUserTenant } = useTenant(
     currentUser?.tenant_id ?? null,
     {
@@ -82,7 +82,10 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   ]
 
   // Admin-only items
-  const adminItems: SidebarItem[] = isPrivilegedUser
+  //  const adminItems: SidebarItem[] = isPrivilegedUser
+  const shouldShowAdminItems =
+    isPrivilegedUser && currentUser?.email !== "solar@rayton.com.ua"
+  const adminItems: SidebarItem[] = shouldShowAdminItems
     ? [
         { icon: FiUsers, title: "User Management", path: "/admin" },
         { icon: FaBuilding, title: "Tenant Management", path: "/tenant" },
