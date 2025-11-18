@@ -13,14 +13,10 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    # Checkout - handle both same-repo and fork PRs
     - uses: actions/checkout@v5
       with:
-        # For same-repo PRs, use custom token and checkout the PR branch
-        # For fork PRs, use default token and checkout the merge commit
-        ref: ${{ github.event.pull_request.head.ref }}
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
-        token: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.FULL_STACK_FASTAPI_TEMPLATE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - uses: actions/setup-node@v5
       with:
@@ -50,21 +46,9 @@ jobs:
         POSTGRES_PASSWORD: just-for-generating-client
         FIRST_SUPERUSER_PASSWORD: just-for-generating-client
 
-    - name: Add changes to git
+    - name: Commit and push if changed
       run: |
-        git config --local user.email "github-actions@github.com"
-        git config --local user.name "github-actions"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         git add frontend/src/client
-
-    # Same repo PRs - push changes
-    - name: Push changes
-      if: github.event.pull_request.head.repo.full_name == github.repository
-      run: |
-        git diff --staged --quiet || git commit -m "✨ Autogenerate frontend client"
-        git push
-
-    # Fork PRs - just validate, cannot push
-    - name: Check changes
-      if: github.event.pull_request.head.repo.full_name != github.repository
-      run: |
-        git diff --staged --quiet || (echo "❌ Changes detected in generated client. Please run 'bash scripts/generate-client.sh' locally and commit the changes." && exit 1)
+        git diff --staged --quiet || (git commit -m "✨ Autogenerate frontend client" && git push)
