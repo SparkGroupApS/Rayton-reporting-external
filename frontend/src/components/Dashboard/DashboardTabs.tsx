@@ -1,20 +1,21 @@
 // src/components/Dashboard/DashboardTabs.tsx
+import type { ApiError, DashboardData } from "@/client"
 import {
   Box,
   Grid,
   Spinner,
   Tabs, // Import the main Tabs namespace
 } from "@chakra-ui/react"
-import type { ApiError, DashboardData } from "@/client"
 import { useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 import EnergyTrendChart from "./EnergyTrendChart"
+import ESS from "./ESS"
 import ItemsSection from "./ItemsSection"
 import KpiSection from "./KpiSection"
+import PLCControl from "./PLCControl"
+import PLCDataSettingsTable from "./PLCDataSettingsTable"
 import ScheduleTab from "./ScheduleTab"
 import Smartlogger from "./Smartlogger"
-import ESS from "./ESS"
-import PLCDataSettingsTable from "./PLCDataSettingsTable"
-import { useEffect, useState } from "react"
 
 // Define the props this component needs
 interface DashboardTabsProps {
@@ -130,10 +131,7 @@ const DashboardTabs = ({
       </Tabs.Content>
 
       <Tabs.Content value="control">
-       <Box p={4}>
-          <p>Control content will go here!</p>
-          <p>Control and management features coming soon.</p>
-        </Box>
+       <PLCControl tenantId={selectedTenant} />
       </Tabs.Content>
 
       <Tabs.Content value="settings">

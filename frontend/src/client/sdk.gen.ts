@@ -3,7 +3,56 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, SettingsGetPlcDataSettingsData, SettingsGetPlcDataSettingsResponse, SettingsUpdatePlcDataSettingsData, SettingsUpdatePlcDataSettingsResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ControlGetPlcControlData, ControlGetPlcControlResponse, ControlUpdatePlcControlData, ControlUpdatePlcControlResponse, DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, SettingsGetPlcDataSettingsData, SettingsGetPlcDataSettingsResponse, SettingsUpdatePlcDataSettingsData, SettingsUpdatePlcDataSettingsResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class ControlService {
+    /**
+     * Get Plc Control
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.plantIds Optional list of PLANT_IDs to fetch
+     * @param data.controlTypes Optional list of CONTROL_TYPEs to fetch
+     * @returns PlcDataControlExtendedRow Successful Response
+     * @throws ApiError
+     */
+    public static getPlcControl(data: ControlGetPlcControlData): CancelablePromise<ControlGetPlcControlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/control/plc-data-control',
+            query: {
+                tenant_id: data.tenantId,
+                plant_ids: data.plantIds,
+                control_types: data.controlTypes
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Plc Control
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to update control for
+     * @param data.requestBody
+     * @returns CommandResponse Successful Response
+     * @throws ApiError
+     */
+    public static updatePlcControl(data: ControlUpdatePlcControlData): CancelablePromise<ControlUpdatePlcControlResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/control/plc-data-control',
+            query: {
+                tenant_id: data.tenantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class DashboardService {
     /**

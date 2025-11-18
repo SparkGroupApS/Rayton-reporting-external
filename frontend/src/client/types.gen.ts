@@ -90,6 +90,22 @@ export type PlantConfigResponse = {
     devices: Array<DeviceInfo>;
 };
 
+export type PlcDataControlExtendedRow = {
+    id: number;
+    plant_id: number;
+    control_type: number;
+    data_id: number;
+    data: (number | null);
+    updated_at: (string | null);
+    updated_by: (string | null);
+    device_text: (string | null);
+    data_text: (string | null);
+    input_type: string;
+    textlist_entries?: ({
+    [key: string]: string;
+} | null);
+};
+
 export type PlcDataSettingsExtendedRow = {
     id: number;
     plant_id: number;
@@ -240,6 +256,33 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type ControlGetPlcControlData = {
+    /**
+     * Optional list of CONTROL_TYPEs to fetch
+     */
+    controlTypes?: Array<number>;
+    /**
+     * Optional list of PLANT_IDs to fetch
+     */
+    plantIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type ControlGetPlcControlResponse = (Array<PlcDataControlExtendedRow>);
+
+export type ControlUpdatePlcControlData = {
+    requestBody: Array<PlcDataSettingsUpdate>;
+    /**
+     * Tenant ID to update control for
+     */
+    tenantId: string;
+};
+
+export type ControlUpdatePlcControlResponse = (CommandResponse);
 
 export type DashboardReadDashboardDataData = {
     /**
