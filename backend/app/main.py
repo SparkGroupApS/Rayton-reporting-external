@@ -1,19 +1,19 @@
 # app/main.py
-import sentry_sdk
-from fastapi import FastAPI
-from fastapi.routing import APIRoute
-from starlette.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 import asyncio
 import logging
+from contextlib import asynccontextmanager
+
+import sentry_sdk
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
-from app.core.config import settings
-from app.mqtt_handlers import mqtt  # Import the FastMQTT instance
-from app.core.db import init_db, async_engine
 
 # Import WebSocket router
 from app.api.routes.websocket import router as websocket_router
+from app.core.config import settings
+from app.core.db import async_engine, init_db
+from app.mqtt_handlers import mqtt  # Import the FastMQTT instance
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # def custom_generate_unique_id(route: APIRoute) -> str:
 #    return f"{route.tags[0]}-{route.name}"
+
 
 #    Проверять наличие тегов:
 def custom_generate_unique_id(route):
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up application...")
     try:
         logger.info("Initializing database...")
-        await init_db() # Ensure init_db is async and awaited
+        await init_db()  # Ensure init_db is async and awaited
         logger.info("Database initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -60,15 +61,47 @@ async def lifespan(app: FastAPI):
     # --- Shutdown ---
     logger.info("Shutting down application...")
 
-    # Shutdown MQTT
+    # 1. Shutdown MQTT with Timeout
     try:
-        await mqtt.mqtt_shutdown()
-        logger.info("MQTT disconnected.")
+        logger.info("Disconnecting MQTT...")
+        await asyncio.wait_for(mqtt.mqtt_shutdown(), timeout=3.0)
+        logger.info("MQTT disconnected gracefully.")
+    except asyncio.TimeoutError:
+        logger.warning("⚠️ MQTT shutdown timed out. Forcing.")
     except Exception as e:
         logger.error(f"Error disconnecting MQTT: {e}")
 
-    # Dispose database
-    await async_engine.dispose()
+    # 2. Dispose database
+    try:
+        logger.info("Disposing database connection...")
+        await async_engine.dispose()
+        logger.info("Database connection disposed.")
+    except Exception as e:
+        logger.error(f"Error disposing database: {e}")
+
+    # 3. Force Cancel Pending Tasks (The Fix for Hanging Process)
+    # This cancels any background loops (like MQTT reconnects) that are keeping the process alive.
+    try:
+        current_task = asyncio.current_task()
+        tasks = [t for t in asyncio.all_tasks() if t is not current_task]
+
+        if tasks:
+            logger.info(f"Cancelling {len(tasks)} pending background tasks...")
+            for task in tasks:
+                task.cancel()
+
+            # Wait briefly for tasks to acknowledge cancellation,
+            # but protect against the wait itself being cancelled.
+            try:
+                await asyncio.wait(tasks, timeout=1.0)
+            except asyncio.CancelledError:
+                logger.debug(
+                    "asyncio.wait() was cancelled during shutdown — proceeding."
+                )
+            logger.info("Background tasks cancellation initiated.")
+    except Exception as e:
+        logger.exception("Error while cancelling background tasks: %s", e)
+
     logger.info("Application shutdown complete.")
 
 

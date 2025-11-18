@@ -13,12 +13,11 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    # Checkout - handle both same-repo and fork PRs
-    - uses: actions/checkout@v5
+    - name: Checkout
+      uses: actions/checkout@v5
       with:
-        ref: ${{ github.event.pull_request.head.ref }}
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
-        token: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.FULL_STACK_FASTAPI_TEMPLATE_REPO_TOKEN != '' && secrets.FULL_STACK_FASTAPI_TEMPLATE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
 
     - uses: actions/setup-node@v5
@@ -32,14 +31,14 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
-        version: "0.4.15"
+        version: "latest"
         enable-cache: true
 
-    - name: Install dependencies
+    - name: Install frontend dependencies
       run: npm ci
       working-directory: frontend
 
-    - name: Install Python dependencies
+    - name: Install backend dependencies
       run: uv sync
       working-directory: backend
 
@@ -73,17 +72,10 @@ jobs:
           echo "has_changes=true" >> $GITHUB_OUTPUT
         fi
 
-    - name: Commit and push changes (same repo)
-      if: steps.check_changes.outputs.has_changes == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git commit -m "✨ Autogenerate frontend client"
         git push
-
-    - name: Fail if changes needed (fork)
-      if: steps.check_changes.outputs.has_changes == 'true' && github.event.pull_request.head.repo.full_name != github.repository
-      run: |
-        echo "❌ Changes detected in generated client."
-        echo "Please run 'bash scripts/generate-client.sh' locally and commit the changes."
-        exit 1

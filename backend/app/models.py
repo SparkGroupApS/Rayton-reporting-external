@@ -509,6 +509,30 @@ class TextList(SQLModel, table=True, metadata=external_metadata):
     TEXT_L2: str | None = Field(default=None, max_length=100)
 
 
+class PlcDataControls(SQLModel, table=True, metadata=external_metadata):
+    __tablename__ = "PLC_DATA_CONTROLS"
+
+    ID: int | None = Field(
+        default=None, primary_key=True, sa_column_kwargs={"name": "ID"}
+    )
+    PLANT_ID: int = Field(
+        nullable=False, sa_column_kwargs={"name": "PLANT_ID"}
+    )  # Part of unique key
+    CONTROL_TYPE: int = Field(
+        nullable=False, sa_column_kwargs={"name": "CONTROL_TYPE"}
+    )  # Part of unique key - renamed from DEVICE_ID
+    DATA_ID: int = Field(
+        nullable=False, sa_column_kwargs={"name": "DATA_ID"}
+    )  # Part of unique key
+    DATA: float | None = Field(default=None, sa_column_kwargs={"name": "DATA"})
+    UPDATED_AT: datetime.datetime | None = Field(
+        default=None, sa_column_kwargs={"name": "UPDATED_AT"}
+    )
+    UPDATED_BY: str | None = Field(
+        default=None, sa_column_kwargs={"name": "UPDATED_BY"}, max_length=100
+    )
+
+
 class PlcDataSettings(SQLModel, table=True, metadata=external_metadata):
     __tablename__ = "PLC_DATA_SETTINGS"
 
