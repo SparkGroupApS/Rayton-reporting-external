@@ -157,7 +157,7 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
 
       // Close any existing connection before creating a new one
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close(100, "New connection requested");
+        ws.close(1000, "New connection requested");
       }
 
       // const wsProtocol = backendUrl.startsWith('https://') ? 'wss:' : 'ws:';
@@ -251,7 +251,7 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
     return () => {
       isUnmounted = true;
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close(100, "Component unmounting"); // 1000 indicates normal closure
+        ws.close(1000, "Component unmounting"); // 1000 indicates normal closure
       }
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
