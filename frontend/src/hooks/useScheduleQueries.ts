@@ -49,10 +49,7 @@ export const useBulkUpdateSchedule = (params: ScheduleParams) => {
 
     onSuccess: (_response) => {
       // 'response' is the CommandResponse from backend with message_id
-      // Invalidate the query to refetch after save
-      queryClient.invalidateQueries({
-        queryKey: ["schedule", { tenantId, date }],
-      })
+      // Note: Query invalidation is now handled by WebSocket confirmation in the component
       // Optional: Update the query cache directly with the response
       // queryClient.setQueryData(['schedule', { plantId, tenantDb, date }], savedData);
     },

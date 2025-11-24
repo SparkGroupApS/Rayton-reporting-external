@@ -355,6 +355,7 @@ class PlantList(SQLModel, table=True, metadata=external_metadata):
     timezone: str = Field(default="Europe/Kyiv", nullable=False, max_length=64)
     TEXT_L1: str | None = Field(default=None, max_length=32)
     TEXT_L2: str | None = Field(default=None, max_length=32)
+    tab_config: str | None = Field(default=None, sa_column_kwargs={"name": "tab_config"})  # JSON configuration for tab variations
     created_at: datetime.datetime = Field(
         default_factory=datetime.datetime.utcnow, nullable=False
     )

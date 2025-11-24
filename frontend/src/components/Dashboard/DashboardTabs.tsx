@@ -8,14 +8,12 @@ import {
 } from "@chakra-ui/react"
 import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
+import { usePlant } from "@/hooks/usePlantQueries";
 import EnergyTrendChart from "./EnergyTrendChart"
-import ESS from "./ESS"
 import ItemsSection from "./ItemsSection"
 import KpiSection from "./KpiSection"
-import PLCControl from "./PLCControl"
 import PLCDataSettingsTable from "./PLCDataSettingsTable"
-import ScheduleTab from "./ScheduleTab"
-import Smartlogger from "./Smartlogger"
+import TabRenderer from "./TabRenderer"
 
 // Define the props this component needs
 interface DashboardTabsProps {
@@ -26,6 +24,7 @@ interface DashboardTabsProps {
   energyDataIds: number[] // <-- UPDATED type
   socDataId: number       // <-- UPDATED type
   initialTab?: string     // <-- Add initialTab prop to receive tab from route
+  plantId?: number | string; // <-- Add plantId prop for tab configuration
 }
 
 const DashboardTabs = ({
@@ -35,12 +34,40 @@ const DashboardTabs = ({
   selectedTenant,
   energyDataIds,
   socDataId,
-  initialTab = "main"     // Default to main tab
+  initialTab = "main",     // Default to main tab
+  plantId
 }: DashboardTabsProps) => {
   // Initialize activeTab from the prop passed from the route, default to "main"
   const [activeTab, setActiveTab] = useState(initialTab)
 
   const navigate = useNavigate()
+
+  // Fetch plant configuration to determine which tabs should be visible
+  const { data: plantData, isLoading: isPlantLoading } = usePlant(plantId ? Number(plantId) : null);
+
+  // Define the type for tab configuration
+  interface TabConfig {
+    schedule?: string;
+    ess?: string;
+    smartlogger?: string;
+    plccontrol?: string;
+    [key: string]: string | undefined;
+  }
+
+  // Parse the tab_config JSON string into an object if it exists
+  let tabConfig: TabConfig = {};
+  if (plantData?.tab_config) {
+    try {
+      tabConfig = JSON.parse(plantData.tab_config);
+    } catch (e) {
+      console.error('Error parsing tab_config:', e);
+    }
+  }
+
+  // Determine if a tab should be visible based on configuration
+  const isTabVisible = (tabKey: string): boolean => {
+    return tabConfig[tabKey] !== 'none';
+  };
 
   // Update the URL when activeTab changes
   useEffect(() => {
@@ -53,6 +80,28 @@ const DashboardTabs = ({
       replace: true // Replace history instead of pushing to avoid back button issues
     })
   }, [activeTab, navigate])
+
+  // If the active tab is hidden due to configuration, switch to a visible default tab
+  useEffect(() => {
+    if (!isPlantLoading && activeTab !== 'main' && activeTab !== 'settings' && !isTabVisible(activeTab)) {
+      // Find the first visible configurable tab as default
+      const firstVisibleTab = ['schedule', 'smdata', 'essdata', 'control'].find(tab => isTabVisible(tab === 'smdata' ? 'smartlogger' : tab === 'essdata' ? 'ess' : tab === 'control' ? 'plcontrol' : tab));
+
+      if (firstVisibleTab) {
+        // Map back to the correct tab value
+        const tabMap: Record<string, string> = {
+          'smartlogger': 'smdata',
+          'ess': 'essdata',
+          'plccontrol': 'control'
+        };
+        const mappedTab = tabMap[firstVisibleTab] || firstVisibleTab;
+        setActiveTab(mappedTab);
+      } else {
+        // If no configurable tabs are visible, default to main
+        setActiveTab('main');
+      }
+    }
+  }, [isPlantLoading, activeTab, tabConfig]);
 
   if (isLoadingDashboard) {
     return (
@@ -67,6 +116,15 @@ const DashboardTabs = ({
     return <Box>Please select a tenant to view data.</Box>
   }
 
+  // Don't render the tabs until plant configuration is loaded to avoid flickering
+  if (isPlantLoading) {
+    return (
+      <Box display="flex" justifyContent="center" py={10}>
+        <Spinner />
+      </Box>
+    );
+  }
+
   // Function to handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -77,10 +135,18 @@ const DashboardTabs = ({
     <Tabs.Root colorScheme="blue" mt={4} value={activeTab}>
       <Tabs.List>
         <Tabs.Trigger value="main" onClick={() => handleTabChange("main")}>Головна</Tabs.Trigger>
-        <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")}>Розклад</Tabs.Trigger>
-        <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
-        <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
-        <Tabs.Trigger value="control" onClick={() => handleTabChange("control")}>Керування</Tabs.Trigger>
+        {isTabVisible('schedule') && (
+          <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")}>Розклад</Tabs.Trigger>
+        )}
+        {isTabVisible('smartlogger') && (
+          <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
+        )}
+        {isTabVisible('ess') && (
+          <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
+        )}
+        {isTabVisible('plcontrol') && (
+          <Tabs.Trigger value="control" onClick={() => handleTabChange("control")}>Керування</Tabs.Trigger>
+        )}
         <Tabs.Trigger value="settings" onClick={() => handleTabChange("settings")}>Налаштування</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
@@ -115,24 +181,29 @@ const DashboardTabs = ({
         </Grid>
       </Tabs.Content>
 
-      <Tabs.Content value="schedule">
-        <ScheduleTab tenantId={selectedTenant} />
-      </Tabs.Content>
+      {isTabVisible('schedule') && (
+        <Tabs.Content value="schedule">
+          <TabRenderer tabType="schedule" tenantId={selectedTenant} plantId={plantId} />
+        </Tabs.Content>
+      )}
 
-      <Tabs.Content value="smdata">
-        <Smartlogger tenantId={selectedTenant}/>
-      </Tabs.Content>
+      {isTabVisible('smartlogger') && (
+        <Tabs.Content value="smdata">
+          <TabRenderer tabType="smartlogger" tenantId={selectedTenant} plantId={plantId}/>
+        </Tabs.Content>
+      )}
 
-      <Tabs.Content value="essdata">
-       {/* <Box p={4}>
-          <p>SmartLogger Data content will go here!</p>
-        </Box>*/}
-        <ESS tenantId={selectedTenant}/>
-      </Tabs.Content>
+      {isTabVisible('ess') && (
+        <Tabs.Content value="essdata">
+          <TabRenderer tabType="ess" tenantId={selectedTenant} plantId={plantId}/>
+        </Tabs.Content>
+      )}
 
-      <Tabs.Content value="control">
-       <PLCControl tenantId={selectedTenant} />
-      </Tabs.Content>
+      {isTabVisible('plccontrol') && (
+        <Tabs.Content value="control">
+         <TabRenderer tabType="plccontrol" tenantId={selectedTenant} plantId={plantId} />
+        </Tabs.Content>
+      )}
 
       <Tabs.Content value="settings">
         <PLCDataSettingsTable tenantId={selectedTenant} />

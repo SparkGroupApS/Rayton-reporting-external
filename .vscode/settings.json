@@ -5,7 +5,7 @@
   "files.trimFinalNewlines": true,
   "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit",
+    "source.organizeImports": "never",
     "source.fixAll": "explicit"
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
