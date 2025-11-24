@@ -83,12 +83,13 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
 
   // Admin-only items
   //  const adminItems: SidebarItem[] = isPrivilegedUser
-  const shouldShowAdminItems =
+ const shouldShowAdminItems =
     isPrivilegedUser && currentUser?.email !== "solar@rayton.com.ua"
   const adminItems: SidebarItem[] = shouldShowAdminItems
     ? [
         { icon: FiUsers, title: "User Management", path: "/admin" },
         { icon: FaBuilding, title: "Tenant Management", path: "/tenant" },
+        { icon: FaSolarPanel, title: "Plant Management", path: "/plant-management" },
       ]
     : []
 

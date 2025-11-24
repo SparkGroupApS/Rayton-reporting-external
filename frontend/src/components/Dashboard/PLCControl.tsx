@@ -273,7 +273,7 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
     });
   };
 
-  // --- Save All Changes ---
+  // --- Зберегти зміни ---
   const handleSaveAll = () => {
     if (commandTimeoutIdRef.current) {
       clearTimeout(commandTimeoutIdRef.current);
@@ -439,7 +439,7 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
           onClick={handleSaveAll}
           loading={isSaving || commandStatus.status === "sending"}
           disabled={isSaving || commandStatus.status === "sending"}>
-          Save All Changes
+          Зберегти зміни
         </Button>
       </Flex>
     </VStack>

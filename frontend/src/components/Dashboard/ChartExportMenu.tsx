@@ -28,7 +28,7 @@ const toLocalISOString = (date: Date) => {
   const localISOTime = new Date(date.getTime() - tzOffset)
     .toISOString()
     .slice(0, 23); // Get precision (YYYY-MM-DDTHH:mm:ss.sss)
-  
+
   // Return YYYY-MM-DDTHH:mm:ss format
   return localISOTime.slice(0, 19);
 };
@@ -114,7 +114,7 @@ export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDat
           if (!rowMap.has(timestamp)) {
             rowMap.set(timestamp, {
               Timestamp: timestamp,
-              "Година": marketHour, 
+              "Година": marketHour,
             });
           }
 
@@ -162,19 +162,19 @@ export const ChartExportMenu = ({ chartRef, tenantId, dataIds, startDate, endDat
     <MenuRoot>
       <MenuTrigger asChild>
         <Button variant="solid" size="sm" as={Button} loading={isLoading}>
-          <LuDownload /> Export
+          <LuDownload /> Експорт
         </Button>
       </MenuTrigger>
 
       <MenuContent>
         <MenuItem value="csv" onClick={() => onExportData("csv")} disabled={isLoading}>
-          Export as CSV
+          Експорт CSV
         </MenuItem>
         <MenuItem value="xlsx" onClick={() => onExportData("xlsx")} disabled={isLoading}>
-          Export as XLSX
+          Експорт XLSX
         </MenuItem>
         <MenuItem value="png" onClick={onExportPNG} disabled={isLoading}>
-          Export Chart as PNG
+          Експорт PNG
         </MenuItem>
       </MenuContent>
     </MenuRoot>

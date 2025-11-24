@@ -496,19 +496,19 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
       <Flex justify="space-between" align="center" mb={4} wrap="wrap" gap={2}>
         <ButtonGroup variant="solid" size="sm">
           <Button onClick={() => handleTimeRangeChange("1D")} data-active={timeRange === "1D" || undefined}>
-            Day
+            День
           </Button>
           <Button onClick={() => handleTimeRangeChange("1W")} data-active={timeRange === "1W" || undefined}>
-            Week
+            Тиждень
           </Button>
           <Button onClick={() => handleTimeRangeChange("1M")} data-active={timeRange === "1M" || undefined}>
-            Month
+            Місяць
           </Button>
           <Button onClick={() => handleTimeRangeChange("1Y")} data-active={timeRange === "1Y" || undefined}>
-            Year
+            Рік
           </Button>
           <Button onClick={() => handleTimeRangeChange("All")} data-active={timeRange === "All" || undefined}>
-            Lifetime
+            Всі
           </Button>
         </ButtonGroup>
 
@@ -531,7 +531,7 @@ const EnergyTrendChart = ({ tenantId, energyDataIds, socDataId }: EnergyTrendCha
         {timeRange === "1D" && (
           <HStack gap={2} ml={4}>
             <Text fontSize="sm" fontWeight="medium">
-              SOC Combined Display
+              Комбінований дисплей SOC
             </Text>
             <Switch.Root colorScheme="rayton_orange" checked={isSocCombined} onCheckedChange={(e) => setIsSocCombined(e.checked)}>
               <Switch.HiddenInput />

@@ -255,7 +255,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" /> 
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timeLabel"
                   interval={3} // Show every 3rd label to avoid crowding
@@ -338,7 +338,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                   dataKey="timeLabel"
                   interval={3} // Show every 3rd label to avoid crowding
                 />
-                <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} />
+                <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={[0, "auto"]} />
                 {/* <YAxis yAxisId="right" orientation="right" label={{ value: "MW", angle: 90, position: "insideRight" }} domain={["auto", "auto"]} /> */}
                 <Tooltip
                   formatter={(value, name) => {

@@ -1,13 +1,12 @@
 // src/routes/_layout/plant_/$plantId.tsx
+import { type ApiError, type DashboardData, DashboardService } from "@/client"
+import DashboardTabs from "@/components/Dashboard/DashboardTabs"
+import useAuth from "@/hooks/useAuth"
+import { useTenant, useTenants } from "@/hooks/useTenantQueries"
 import { Container, Spinner } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
-import { type ApiError, type DashboardData, DashboardService } from "@/client"
-import DashboardTabs from "@/components/Dashboard/DashboardTabs"
-import useAuth from "@/hooks/useAuth"
-import { useTenants, useTenant } from "@/hooks/useTenantQueries"
-import { useEffect } from "react"
 
 // Define search schema with only tab as a search parameter (plantId is a path parameter)
 const plantSearchSchema = z.object({
@@ -118,6 +117,7 @@ function PlantDashboard() {
         energyDataIds={energyDataIds}
         socDataId={socDataId}
         initialTab={tab || "main"} // Pass the tab from URL search params
+        plantId={effectivePlantId} // Pass plantId for tab configuration
       />
     </Container>
   )
