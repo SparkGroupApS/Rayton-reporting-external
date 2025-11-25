@@ -1,9 +1,10 @@
-// src/hooks/usePlcDataSettingsQueries.ts
+// src/hooks/usePlcControlQueries.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ApiError,
   type PlcDataSettingsExtendedRow,
-  ControlService
+  type PlcDataControlExtendedRow, // <-- Import the correct type
+  ControlService,
 } from "../client"; // Adjust path if needed
 
 interface PlcDataControlarams {
@@ -14,7 +15,7 @@ interface PlcDataControlarams {
 export const useGetPlcDataControl = (params: PlcDataControlarams) => {
   const { tenantId } = params;
 
-  return useQuery<PlcDataSettingsExtendedRow[], ApiError>({
+  return useQuery<PlcDataControlExtendedRow[], ApiError>({
     queryKey: ["plcDataControl", { tenantId }],
     queryFn: () =>
       ControlService.getPlcControl({
@@ -33,7 +34,7 @@ export const useBulkUpdatePlcDataControl = (params: PlcDataControlarams) => {
 
   return useMutation({
     // Expects array, returns CommandResponse with message_id
-    mutationFn: (controlRows: PlcDataSettingsExtendedRow[]) => {
+    mutationFn: (controlRows: PlcDataControlExtendedRow[]) => { // <-- Use the correct type here
       // Transform the data to send only the required fields [plant_id, data_id, data]
       const transformedData = controlRows.map(row => ({
         id: row.id, // Use the database ID as id for the update request
