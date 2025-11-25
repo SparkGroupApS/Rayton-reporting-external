@@ -83,7 +83,7 @@ const renderComponent = (componentType: string, tenantId: string) => {
     case 'ESS':
       return <ESS tenantId={tenantId} />;
     case 'ESS_v3':
-      return <ESS_v3 tenantId={tenantId} />;
+      return <ESS_v3 tenantId={tenantId} />; // New case for ESS_v3 battery
     case 'Smartlogger':
       return <Smartlogger tenantId={tenantId} />;
     case 'PLCControl':
