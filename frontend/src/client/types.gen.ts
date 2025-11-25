@@ -140,7 +140,7 @@ export type RealtimeDataPoint = {
     device_id: number;
     name: string;
     timestamp: number;
-    value: string;
+    value?: (string | number | null);
 };
 
 export type RealtimeDataResponse = {

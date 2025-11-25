@@ -673,12 +673,22 @@ export const RealtimeDataPointSchema = {
             title: 'Timestamp'
         },
         value: {
-            type: 'string',
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Value'
         }
     },
     type: 'object',
-    required: ['data_id', 'plant_id', 'device_id', 'name', 'timestamp', 'value'],
+    required: ['data_id', 'plant_id', 'device_id', 'name', 'timestamp'],
     title: 'RealtimeDataPoint'
 } as const;
 
