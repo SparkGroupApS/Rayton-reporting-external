@@ -1,4 +1,4 @@
-import { Box, Heading, Text, Flex, Spinner } from "@chakra-ui/react";
+import { Box, Heading, Text, Flex, Spinner, useBreakpointValue } from "@chakra-ui/react";
 import { useMemo } from "react";
 import { Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import type { ScheduleRow, ElectricityCostRow } from "@/client";
@@ -202,6 +202,23 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
     return [];
   }, [transformedCostData, transformedScheduleData]);
 
+  // --- Mobile Adaptations ---
+  const tooltipFontSize = useBreakpointValue({ base: 10, md: 12 }, { ssr: false });
+  const tooltipPadding = useBreakpointValue({ base: 5, md: 10 }, { ssr: false });
+  const yAxisWidth = useBreakpointValue({ base: 40, md: 50 }, { ssr: false });
+  const chartHeight = useBreakpointValue({ base: "500px", md: "450px" }, { ssr: false });
+  const legendFontSize = useBreakpointValue({ base: "10px", md: "14px" }, { ssr: false });
+  const xAxisInterval = useBreakpointValue({ base: 5, md: 3 }, { ssr: false });
+
+  const chartMargins = useBreakpointValue(
+    {
+      base: { top: 5, right: 5, left: 5, bottom: 5 },
+      md: { top: 5, right: 5, left: 5, bottom: 5 },
+    },
+    { ssr: false }
+  );
+  // --------------------------
+
   // If schedule data is provided via props, we don't need to wait for the schedule fetch
   const isLoading = isElectricityCostLoading; // Only check electricity cost loading since schedule data can come from props
   const error = electricityCostError;
@@ -232,15 +249,11 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
 
   return (
     <Box p={2} borderWidth="1px" borderRadius="md" bg="gray.50" minHeight="400px">
-      {/* <Heading as="h3" size="md" mb={2}>Schedule Chart</Heading>
-      <Text>Schedule visualization for {date}</Text>
-      <Text>Total entries: {combinedData.length}</Text> */}
-
-      <Box h="450px" mt={2}>
+      <Box h={chartHeight} mt={2}>
         {combinedData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="50%" initialDimension={ { width: 320, height: 200 } }>
-              <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <AreaChart data={combinedData} syncId="chartSync" margin={chartMargins}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
@@ -258,11 +271,23 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timeLabel"
-                  interval={3} // Show every 3rd label to avoid crowding
+                  interval={xAxisInterval} // Show every 3rd label to avoid crowding
                 />
                 {/* <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={["auto", "auto"]} /> */}
-                <YAxis yAxisId="right" orientation="left" label={{ value: "MW", angle: -90, position: "insideLeft" }} domain={['dataMin - 50', 'dataMax + 50']} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="left"
+                  label={{ value: "MW", angle: -90, position: "insideLeft", fontSize: tooltipFontSize }}
+                  domain={['dataMin - 50', 'dataMax + 50']}
+                  width={yAxisWidth}
+                  tick={{ fontSize: tooltipFontSize }}
+                />
                 <Tooltip
+                  contentStyle={{
+                      fontSize: tooltipFontSize,
+                      padding: tooltipPadding,
+                      borderRadius: '4px',
+                  }}
                   formatter={(value, name) => {
                     if (name === "Electricity Price (UAH/MWh)") {
                       return [`${value} UAH/MWh`, "Price"];
@@ -275,7 +300,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                   }}
                   labelFormatter={(label) => `Time: ${label}`}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: legendFontSize }} />
                 {/* <Area
                   type="stepBefore"
                   dataKey="price"
@@ -289,7 +314,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                   isAnimationActive={false}
                   yAxisId="left"
                 /> */}
-                <Area
+               <Area
                   type="stepAfter"
                   dataKey="charge_power"
                   name="Charge Power (MW)"
@@ -318,7 +343,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
               </AreaChart>
             </ResponsiveContainer>
             <ResponsiveContainer width="100%" height="50%" initialDimension={ { width: 320, height: 200 } }>
-              <AreaChart data={combinedData} syncId="chartSync" margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <AreaChart data={combinedData} syncId="chartSync" margin={chartMargins}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
@@ -336,11 +361,22 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timeLabel"
-                  interval={3} // Show every 3rd label to avoid crowding
+                  interval={xAxisInterval} // Show every 3rd label to avoid crowding
                 />
-                <YAxis yAxisId="left" label={{ value: "UAH/MWh", angle: -90, position: "insideLeft" }} domain={[0, "auto"]} />
-                {/* <YAxis yAxisId="right" orientation="right" label={{ value: "MW", angle: 90, position: "insideRight" }} domain={["auto", "auto"]} /> */}
+                <YAxis
+                  yAxisId="left"
+                  label={{ value: "UAH/MWh", angle: -90, position: "insideLeft", fontSize: tooltipFontSize }}
+                  domain={[0, "auto"]}
+                  width={yAxisWidth}
+                  tick={{ fontSize: tooltipFontSize }}
+                />
+
                 <Tooltip
+                  contentStyle={{
+                      fontSize: tooltipFontSize,
+                      padding: tooltipPadding,
+                      borderRadius: '4px',
+                  }}
                   formatter={(value, name) => {
                     if (name === "Electricity Price (UAH/MWh)") {
                       return [`${value} UAH/MWh`, "Price"];
@@ -353,7 +389,7 @@ const ScheduleChart = ({ tenantId, date, scheduleData: propScheduleData }: Sched
                   }}
                   labelFormatter={(label) => `Time: ${label}`}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: legendFontSize }} />
                 <Area
                   type="stepBefore"
                   dataKey="price"
