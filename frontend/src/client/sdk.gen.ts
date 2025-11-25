@@ -3,7 +3,56 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ControlGetPlcControlData, ControlGetPlcControlResponse, ControlUpdatePlcControlData, ControlUpdatePlcControlResponse, DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsUpdatePlantData, PlantsUpdatePlantResponse, PlantsDeletePlantData, PlantsDeletePlantResponse, PlantsReadAllPlantsData, PlantsReadAllPlantsResponse, PlantsCreatePlantData, PlantsCreatePlantResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, SettingsGetPlcDataSettingsData, SettingsGetPlcDataSettingsResponse, SettingsUpdatePlcDataSettingsData, SettingsUpdatePlcDataSettingsResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class ControlService {
+    /**
+     * Get Plc Control
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.plantIds Optional list of PLANT_IDs to fetch
+     * @param data.controlTypes Optional list of CONTROL_TYPEs to fetch
+     * @returns PlcDataControlExtendedRow Successful Response
+     * @throws ApiError
+     */
+    public static getPlcControl(data: ControlGetPlcControlData): CancelablePromise<ControlGetPlcControlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/control/plc-data-control',
+            query: {
+                tenant_id: data.tenantId,
+                plant_ids: data.plantIds,
+                control_types: data.controlTypes
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Plc Control
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to update control for
+     * @param data.requestBody
+     * @returns CommandResponse Successful Response
+     * @throws ApiError
+     */
+    public static updatePlcControl(data: ControlUpdatePlcControlData): CancelablePromise<ControlUpdatePlcControlResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/control/plc-data-control',
+            query: {
+                tenant_id: data.tenantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class DashboardService {
     /**
@@ -29,18 +78,72 @@ export class DashboardService {
     }
 }
 
+export class DefaultService {
+    /**
+     * Get Plant Config
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.deviceIds Optional list of DEVICE_IDs to fetch
+     * @returns PlantConfigResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPlantConfig(data: DefaultGetPlantConfigData): CancelablePromise<DefaultGetPlantConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/plant-config',
+            query: {
+                tenant_id: data.tenantId,
+                device_ids: data.deviceIds
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ElectricityCostService {
+    /**
+     * Read Electricity Cost
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch electricity cost for
+     * @param data.date Date (YYYY-MM-DD)
+     * @returns ElectricityCostRow Successful Response
+     * @throws ApiError
+     */
+    public static readElectricityCost(data: ElectricityCostReadElectricityCostData): CancelablePromise<ElectricityCostReadElectricityCostResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/electricity-cost/',
+            query: {
+                tenant_id: data.tenantId,
+                date: data.date
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class HistoricalDataService {
     /**
      * Read Historical Details
-     * Fetch raw historical DATA values for multiple DATA_IDs by PLANT_ID,
-     * grouped by series, including labels from TEXT_LIST.
-     * Scoped to user's tenant unless overridden.
+     * Fetch historical data.
+     * - If aggregate_by is 'hour', it returns raw data points.
+     * - Otherwise, it calculates the DELTA (difference between consecutive readings).
+     *
+     * Frontend Time Range to Aggregation Mapping:
+     * - Day view: hour (raw data points)
+     * - Week/Month view: day (daily deltas)
+     * - Year view: month (monthly deltas)
+     * - Lifetime view: year (yearly deltas)
      * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
      * @param data.dataIds List of DATA_IDs to fetch
-     * @param data.plantId PLANT_ID to fetch data for
-     * @param data.start Start timestamp (ISO format, optional)
-     * @param data.end End timestamp (ISO format, optional)
-     * @param data.tenantIdOverride Admin override for tenant ID
+     * @param data.start Start timestamp
+     * @param data.end End timestamp
+     * @param data.aggregateBy Aggregation level: hour (raw data), day, month, year (deltas)
      * @returns HistoricalDataGroupedResponse Successful Response
      * @throws ApiError
      */
@@ -49,11 +152,39 @@ export class HistoricalDataService {
             method: 'GET',
             url: '/api/v1/historical-data/details',
             query: {
+                tenant_id: data.tenantId,
                 data_ids: data.dataIds,
-                plant_id: data.plantId,
                 start: data.start,
                 end: data.end,
-                tenant_id_override: data.tenantIdOverride
+                aggregate_by: data.aggregateBy
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Export Historical Data
+     * Export hourly consumption deltas using closest-to-hour-boundary logic.
+     * All timestamps are handled as naive local time, matching the database storage.
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID for plant lookup
+     * @param data.exportGranularity Granularity for exported data (e..g, 'hourly')
+     * @param data.start Start timestamp (local time)
+     * @param data.end End timestamp (local time)
+     * @returns HistoricalDataGroupedResponse Successful Response
+     * @throws ApiError
+     */
+    public static exportHistoricalData(data: HistoricalDataExportHistoricalDataData): CancelablePromise<HistoricalDataExportHistoricalDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/historical-data/export/',
+            query: {
+                tenant_id: data.tenantId,
+                start: data.start,
+                end: data.end,
+                export_granularity: data.exportGranularity
             },
             errors: {
                 422: 'Validation Error'
@@ -275,6 +406,123 @@ export class LoginService {
     }
 }
 
+export class PlantsService {
+    /**
+     * Read Plant By Id
+     * Get plant details by plant_id.
+     * Checks that the user has access to this plant through their tenant.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readPlantById(data: PlantsReadPlantByIdData): CancelablePromise<PlantsReadPlantByIdResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/plants/{plant_id}',
+            path: {
+                plant_id: data.plantId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Plant
+     * Update an existing plant.
+     * Only superusers can update plants.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static updatePlant(data: PlantsUpdatePlantData): CancelablePromise<PlantsUpdatePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/plants/{plant_id}',
+            path: {
+                plant_id: data.plantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Plant
+     * Delete a plant.
+     * Only superusers can delete plants.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deletePlant(data: PlantsDeletePlantData): CancelablePromise<PlantsDeletePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/plants/{plant_id}',
+            path: {
+                plant_id: data.plantId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read All Plants
+     * Get all plants.
+     * For superusers: returns all plants.
+     * For regular users: returns only plants their tenant has access to.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readAllPlants(data: PlantsReadAllPlantsData = {}): CancelablePromise<PlantsReadAllPlantsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/plants/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Plant
+     * Create a new plant.
+     * Only superusers can create plants.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static createPlant(data: PlantsCreatePlantData): CancelablePromise<PlantsCreatePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/plants/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class PrivateService {
     /**
      * Create User With New Tenant
@@ -298,14 +546,37 @@ export class PrivateService {
     }
 }
 
+export class RealtimeDataService {
+    /**
+     * Read Realtime Latest
+     * Fetch the latest realtime data points for given DEVICE_IDs and tenant.
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.deviceIds List of DEVICE_IDs to fetch
+     * @returns RealtimeDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static readRealtimeLatest(data: RealtimeDataReadRealtimeLatestData): CancelablePromise<RealtimeDataReadRealtimeLatestResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/realtime-data/latest',
+            query: {
+                tenant_id: data.tenantId,
+                device_ids: data.deviceIds
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class ScheduleService {
     /**
      * Read Schedule
-     * Get schedule rows for a specific plant and date.
      * @param data The data for the request.
-     * @param data.plantId
-     * @param data.tenantDb
-     * @param data.date The date to fetch schedule for, in YYYY-MM-DD format
+     * @param data.tenantId Tenant ID to fetch schedule for
+     * @param data.date Date (YYYY-MM-DD)
      * @returns ScheduleRow Successful Response
      * @throws ApiError
      */
@@ -314,8 +585,7 @@ export class ScheduleService {
             method: 'GET',
             url: '/api/v1/schedule/',
             query: {
-                plant_id: data.plantId,
-                tenant_db: data.tenantDb,
+                tenant_id: data.tenantId,
                 date: data.date
             },
             errors: {
@@ -326,14 +596,11 @@ export class ScheduleService {
     
     /**
      * Bulk Update Schedule
-     * Update existing schedule rows, insert new ones, and delete removed ones
-     * for a specific plant and date.
      * @param data The data for the request.
-     * @param data.plantId
-     * @param data.tenantDb
      * @param data.date
+     * @param data.tenantId Tenant ID to update schedule for
      * @param data.requestBody
-     * @returns ScheduleRow Successful Response
+     * @returns CommandResponse Successful Response
      * @throws ApiError
      */
     public static bulkUpdateSchedule(data: ScheduleBulkUpdateScheduleData): CancelablePromise<ScheduleBulkUpdateScheduleResponse> {
@@ -341,9 +608,57 @@ export class ScheduleService {
             method: 'PUT',
             url: '/api/v1/schedule/bulk',
             query: {
-                plant_id: data.plantId,
-                tenant_db: data.tenantDb,
-                date: data.date
+                date: data.date,
+                tenant_id: data.tenantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SettingsService {
+    /**
+     * Get Plc Data Settings
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to fetch data for
+     * @param data.plantIds Optional list of PLANT_IDs to fetch
+     * @param data.deviceIds Optional list of DEVICE_IDs to fetch
+     * @returns PlcDataSettingsExtendedRow Successful Response
+     * @throws ApiError
+     */
+    public static getPlcDataSettings(data: SettingsGetPlcDataSettingsData): CancelablePromise<SettingsGetPlcDataSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/settings/plc-data-settings',
+            query: {
+                tenant_id: data.tenantId,
+                plant_ids: data.plantIds,
+                device_ids: data.deviceIds
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Plc Data Settings
+     * @param data The data for the request.
+     * @param data.tenantId Tenant ID to update settings for
+     * @param data.requestBody
+     * @returns CommandResponse Successful Response
+     * @throws ApiError
+     */
+    public static updatePlcDataSettings(data: SettingsUpdatePlcDataSettingsData): CancelablePromise<SettingsUpdatePlcDataSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/settings/plc-data-settings',
+            query: {
+                tenant_id: data.tenantId
             },
             body: data.requestBody,
             mediaType: 'application/json',
@@ -667,6 +982,20 @@ export class UtilsService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Webhook Pull
+     * Receives a webhook from GitHub to pull changes.
+     * Verifies the signature.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static webhookPull(): CancelablePromise<UtilsWebhookPullResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/utils/webhook-pull-a8d9f'
         });
     }
     

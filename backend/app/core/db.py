@@ -1,9 +1,13 @@
 # app/core/db.py (or wherever engine/session is defined)
-from sqlmodel import SQLModel # Keep if defining models here or importing them
-from sqlmodel.ext.asyncio.session import AsyncSession # Import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker # Import async engine and sessionmaker
-from app.core.config import settings
 from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import (  # Import async engine and sessionmaker
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlmodel.ext.asyncio.session import AsyncSession  # Import AsyncSession
+
+from app.core.config import settings
 
 # Create the async engine
 # Use the URI from your updated config.py
@@ -29,16 +33,19 @@ async def init_db() -> None:
         # await conn.run_sync(SQLModel.metadata.create_all)
 
         # Example of creating a superuser (adapt this logic)
-        from app.models import User # Import your models
-        from app import crud # Import your CRUD functions (these might also need async updates)
         from sqlmodel import select
+
+        from app import (
+            crud,  # Import your CRUD functions (these might also need async updates)
+        )
+        from app.models import User  # Import your models
 
         async with AsyncSessionLocal() as session: # Use AsyncSession
             # Use await session.exec(...) instead of session.exec(...)
             user = await session.exec(select(User).where(User.email == settings.FIRST_SUPERUSER))
             user = user.first()
             if not user:
-                from app.models import UserCreate # Import schemas if needed
+                from app.models import UserCreate  # Import schemas if needed
                 user_in = UserCreate(
                     email=settings.FIRST_SUPERUSER,
                     password=settings.FIRST_SUPERUSER_PASSWORD,
@@ -62,9 +69,9 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]: # Use Async
 # --- Historical Data Database Connection ---
 
 # Ensure MARIADB_DB_DATA is defined in your settings (config.py and .env)
-if not settings.MARIADB_DB_DATA:
+if not settings.DATA_MARIADB_DB:
     raise ValueError("MARIADB_DB_DATA setting is not configured in .env or config.py")
-    
+
 data_async_engine = create_async_engine(
     str(settings.SQLALCHEMY_DATA_DATABASE_URI),
     # echo=True, # Optional: for debugging SQL queries

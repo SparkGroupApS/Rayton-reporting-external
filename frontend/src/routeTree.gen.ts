@@ -17,9 +17,10 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutTenantRouteImport } from './routes/_layout/tenant'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutScheduleRouteImport } from './routes/_layout/schedule'
+import { Route as LayoutPlantManagementRouteImport } from './routes/_layout/plant-management'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutPlantPlantIdRouteImport } from './routes/_layout/plant_/$plantId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -60,9 +61,9 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutScheduleRoute = LayoutScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
+const LayoutPlantManagementRoute = LayoutPlantManagementRouteImport.update({
+  id: '/plant-management',
+  path: '/plant-management',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
@@ -75,6 +76,11 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutPlantPlantIdRoute = LayoutPlantPlantIdRouteImport.update({
+  id: '/plant_/$plantId',
+  path: '/plant/$plantId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
@@ -83,10 +89,11 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
-  '/schedule': typeof LayoutScheduleRoute
+  '/plant-management': typeof LayoutPlantManagementRoute
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
+  '/plant/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -95,10 +102,11 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
-  '/schedule': typeof LayoutScheduleRoute
+  '/plant-management': typeof LayoutPlantManagementRoute
   '/settings': typeof LayoutSettingsRoute
   '/tenant': typeof LayoutTenantRoute
   '/': typeof LayoutIndexRoute
+  '/plant/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,10 +117,11 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/items': typeof LayoutItemsRoute
-  '/_layout/schedule': typeof LayoutScheduleRoute
+  '/_layout/plant-management': typeof LayoutPlantManagementRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tenant': typeof LayoutTenantRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/plant_/$plantId': typeof LayoutPlantPlantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -123,10 +132,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/items'
-    | '/schedule'
+    | '/plant-management'
     | '/settings'
     | '/tenant'
     | '/'
+    | '/plant/$plantId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -135,10 +145,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/items'
-    | '/schedule'
+    | '/plant-management'
     | '/settings'
     | '/tenant'
     | '/'
+    | '/plant/$plantId'
   id:
     | '__root__'
     | '/_layout'
@@ -148,10 +159,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/items'
-    | '/_layout/schedule'
+    | '/_layout/plant-management'
     | '/_layout/settings'
     | '/_layout/tenant'
     | '/_layout/'
+    | '/_layout/plant_/$plantId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,11 +232,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/schedule': {
-      id: '/_layout/schedule'
-      path: '/schedule'
-      fullPath: '/schedule'
-      preLoaderRoute: typeof LayoutScheduleRouteImport
+    '/_layout/plant-management': {
+      id: '/_layout/plant-management'
+      path: '/plant-management'
+      fullPath: '/plant-management'
+      preLoaderRoute: typeof LayoutPlantManagementRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/items': {
@@ -241,25 +253,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/plant_/$plantId': {
+      id: '/_layout/plant_/$plantId'
+      path: '/plant/$plantId'
+      fullPath: '/plant/$plantId'
+      preLoaderRoute: typeof LayoutPlantPlantIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
-  LayoutScheduleRoute: typeof LayoutScheduleRoute
+  LayoutPlantManagementRoute: typeof LayoutPlantManagementRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTenantRoute: typeof LayoutTenantRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutPlantPlantIdRoute: typeof LayoutPlantPlantIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutItemsRoute: LayoutItemsRoute,
-  LayoutScheduleRoute: LayoutScheduleRoute,
+  LayoutPlantManagementRoute: LayoutPlantManagementRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTenantRoute: LayoutTenantRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutPlantPlantIdRoute: LayoutPlantPlantIdRoute,
 }
 
 const LayoutRouteWithChildren =

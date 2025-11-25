@@ -1,18 +1,15 @@
 from typing import Any
-import uuid # Import uuid
 
-from fastapi import APIRouter, HTTPException, status # Import HTTPException, status
-from pydantic import BaseModel, EmailStr # Use EmailStr
+from fastapi import APIRouter, HTTPException, status  # Import HTTPException, status
+from pydantic import BaseModel, EmailStr  # Use EmailStr
 
 # Import necessary CRUD functions and models
-from app import crud 
+from app import crud
 from app.api.deps import SessionDep
-from app.core.security import get_password_hash
 from app.models import (
-    User,
+    TenantCreate,  # Import TenantCreate
+    UserCreate,  # Use UserCreate for validation consistency
     UserPublic,
-    UserCreate, # Use UserCreate for validation consistency
-    TenantCreate # Import TenantCreate
 )
 
 router = APIRouter(tags=["private"], prefix="/private")
@@ -62,8 +59,8 @@ async def create_user_with_new_tenant(user_in: PrivateUserCreateInput, session: 
     )
     try:
         user = await crud.create_user(
-            session=session, 
-            user_create=user_create, 
+            session=session,
+            user_create=user_create,
             tenant_id=new_tenant.id
         )
     except Exception as e:

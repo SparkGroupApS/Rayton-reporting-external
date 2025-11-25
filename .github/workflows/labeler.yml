@@ -5,7 +5,6 @@ on:
       - opened
       - synchronize
       - reopened
-      # For label-checker
       - labeled
       - unlabeled
 
@@ -15,17 +14,18 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
+    # Only auto-label on open/sync/reopen, not on manual label changes
+    if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
     steps:
     - uses: actions/labeler@v6
-      if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
     - run: echo "Done adding labels"
-  # Run this after labeler applied labels
+
   check-labels:
-    needs:
-      - labeler
     permissions:
       pull-requests: read
     runs-on: ubuntu-latest
+    # Only check labels when they're manually added/removed
+    if: ${{ github.event.action == 'labeled' || github.event.action == 'unlabeled' }}
     steps:
       - uses: docker://agilepathway/pull-request-label-checker:latest
         with:

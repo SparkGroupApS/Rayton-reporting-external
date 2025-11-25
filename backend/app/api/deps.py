@@ -1,22 +1,25 @@
 # app/api/deps.py
-from collections.abc import AsyncGenerator # NEW: Use AsyncGenerator for async dependencies
+import uuid  # NEW: Import uuid module
+from collections.abc import (
+    AsyncGenerator,  # NEW: Use AsyncGenerator for async dependencies
+)
 from typing import Annotated
-import uuid # NEW: Import uuid module
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Request, Depends, HTTPException, status
+from fastapi_mqtt import FastMQTT # Or whatever type your mqtt client is
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 
 # Remove: from sqlmodel import Session # OLD: Remove sync Session import
-from sqlmodel.ext.asyncio.session import AsyncSession # NEW: Import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession  # NEW: Import AsyncSession
 
 from app.core import security
 from app.core.config import settings
-# Remove: from app.core.db import engine # OLD: Remove engine import
-from app.core.db import get_async_session # NEW: Import your async session generator
 
+# Remove: from app.core.db import engine # OLD: Remove engine import
+from app.core.db import get_async_session  # NEW: Import your async session generator
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -76,3 +79,18 @@ async def get_current_active_superuser(current_user: CurrentUser) -> User: # NEW
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+def get_mqtt_client(request: Request) -> FastMQTT:
+    """Dependency to get MQTT client from app state"""
+    mqtt_client = request.app.state.mqtt_client
+    
+    if mqtt_client is None:
+        raise HTTPException(
+            status_code=503, 
+            detail="MQTT service unavailable"
+        )
+    
+    return mqtt_client
+
+# Type alias for dependency injection
+MQTTClient = Annotated[FastMQTT, Depends(get_mqtt_client)]

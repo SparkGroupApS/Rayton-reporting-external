@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends
+import hashlib
+import hmac
+import subprocess
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic.networks import EmailStr
 
 from app.api.deps import get_current_active_superuser
+from app.core.config import settings
 from app.models import Message
 from app.utils import generate_test_email, send_email
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
+# Get the secret from the .env file
+GITHUB_WEBHOOK_SECRET = settings.GITHUB_WEBHOOK_SECRET
 
 @router.post(
     "/test-email/",
@@ -25,6 +32,47 @@ async def test_email(email_to: EmailStr) -> Message:
     )
     return Message(message="Test email sent")
 
+@router.post("/webhook-pull-a8d9f")  # <-- This is your secret URL
+async def webhook_pull(request: Request):
+    """
+    Receives a webhook from GitHub to pull changes.
+    Verifies the signature.
+    """
+    if not GITHUB_WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+
+    # Verify the signature
+    signature = request.headers.get('X-Hub-Signature-256')
+    if not signature:
+        raise HTTPException(status_code=403, detail="Signature missing")
+
+    body = await request.body()
+
+    # Calculate expected signature
+    expected_signature = "sha256=" + hmac.new(
+        key=GITHUB_WEBHOOK_SECRET.encode('utf-8'),
+        msg=body,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected_signature, signature):
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
+    try:
+        # Parse the JSON payload
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    # Check the 'ref' field for the branch
+    if data.get('ref') == 'refs/heads/develop':
+        # If it's the 'dev' branch, run the script
+        print("Valid signature for 'dev' branch. Initiating pull script...")
+        subprocess.Popen(["/home/webapp/git_pull.sh"])
+        return {"message": "Pull script initiated for dev branch"}
+
+    # If it's any other branch, do nothing
+    return {"message": "Push received, but not for 'dev' branch. No action taken."}
 
 @router.get("/health-check/")
 async def health_check() -> bool:

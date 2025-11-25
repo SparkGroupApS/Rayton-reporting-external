@@ -6,7 +6,7 @@ export const Body_login_login_access_tokenSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    pattern: 'password'
+                    pattern: '^password$'
                 },
                 {
                     type: 'null'
@@ -20,6 +20,7 @@ export const Body_login_login_access_tokenSchema = {
         },
         password: {
             type: 'string',
+            format: 'password',
             title: 'Password'
         },
         scope: {
@@ -47,12 +48,29 @@ export const Body_login_login_access_tokenSchema = {
                     type: 'null'
                 }
             ],
+            format: 'password',
             title: 'Client Secret'
         }
     },
     type: 'object',
     required: ['username', 'password'],
     title: 'Body_login-login_access_token'
+} as const;
+
+export const CommandResponseSchema = {
+    properties: {
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        message_id: {
+            type: 'string',
+            title: 'Message Id'
+        }
+    },
+    type: 'object',
+    required: ['message', 'message_id'],
+    title: 'CommandResponse'
 } as const;
 
 export const DashboardCardDataSchema = {
@@ -102,6 +120,78 @@ export const DashboardDataSchema = {
     type: 'object',
     required: ['cards', 'revenue', 'items'],
     title: 'DashboardData'
+} as const;
+
+export const DeviceInfoSchema = {
+    properties: {
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        class_id: {
+            type: 'integer',
+            title: 'Class Id'
+        },
+        parent_id: {
+            type: 'integer',
+            title: 'Parent Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        }
+    },
+    type: 'object',
+    required: ['device_id', 'name', 'class_id', 'parent_id', 'plant_id'],
+    title: 'DeviceInfo'
+} as const;
+
+export const ElectricityCostRowSchema = {
+    properties: {
+        price_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Price Date'
+        },
+        hour_of_day: {
+            type: 'integer',
+            title: 'Hour Of Day'
+        },
+        price_UAH_per_MWh: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Price Uah Per Mwh'
+        },
+        received_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Received At'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        }
+    },
+    type: 'object',
+    required: ['price_date', 'hour_of_day', 'price_UAH_per_MWh', 'id'],
+    title: 'ElectricityCostRow'
+} as const;
+
+export const ExportGranularitySchema = {
+    type: 'string',
+    enum: ['hourly'],
+    title: 'ExportGranularity'
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -283,6 +373,255 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
+export const PlantConfigResponseSchema = {
+    properties: {
+        tenant_id: {
+            type: 'string',
+            title: 'Tenant Id'
+        },
+        devices: {
+            items: {
+                '$ref': '#/components/schemas/DeviceInfo'
+            },
+            type: 'array',
+            title: 'Devices'
+        }
+    },
+    type: 'object',
+    required: ['tenant_id', 'devices'],
+    title: 'PlantConfigResponse'
+} as const;
+
+export const PlcDataControlExtendedRowSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        },
+        control_type: {
+            type: 'integer',
+            title: 'Control Type'
+        },
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        data: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        updated_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated At'
+        },
+        updated_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated By'
+        },
+        device_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Device Text'
+        },
+        data_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Text'
+        },
+        input_type: {
+            type: 'string',
+            title: 'Input Type'
+        },
+        textlist_entries: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'string'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Textlist Entries'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plant_id', 'control_type', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text', 'input_type'],
+    title: 'PlcDataControlExtendedRow'
+} as const;
+
+export const PlcDataSettingsExtendedRowSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        },
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        data: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        updated_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated At'
+        },
+        updated_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated By'
+        },
+        device_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Device Text'
+        },
+        data_text: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Text'
+        },
+        input_type: {
+            type: 'string',
+            title: 'Input Type'
+        },
+        textlist_entries: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'string'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Textlist Entries'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plant_id', 'device_id', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text', 'input_type'],
+    title: 'PlcDataSettingsExtendedRow'
+} as const;
+
+export const PlcDataSettingsUpdateSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        data: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        updated_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated By'
+        }
+    },
+    type: 'object',
+    required: ['id'],
+    title: 'PlcDataSettingsUpdate'
+} as const;
+
 export const PrivateUserCreateInputSchema = {
     properties: {
         email: {
@@ -309,6 +648,63 @@ export const PrivateUserCreateInputSchema = {
     type: 'object',
     required: ['email', 'password'],
     title: 'PrivateUserCreateInput'
+} as const;
+
+export const RealtimeDataPointSchema = {
+    properties: {
+        data_id: {
+            type: 'integer',
+            title: 'Data Id'
+        },
+        plant_id: {
+            type: 'integer',
+            title: 'Plant Id'
+        },
+        device_id: {
+            type: 'integer',
+            title: 'Device Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        timestamp: {
+            type: 'integer',
+            title: 'Timestamp'
+        },
+        value: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Value'
+        }
+    },
+    type: 'object',
+    required: ['data_id', 'plant_id', 'device_id', 'name', 'timestamp'],
+    title: 'RealtimeDataPoint'
+} as const;
+
+export const RealtimeDataResponseSchema = {
+    properties: {
+        values: {
+            items: {
+                '$ref': '#/components/schemas/RealtimeDataPoint'
+            },
+            type: 'array',
+            title: 'Values'
+        }
+    },
+    type: 'object',
+    required: ['values'],
+    title: 'RealtimeDataResponse'
 } as const;
 
 export const RevenueDataSchema = {
@@ -338,29 +734,9 @@ export const ScheduleRowSchema = {
             format: 'time',
             title: 'Start Time'
         },
-        end_time: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'time'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'End Time'
-        },
-        charge_enable: {
-            type: 'boolean',
-            title: 'Charge Enable'
-        },
         charge_from_grid: {
             type: 'boolean',
             title: 'Charge From Grid'
-        },
-        discharge_enable: {
-            type: 'boolean',
-            title: 'Discharge Enable'
         },
         allow_to_sell: {
             type: 'boolean',
@@ -390,10 +766,14 @@ export const ScheduleRowSchema = {
             type: 'string',
             format: 'date-time',
             title: 'Updated At'
+        },
+        updated_by: {
+            type: 'string',
+            title: 'Updated By'
         }
     },
     type: 'object',
-    required: ['rec_no', 'start_time', 'end_time', 'charge_enable', 'charge_from_grid', 'discharge_enable', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at'],
+    required: ['rec_no', 'start_time', 'charge_from_grid', 'allow_to_sell', 'charge_power', 'charge_limit', 'discharge_power', 'source', 'id', 'updated_at', 'updated_by'],
     title: 'ScheduleRow'
 } as const;
 
@@ -415,6 +795,17 @@ export const TenantCreateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         }
     },
     type: 'object',
@@ -440,6 +831,17 @@ export const TenantPublicSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         },
         id: {
             type: 'string',
@@ -477,6 +879,17 @@ export const TenantUpdateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        plant_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plant Id'
         }
     },
     type: 'object',
@@ -629,7 +1042,8 @@ export const UserCreateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Role'
+            title: 'Role',
+            default: 'client'
         },
         password: {
             type: 'string',
@@ -773,6 +1187,18 @@ export const UserUpdateSchema = {
                 }
             ],
             title: 'Role'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
         }
     },
     type: 'object',

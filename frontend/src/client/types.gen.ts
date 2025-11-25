@@ -9,6 +9,11 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CommandResponse = {
+    message: string;
+    message_id: string;
+};
+
 export type DashboardCardData = {
     total_users: number;
     total_items: number;
@@ -21,6 +26,24 @@ export type DashboardData = {
     revenue: Array<RevenueData>;
     items: Array<ItemPublic>;
 };
+
+export type DeviceInfo = {
+    device_id: number;
+    name: string;
+    class_id: number;
+    parent_id: number;
+    plant_id: number;
+};
+
+export type ElectricityCostRow = {
+    price_date: string;
+    hour_of_day: number;
+    price_UAH_per_MWh: string;
+    received_at?: (string | null);
+    id: number;
+};
+
+export type ExportGranularity = 'hourly';
 
 export type HistoricalDataGroupedResponse = {
     series: Array<TimeSeriesData>;
@@ -62,10 +85,66 @@ export type NewPassword = {
     new_password: string;
 };
 
+export type PlantConfigResponse = {
+    tenant_id: string;
+    devices: Array<DeviceInfo>;
+};
+
+export type PlcDataControlExtendedRow = {
+    id: number;
+    plant_id: number;
+    control_type: number;
+    data_id: number;
+    data: (number | null);
+    updated_at: (string | null);
+    updated_by: (string | null);
+    device_text: (string | null);
+    data_text: (string | null);
+    input_type: string;
+    textlist_entries?: ({
+    [key: string]: string;
+} | null);
+};
+
+export type PlcDataSettingsExtendedRow = {
+    id: number;
+    plant_id: number;
+    device_id: number;
+    data_id: number;
+    data: (number | null);
+    updated_at: (string | null);
+    updated_by: (string | null);
+    device_text: (string | null);
+    data_text: (string | null);
+    input_type: string;
+    textlist_entries?: ({
+    [key: string]: string;
+} | null);
+};
+
+export type PlcDataSettingsUpdate = {
+    id: number;
+    data?: (number | null);
+    updated_by?: (string | null);
+};
+
 export type PrivateUserCreateInput = {
     email: string;
     password: string;
     full_name?: (string | null);
+};
+
+export type RealtimeDataPoint = {
+    data_id: number;
+    plant_id: number;
+    device_id: number;
+    name: string;
+    timestamp: number;
+    value?: (string | number | null);
+};
+
+export type RealtimeDataResponse = {
+    values: Array<RealtimeDataPoint>;
 };
 
 export type RevenueData = {
@@ -76,10 +155,7 @@ export type RevenueData = {
 export type ScheduleRow = {
     rec_no: number;
     start_time: string;
-    end_time: (string | null);
-    charge_enable: boolean;
     charge_from_grid: boolean;
-    discharge_enable: boolean;
     allow_to_sell: boolean;
     charge_power: number;
     charge_limit: number;
@@ -87,16 +163,19 @@ export type ScheduleRow = {
     source: number;
     id: number;
     updated_at: string;
+    updated_by: string;
 };
 
 export type TenantCreate = {
     name: string;
     description?: (string | null);
+    plant_id?: (number | null);
 };
 
 export type TenantPublic = {
     name: string;
     description?: (string | null);
+    plant_id?: (number | null);
     id: string;
 };
 
@@ -108,6 +187,7 @@ export type TenantsPublic = {
 export type TenantUpdate = {
     name?: (string | null);
     description?: (string | null);
+    plant_id?: (number | null);
 };
 
 export type TimeSeriesData = {
@@ -163,6 +243,7 @@ export type UserUpdate = {
     is_active?: (boolean | null);
     is_superuser?: (boolean | null);
     role?: (string | null);
+    tenant_id?: (string | null);
 };
 
 export type UserUpdateMe = {
@@ -176,6 +257,33 @@ export type ValidationError = {
     type: string;
 };
 
+export type ControlGetPlcControlData = {
+    /**
+     * Optional list of CONTROL_TYPEs to fetch
+     */
+    controlTypes?: Array<number>;
+    /**
+     * Optional list of PLANT_IDs to fetch
+     */
+    plantIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type ControlGetPlcControlResponse = (Array<PlcDataControlExtendedRow>);
+
+export type ControlUpdatePlcControlData = {
+    requestBody: Array<PlcDataSettingsUpdate>;
+    /**
+     * Tenant ID to update control for
+     */
+    tenantId: string;
+};
+
+export type ControlUpdatePlcControlResponse = (CommandResponse);
+
 export type DashboardReadDashboardDataData = {
     /**
      * Admin override to view a specific tenant's dashboard
@@ -185,30 +293,77 @@ export type DashboardReadDashboardDataData = {
 
 export type DashboardReadDashboardDataResponse = (DashboardData);
 
+export type DefaultGetPlantConfigData = {
+    /**
+     * Optional list of DEVICE_IDs to fetch
+     */
+    deviceIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type DefaultGetPlantConfigResponse = (PlantConfigResponse);
+
+export type ElectricityCostReadElectricityCostData = {
+    /**
+     * Date (YYYY-MM-DD)
+     */
+    date: string;
+    /**
+     * Tenant ID to fetch electricity cost for
+     */
+    tenantId: string;
+};
+
+export type ElectricityCostReadElectricityCostResponse = (Array<ElectricityCostRow>);
+
 export type HistoricalDataReadHistoricalDetailsData = {
+    /**
+     * Aggregation level: hour (raw data), day, month, year (deltas)
+     */
+    aggregateBy?: ('hour' | 'day' | 'month' | 'year' | null);
     /**
      * List of DATA_IDs to fetch
      */
-    dataIds: Array<(number)>;
+    dataIds: Array<number>;
     /**
-     * End timestamp (ISO format, optional)
+     * End timestamp
      */
     end?: (string | null);
     /**
-     * PLANT_ID to fetch data for
-     */
-    plantId: number;
-    /**
-     * Start timestamp (ISO format, optional)
+     * Start timestamp
      */
     start?: (string | null);
     /**
-     * Admin override for tenant ID
+     * Tenant ID to fetch data for
      */
-    tenantIdOverride?: (string | null);
+    tenantId: string;
 };
 
 export type HistoricalDataReadHistoricalDetailsResponse = (HistoricalDataGroupedResponse);
+
+export type HistoricalDataExportHistoricalDataData = {
+    /**
+     * End timestamp (local time)
+     */
+    end?: (string | null);
+    /**
+     * Granularity for exported data (e..g, 'hourly')
+     */
+    exportGranularity: ExportGranularity;
+    /**
+     * Start timestamp (local time)
+     */
+    start?: (string | null);
+    /**
+     * Tenant ID for plant lookup
+     */
+    tenantId: string;
+};
+
+export type HistoricalDataExportHistoricalDataResponse = (HistoricalDataGroupedResponse);
 
 export type ItemsReadItemsData = {
     /**
@@ -276,31 +431,111 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
+export type PlantsReadPlantByIdData = {
+    plantId: number;
+};
+
+export type PlantsReadPlantByIdResponse = (unknown);
+
+export type PlantsUpdatePlantData = {
+    plantId: number;
+    requestBody: {
+        [key: string]: unknown;
+    };
+};
+
+export type PlantsUpdatePlantResponse = (unknown);
+
+export type PlantsDeletePlantData = {
+    plantId: number;
+};
+
+export type PlantsDeletePlantResponse = (unknown);
+
+export type PlantsReadAllPlantsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type PlantsReadAllPlantsResponse = (unknown);
+
+export type PlantsCreatePlantData = {
+    requestBody: {
+        [key: string]: unknown;
+    };
+};
+
+export type PlantsCreatePlantResponse = (unknown);
+
 export type PrivateCreateUserWithNewTenantData = {
     requestBody: PrivateUserCreateInput;
 };
 
 export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
 
+export type RealtimeDataReadRealtimeLatestData = {
+    /**
+     * List of DEVICE_IDs to fetch
+     */
+    deviceIds: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type RealtimeDataReadRealtimeLatestResponse = (RealtimeDataResponse);
+
 export type ScheduleReadScheduleData = {
     /**
-     * The date to fetch schedule for, in YYYY-MM-DD format
+     * Date (YYYY-MM-DD)
      */
     date: string;
-    plantId: number;
-    tenantDb: string;
+    /**
+     * Tenant ID to fetch schedule for
+     */
+    tenantId: string;
 };
 
 export type ScheduleReadScheduleResponse = (Array<ScheduleRow>);
 
 export type ScheduleBulkUpdateScheduleData = {
     date: string;
-    plantId: number;
     requestBody: Array<ScheduleRow>;
-    tenantDb: string;
+    /**
+     * Tenant ID to update schedule for
+     */
+    tenantId: string;
 };
 
-export type ScheduleBulkUpdateScheduleResponse = (Array<ScheduleRow>);
+export type ScheduleBulkUpdateScheduleResponse = (CommandResponse);
+
+export type SettingsGetPlcDataSettingsData = {
+    /**
+     * Optional list of DEVICE_IDs to fetch
+     */
+    deviceIds?: Array<number>;
+    /**
+     * Optional list of PLANT_IDs to fetch
+     */
+    plantIds?: Array<number>;
+    /**
+     * Tenant ID to fetch data for
+     */
+    tenantId: string;
+};
+
+export type SettingsGetPlcDataSettingsResponse = (Array<PlcDataSettingsExtendedRow>);
+
+export type SettingsUpdatePlcDataSettingsData = {
+    requestBody: Array<PlcDataSettingsUpdate>;
+    /**
+     * Tenant ID to update settings for
+     */
+    tenantId: string;
+};
+
+export type SettingsUpdatePlcDataSettingsResponse = (CommandResponse);
 
 export type TenantsCreateTenantData = {
     requestBody: TenantCreate;
@@ -395,5 +630,7 @@ export type UtilsTestEmailData = {
 };
 
 export type UtilsTestEmailResponse = (Message);
+
+export type UtilsWebhookPullResponse = (unknown);
 
 export type UtilsHealthCheckResponse = (boolean);

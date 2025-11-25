@@ -1,0 +1,92 @@
+{
+  // --- General ---
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never",
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit"
+
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // --- Python (FastAPI/SQLModel/Pydantic) ---
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+"ruff.enable": true,
+"ruff.format.enable": true,
+"ruff.lint.enable": true,
+
+  // --- TypeScript / React (Vite) ---
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+
+  // --- Prettier & ESLint ---
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": false,
+  "eslint.enable": true,
+  "eslint.run": "onSave",
+  "eslint.format.enable": true,
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "files.associations": {
+    ".env.*": "dotenv"
+  },
+
+  // --- Terminal & Environment ---
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  },
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}\\src"
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  // --- Search & Explorer ---
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.git": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.venv": true,
+    "**/venv": true
+  }
+}

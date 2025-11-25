@@ -1,28 +1,81 @@
-name: Lint Backend
+name: Generate Client
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     types:
-      - opened
-      - synchronize
+    - opened
+    - synchronize
 
 jobs:
-  lint-backend:
+  generate-client:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.10"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: "0.4.15"
-          enable-cache: true
-      - run: uv run bash scripts/lint.sh
-        working-directory: backend
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - uses: actions/setup-node@v5
+      with:
+        node-version: lts/*
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Install frontend dependencies
+      run: npm ci
+      working-directory: frontend
+
+    - name: Install backend dependencies
+      run: uv sync
+      working-directory: backend
+
+    - name: Generate client
+      run: uv run bash scripts/generate-client.sh
+      env:
+        VIRTUAL_ENV: backend/.venv
+        SECRET_KEY: just-for-generating-client
+        FIRST_SUPERUSER_PASSWORD: just-for-generating-client
+        GITHUB_WEBHOOK_SECRET: just-for-generating-client
+        PROJECT_NAME: Rayton Reporting
+        SITE_MARIADB_SERVER: localhost
+        SITE_MARIADB_USER: dummy-user
+        SITE_MARIADB_PASSWORD: dummy-password
+        SITE_MARIADB_DB: dummy-db
+        DATA_MARIADB_SERVER: localhost
+        DATA_MARIADB_USER: dummy-user
+        DATA_MARIADB_PASSWORD: dummy-password
+        DATA_MARIADB_DB: dummy-db
+        MQTT_BROKER: localhost
+        FIRST_SUPERUSER: admin@example.com
+        ENVIRONMENT: local
+
+    - name: Check for changes
+      id: check_changes
+      run: |
+        git add frontend/src/client
+        if git diff --staged --quiet; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -m "✨ Autogenerate frontend client"
+        git push

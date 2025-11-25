@@ -58,6 +58,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
     const inputRef = useRef<HTMLInputElement>(null)
 
+    // Extract styling props for InputGroup and Input
+    const { bg, color, _placeholder, ...inputProps } = rest
+
     return (
       <Field
         invalid={!!errors[type]}
@@ -83,9 +86,14 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           {...rootProps}
         >
           <Input
-            {...rest}
+            {...inputProps}
             ref={mergeRefs(ref, inputRef)}
             type={visible ? "text" : "password"}
+            bg={bg}
+            color={color}
+            _placeholder={_placeholder}
+            borderRadius="md"
+            px={6}
           />
         </InputGroup>
       </Field>

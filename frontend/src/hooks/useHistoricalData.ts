@@ -1,57 +1,73 @@
 // src/hooks/useHistoricalData.ts
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { 
-    HistoricalDataService, 
-    type ApiError, 
-    type HistoricalDataGroupedResponse 
-} from '@/client'; // Adjust path if needed
+import { type UseQueryOptions, useQuery } from "@tanstack/react-query"
+import {
+  type ApiError,
+  type HistoricalDataGroupedResponse,
+  HistoricalDataService,
+} from "@/client"
 
 // Define the type for the parameters needed by the hook/API
 interface FetchHistoricalDetailsParams {
-    plant_id: number | null;  // Allow null
-    data_ids: number[];
-    start?: string | null;
-    end?: string | null;
-    tenant_id_override?: string | null;
+  data_ids: number[]
+  start?: string | null
+  end?: string | null
+  tenantId: string | null
+  aggregate_by?: "hour" | "day" | "month" | "year" | null
 }
 
 // Define the type for extra useQuery options
-type UseHistoricalDataQueryOptions = Omit<UseQueryOptions<HistoricalDataGroupedResponse, ApiError>,
-    'queryKey' | 'queryFn' // Only omit keys set internally
->;
+type UseHistoricalDataQueryOptions = Omit<
+  UseQueryOptions<HistoricalDataGroupedResponse, ApiError>,
+  "queryKey" | "queryFn"
+>
 
 /**
- * Hook to fetch detailed historical data, grouped by series, for charting.
+ * Hook to fetch detailed historical data, with optional aggregation.
+ *
+ * param params.aggregate_by - Aggregation level:
+ * - null/"hour": Raw/averaged power data (kW) for Day view
+ * - "day": Daily delta energy (kWh) for Week/Month view
+ * - "month": Monthly delta energy (kWh) for Year view
+ * - "year": Yearly delta energy (kWh) for Lifetime view
  */
+
 const useHistoricalData = (
-    params: FetchHistoricalDetailsParams,
-    options: UseHistoricalDataQueryOptions = {}
+  params: FetchHistoricalDetailsParams,
+  options: UseHistoricalDataQueryOptions = {},
 ) => {
-    
-    // Determine if the query should be enabled
-    const enabled = (
-        options.enabled !== false && // Allow explicit disabling
-        !!params.plant_id && // Must have a plant_id
-        params.data_ids && params.data_ids.length > 0 // Must have data_ids
-    );
+  const enabled =
+    options.enabled !== false &&
+    !!params.tenantId &&
+    params.data_ids &&
+    params.data_ids.length > 0
 
-    return useQuery<HistoricalDataGroupedResponse, ApiError>({
-        // Spread any additional options (like 'enabled' from the caller)
-        ...options,
-        
-        queryKey: ['historicalDataDetails', params], // Cache based on params
-        
-        queryFn: () => HistoricalDataService.readHistoricalDetails({
-            plantId: params.plant_id!, // '!' is safe here because 'enabled' checks it
-            dataIds: params.data_ids,
-            start: params.start || undefined,
-            end: params.end || undefined,
-            tenantIdOverride: params.tenant_id_override || undefined,
-        }),
-        
-        enabled: enabled, // Control when the query runs
-        staleTime: 5 * 60 * 1000, // 5 minutes
-    });
-};
+  return useQuery<HistoricalDataGroupedResponse, ApiError>({
+    ...options,
+    queryKey: [
+      "historicalDataDetails",
+      {
+        ...params,
+        aggregate_by: params.aggregate_by || "hour",
+      },
+    ],
+    queryFn: () => {
+      const queryParams: any = {
+        dataIds: params.data_ids,
+        start: params.start || undefined,
+        end: params.end || undefined,
+        tenantId: params.tenantId!,
+      }
 
-export default useHistoricalData;
+      if (params.aggregate_by !== undefined && params.aggregate_by !== null) {
+        queryParams.aggregateBy = params.aggregate_by
+      }
+
+      return HistoricalDataService.readHistoricalDetails(queryParams)
+    },
+    enabled: enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
+  })
+}
+
+export default useHistoricalData
