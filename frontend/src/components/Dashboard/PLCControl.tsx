@@ -21,7 +21,7 @@ import {
 import { CgSpinner } from "react-icons/cg";
 import { FaCheckCircle, FaTimesCircle, FaUndo } from "react-icons/fa";
 // --- END NEW ---
-import type { CommandResponse, PlcDataSettingsExtendedRow } from "@/client";
+import type { CommandResponse, PlcDataSettingsExtendedRow, PlcDataControlExtendedRow } from "@/client";
 import { toaster } from "@/components/ui/toaster";
 import { useBulkUpdatePlcDataControl, useGetPlcDataControl } from "@/hooks/usePlcControlQueries";
 import { useQueryClient } from "@tanstack/react-query";
@@ -81,7 +81,7 @@ interface ValueChangeDetails {
   valueAsNumber: number;
 }
 
-interface ModifiedPlcDataRow extends PlcDataSettingsExtendedRow {
+interface ModifiedPlcDataRow extends PlcDataControlExtendedRow {
   originalData: number | null;
   isModified: boolean;
 }
