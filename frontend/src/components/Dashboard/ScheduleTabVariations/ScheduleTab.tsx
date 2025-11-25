@@ -5,10 +5,12 @@ import DatePicker from "@/components/ui/DatePicker";
 import {
   Box,
   ButtonGroup,
+  Flex,
   Grid,
   GridItem,
   Heading,
   HStack,
+  IconButton,
   VStack,
 } from "@chakra-ui/react";
 import { useQueryClient } from "@tanstack/react-query"; // <-- 2. Import useQueryClient
@@ -74,28 +76,56 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
   }
 
   return (
-    <Box bg="white" shadow="sm" rounded="lg" p={4} borderWidth="1px">
-      <HStack justify="space-between" mb={2}>
-       <HStack gap="2">
-          <Heading as="h2" size="lg">
+    <Box
+      bg="white"
+      shadow="sm"
+      rounded="lg"
+      p={{ base: 2, md: 4 }}
+      borderWidth="1px"
+      // Ensure the main container doesn't overflow
+      maxW="100%"
+      overflow="hidden"
+    >
+      {/* Header Section */}
+      <Flex
+        direction={{ base: "column", md: "row" }}
+        justify="space-between"
+        align={{ base: "stretch", md: "center" }}
+        mb={{ base: 3, md: 2 }}
+        gap={{ base: 3, md: 0 }}
+      >
+        {/* Title and Refresh Button */}
+        <Flex gap={2} justify="space-between" align="center">
+          <Heading as="h2" size={{ base: "md", md: "lg" }}>
             Керування розкладом
           </Heading>
-          <Button size="sm"
-              onClick={() => handleRefresh()}
-            >
-              <FiRefreshCw /> Оновити
-            </Button>
 
-          {/* <IconButton
-            icon={<FiRefreshCw />}
+          <IconButton
             aria-label="Refresh Data"
             onClick={handleRefresh}
             size="sm"
             variant="ghost"
-          /> */}
-        </HStack>
-        <HStack gap={2}>
-          <ButtonGroup variant="solid" size="sm">
+            display={{ base: "flex", md: "none" }}
+          >
+            <FiRefreshCw />
+          </IconButton>
+
+          <Button
+            size="sm"
+            onClick={handleRefresh}
+            display={{ base: "none", md: "flex" }}
+          >
+            <FiRefreshCw /> Оновити
+          </Button>
+        </Flex>
+        {/* Date Controls - Changed to Flex with wrap to prevent overflow */}
+        <Flex
+          gap={2}
+          justify={{ base: "flex-start", md: "flex-end" }}
+          w={{ base: "100%", md: "auto" }}
+          wrap="wrap"
+        >
+          <ButtonGroup variant="solid" size={{ base: "xs", md: "sm" }}>
             <Button
               onClick={() => handleDateChange(toLocalDateString(new Date(Date.now() - 86400000)))}
             >
@@ -112,36 +142,60 @@ const ScheduleTab = ({ tenantId }: ScheduleTabProps) => {
               Завтра
             </Button>
           </ButtonGroup>
-          <DatePicker
-            value={selectedDate}
-            onChange={handleDateChange}
-            size="sm"
-          />
-        </HStack>
-      </HStack>
+          <Box flexShrink={0}>
+             <DatePicker
+                value={selectedDate}
+                onChange={handleDateChange}
+                size="sm"
+              />
+          </Box>
+        </Flex>
+      </Flex>
 
-      <Grid templateColumns="1fr 1fr" gap={2}>
-        <GridItem>
+      {/* Main Content Grid */}
+      <Grid
+        templateColumns={{ base: "1fr", md: "1fr 1fr" }}
+        gap={{ base: 3, md: 2 }}
+      >
+        {/* Table Section */}
+        {/* minW="0" is critical in CSS Grid to allow children to scroll instead of expanding the grid item */}
+        <GridItem minW="0">
           <VStack alignItems="stretch">
-            <ScheduleControlTable
-              tenantId={tenantId}
-              date={selectedDate}
-              onScheduleDataChange={setScheduleData}
-            />
+            {/* Added Box wrapper with overflowX="auto" */}
+            <Box
+              overflowX="auto"
+              w="100%"
+              css={{
+                "&::-webkit-scrollbar": { height: "6px" },
+                "&::-webkit-scrollbar-track": { background: "#f1f1f1" },
+                "&::-webkit-scrollbar-thumb": { background: "#ccc", borderRadius: "3px" },
+              }}
+            >
+              <ScheduleControlTable
+                tenantId={tenantId}
+                date={selectedDate}
+                onScheduleDataChange={setScheduleData}
+              />
+            </Box>
           </VStack>
         </GridItem>
-        <GridItem>
+
+        {/* Chart Section */}
+        <GridItem minW="0">
           <VStack alignItems="stretch">
-            <ScheduleChart
-              tenantId={tenantId}
-              date={selectedDate}
-              scheduleData={scheduleData}
-            />
+             {/* Charts also often overflow, so we wrap them too */}
+            <Box overflowX="auto" w="100%">
+              <ScheduleChart
+                tenantId={tenantId}
+                date={selectedDate}
+                scheduleData={scheduleData}
+              />
+            </Box>
           </VStack>
         </GridItem>
       </Grid>
     </Box>
-  )
-}
+  );
+};
 
 export default ScheduleTab

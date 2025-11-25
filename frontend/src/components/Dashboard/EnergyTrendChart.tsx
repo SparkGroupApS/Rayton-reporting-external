@@ -578,7 +578,7 @@ const EnergyTrendChart = ({
 
   const barChartMargins = useBreakpointValue(
     {
-      base: { top: 20, right: 10, left: 0, bottom: 0 }, // Changed top from 5 to 20, left from -15 to 0
+      base: { top: 20, right: 10, left: 10, bottom: 0 }, // Changed top from 5 to 20, left from -15 to 0
       md: { top: 30, right: 30, left: 0, bottom: 0 }, // Changed top from 10 to 30
     },
     { ssr: false }
@@ -594,6 +594,44 @@ const EnergyTrendChart = ({
 
   // Add this with your other breakpoint values at the top of the component
   const xAxisHeight = useBreakpointValue({ base: 15, md: 20 }, { ssr: false });
+
+  // 1. Get the number of data points currently visible
+  const dataCount = transformedEnergyData?.chartData.length || 0;
+
+  // 2. Determine if we are on mobile
+  const isMobile = useBreakpointValue({ base: true, md: false }, { ssr: false });
+
+  // 3. Calculate Dynamic Padding
+  const dynamicXAxisPadding = useMemo(() => {
+    // Mobile always needs tight padding to save screen real estate
+    if (isMobile) {
+      return { left: 20, right: 20 };
+    }
+
+    // DESKTOP LOGIC:
+    // If we have very few data points (e.g., < 5), add large padding to center them.
+    if (dataCount > 0 && dataCount <= 5) {
+      return { left: 100, right: 100 };
+    }
+    // If we have a medium amount (e.g., a week), use medium padding.
+    if (dataCount <= 10) {
+      return { left: 60, right: 60 };
+    }
+    // For large datasets (Month/Year), use small padding to maximize space.
+    return { left: 30, right: 30 };
+  }, [dataCount, isMobile]);
+
+  // Add responsive controls for bar spacing
+  // 'barCategoryGap': The space between the day groups (e.g. between Nov 19 and Nov 20)
+  // 'barGap': The space between the individual colored bars (e.g. between Blue and Red)
+  const chartSpacing = useBreakpointValue(
+    {
+      base: { barGap: 0, barCategoryGap: '15%' }, // Mobile: Tight packing to make bars thicker
+      md: { barGap: 4, barCategoryGap: '20%' },   // Desktop: Standard breathing room
+    },
+    { ssr: false }
+  );
+///////////////////End Adpotive UI tweaks/////////////////////
 
   // Define the time range collection for the Select component
   const timeRangeCollection = createListCollection({
@@ -1325,7 +1363,9 @@ const EnergyTrendChart = ({
                 <BarChart
                   data={transformedEnergyData.chartData}
                   margin={barChartMargins}
-                  // margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  // 2. Apply the spacing controls here
+                  barGap={chartSpacing?.barGap}
+                  barCategoryGap={chartSpacing?.barCategoryGap}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -1337,7 +1377,7 @@ const EnergyTrendChart = ({
                     tickFormatter={(value) => formatXAxis(value)}
                     allowDataOverflow={true}
                     ticks={timeRange === '1W' ? weekTicks : undefined}
-                    padding={{ left: 80, right: 80 }}
+                    padding={dynamicXAxisPadding}
                   />
                   <YAxis
                     label={{ value: 'kWh', angle: -90, position: 'insideLeft' }} //offset: yAxisLabelOffset
@@ -1404,6 +1444,10 @@ const EnergyTrendChart = ({
                       dataKey={series.name}
                       fill={series.color}
                       isAnimationActive={false}
+                      // 5. CRITICAL: Set a maxBarSize.
+                      // This ensures that when you only have 2 days, the bars
+                      // don't become 500px wide blocks.
+                      maxBarSize={50}
                     />
                   ))}
                 </BarChart>

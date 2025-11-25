@@ -176,14 +176,14 @@ const DashboardTabs = ({
             socDataId={socDataId}         // <-- Use the prop
           />
 
-          <KpiSection isLoading={isLoadingDashboard} error={error} />
+          {/* <KpiSection isLoading={isLoadingDashboard} error={error} /> */}
 
-          <ItemsSection
+          {/* <ItemsSection
             items={dashboardData?.items}
             //users={dashboardData?.users} // <-- Pass users prop
             isLoading={isLoadingDashboard}
           // error={error} // <-- ItemsSection doesn't seem to take an error prop
-          />
+          /> */}
         </Grid>
       </Tabs.Content>
 
