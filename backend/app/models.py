@@ -416,7 +416,8 @@ class RealtimeDataPoint(BaseModel):
     device_id: int
     name: str
     timestamp: int
-    value: str
+    # Allow string, float, or None to handle all data types and missing values
+    value: str | float | None = None
 
 
 class RealtimeDataResponse(BaseModel):
