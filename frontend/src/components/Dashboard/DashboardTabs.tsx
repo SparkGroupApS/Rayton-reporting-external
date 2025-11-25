@@ -133,21 +133,27 @@ const DashboardTabs = ({
   // Use the v3 namespaced syntax
   return (
     <Tabs.Root colorScheme="blue" mt={4} value={activeTab}>
-      <Tabs.List>
-        <Tabs.Trigger value="main" onClick={() => handleTabChange("main")}>Головна</Tabs.Trigger>
+      <Tabs.List overflowX={{ base: "auto", md: "visible" }} pb={2} css={{
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
+        "-ms-overflow-style": "none",  // IE and Edge
+        "scrollbar-width": "none",  // Firefox
+      }}>
+        <Tabs.Trigger value="main" onClick={() => handleTabChange("main")} minW="fit-content">Головна</Tabs.Trigger>
         {isTabVisible('schedule') && (
-          <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")}>Розклад</Tabs.Trigger>
+          <Tabs.Trigger value="schedule" onClick={() => handleTabChange("schedule")} minW="fit-content">Розклад</Tabs.Trigger>
         )}
         {isTabVisible('smartlogger') && (
-          <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")}>СЕС</Tabs.Trigger>
+          <Tabs.Trigger value="smdata" onClick={() => handleTabChange("smdata")} minW="fit-content">СЕС</Tabs.Trigger>
         )}
         {isTabVisible('ess') && (
-          <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")}>УЗЕ</Tabs.Trigger>
+          <Tabs.Trigger value="essdata" onClick={() => handleTabChange("essdata")} minW="fit-content">УЗЕ</Tabs.Trigger>
         )}
         {isTabVisible('plcontrol') && (
-          <Tabs.Trigger value="control" onClick={() => handleTabChange("control")}>Керування</Tabs.Trigger>
+          <Tabs.Trigger value="control" onClick={() => handleTabChange("control")} minW="fit-content">Керування</Tabs.Trigger>
         )}
-        <Tabs.Trigger value="settings" onClick={() => handleTabChange("settings")}>Налаштування</Tabs.Trigger>
+        <Tabs.Trigger value="settings" onClick={() => handleTabChange("settings")} minW="fit-content">Налаштування</Tabs.Trigger>
         {/* Add more tabs as needed */}
       </Tabs.List>
 
@@ -161,7 +167,7 @@ const DashboardTabs = ({
           }}
           templateColumns={{ base: "1fr", md: "1fr 1fr", lg: "1fr 1fr 1fr 1fr" }}
           templateRows={{ lg: "auto 1fr" }}
-          gap={6}
+          gap={{ base: 4, md: 6 }}
         >
           {/* All components are now rendered inside here */}
           <EnergyTrendChart

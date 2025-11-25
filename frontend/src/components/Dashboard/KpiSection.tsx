@@ -18,7 +18,7 @@ const KpiSection = ({ isLoading, error }: KpiSectionProps) => {
       bg="white"
       shadow="sm"
       rounded="lg"
-      p={4}
+      p={{ base: 3, md: 4 }}
       borderWidth="1px"
     >
       <Heading size="md" color="gray.700" mb={4}>
