@@ -437,7 +437,35 @@ export type PlantsReadPlantByIdData = {
 
 export type PlantsReadPlantByIdResponse = (unknown);
 
+export type PlantsUpdatePlantData = {
+    plantId: number;
+    requestBody: {
+        [key: string]: unknown;
+    };
+};
+
+export type PlantsUpdatePlantResponse = (unknown);
+
+export type PlantsDeletePlantData = {
+    plantId: number;
+};
+
+export type PlantsDeletePlantResponse = (unknown);
+
+export type PlantsReadAllPlantsData = {
+    limit?: number;
+    skip?: number;
+};
+
 export type PlantsReadAllPlantsResponse = (unknown);
+
+export type PlantsCreatePlantData = {
+    requestBody: {
+        [key: string]: unknown;
+    };
+};
+
+export type PlantsCreatePlantResponse = (unknown);
 
 export type PrivateCreateUserWithNewTenantData = {
     requestBody: PrivateUserCreateInput;

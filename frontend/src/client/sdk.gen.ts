@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ControlGetPlcControlData, ControlGetPlcControlResponse, ControlUpdatePlcControlData, ControlUpdatePlcControlResponse, DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsReadAllPlantsResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, SettingsGetPlcDataSettingsData, SettingsGetPlcDataSettingsResponse, SettingsUpdatePlcDataSettingsData, SettingsUpdatePlcDataSettingsResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ControlGetPlcControlData, ControlGetPlcControlResponse, ControlUpdatePlcControlData, ControlUpdatePlcControlResponse, DashboardReadDashboardDataData, DashboardReadDashboardDataResponse, DefaultGetPlantConfigData, DefaultGetPlantConfigResponse, ElectricityCostReadElectricityCostData, ElectricityCostReadElectricityCostResponse, HistoricalDataReadHistoricalDetailsData, HistoricalDataReadHistoricalDetailsResponse, HistoricalDataExportHistoricalDataData, HistoricalDataExportHistoricalDataResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlantsReadPlantByIdData, PlantsReadPlantByIdResponse, PlantsUpdatePlantData, PlantsUpdatePlantResponse, PlantsDeletePlantData, PlantsDeletePlantResponse, PlantsReadAllPlantsData, PlantsReadAllPlantsResponse, PlantsCreatePlantData, PlantsCreatePlantResponse, PrivateCreateUserWithNewTenantData, PrivateCreateUserWithNewTenantResponse, RealtimeDataReadRealtimeLatestData, RealtimeDataReadRealtimeLatestResponse, ScheduleReadScheduleData, ScheduleReadScheduleResponse, ScheduleBulkUpdateScheduleData, ScheduleBulkUpdateScheduleResponse, SettingsGetPlcDataSettingsData, SettingsGetPlcDataSettingsResponse, SettingsUpdatePlcDataSettingsData, SettingsUpdatePlcDataSettingsResponse, TenantsCreateTenantData, TenantsCreateTenantResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantByIdData, TenantsReadTenantByIdResponse, TenantsUpdateTenantData, TenantsUpdateTenantResponse, TenantsDeleteTenantData, TenantsDeleteTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsWebhookPullResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ControlService {
     /**
@@ -430,17 +430,95 @@ export class PlantsService {
     }
     
     /**
+     * Update Plant
+     * Update an existing plant.
+     * Only superusers can update plants.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static updatePlant(data: PlantsUpdatePlantData): CancelablePromise<PlantsUpdatePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/plants/{plant_id}',
+            path: {
+                plant_id: data.plantId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Plant
+     * Delete a plant.
+     * Only superusers can delete plants.
+     * @param data The data for the request.
+     * @param data.plantId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deletePlant(data: PlantsDeletePlantData): CancelablePromise<PlantsDeletePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/plants/{plant_id}',
+            path: {
+                plant_id: data.plantId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Read All Plants
      * Get all plants.
      * For superusers: returns all plants.
      * For regular users: returns only plants their tenant has access to.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
      * @returns unknown Successful Response
      * @throws ApiError
      */
-    public static readAllPlants(): CancelablePromise<PlantsReadAllPlantsResponse> {
+    public static readAllPlants(data: PlantsReadAllPlantsData = {}): CancelablePromise<PlantsReadAllPlantsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/plants/'
+            url: '/api/v1/plants/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Plant
+     * Create a new plant.
+     * Only superusers can create plants.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static createPlant(data: PlantsCreatePlantData): CancelablePromise<PlantsCreatePlantResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/plants/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }
