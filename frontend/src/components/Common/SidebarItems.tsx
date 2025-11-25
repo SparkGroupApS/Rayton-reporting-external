@@ -127,7 +127,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         {/* Render Admin Items */}
         {adminItems.map(({ icon, title, path }) => (
           <RouterLink key={path} to={path} onClick={onClose}>
-            {({ isActive }) => (
+             {({ isActive }: { isActive: boolean }) => (
               <Flex
                 gap={4}
                 px={4}
@@ -154,7 +154,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         {/* Render Plant Items */}
         {plantItems.map(({ icon, title, path }) => (
           <RouterLink key={path} to={path} onClick={onClose}>
-            {({ isActive }) => (
+             {({ isActive }: { isActive: boolean }) => (
               <Flex
                 gap={4}
                 px={4}
@@ -181,7 +181,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         {/* Render Static Items */}
         {staticItems.map(({ icon, title, path }) => (
           <RouterLink key={path} to={path} onClick={onClose}>
-            {({ isActive }) => (
+             {({ isActive }: { isActive: boolean }) => (
               <Flex
                 gap={4}
                 px={4}
