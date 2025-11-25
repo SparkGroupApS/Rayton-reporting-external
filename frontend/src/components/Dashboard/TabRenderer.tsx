@@ -2,6 +2,7 @@
 import { usePlant } from "@/hooks/usePlantQueries";
 import { Box, Spinner, Text } from "@chakra-ui/react";
 import ESS from "./ESS";
+import ESS_v3 from "./ESS_v3";
 import ESSTabAdvanced from "./ESSTabVariations/ESSTab_advanced";
 import ESSTabBasic from "./ESSTabVariations/ESSTab_basic";
 import PLCControl from "./PLCControl";
@@ -81,6 +82,8 @@ const renderComponent = (componentType: string, tenantId: string) => {
       return <ESSTabAdvanced tenantId={tenantId} />;
     case 'ESS':
       return <ESS tenantId={tenantId} />;
+    case 'ESS_v3':
+      return <ESS_v3 tenantId={tenantId} />;
     case 'Smartlogger':
       return <Smartlogger tenantId={tenantId} />;
     case 'PLCControl':
