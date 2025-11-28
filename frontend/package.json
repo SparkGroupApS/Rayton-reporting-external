@@ -34,7 +34,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.2",
+    "@biomejs/biome": "^2.3.8",
     "@hey-api/openapi-ts": "0.86.8",
     "@playwright/test": "^1.56.1",
     "@tanstack/react-router-devtools": "^1.134.9",
