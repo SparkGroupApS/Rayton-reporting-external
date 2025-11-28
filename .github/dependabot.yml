@@ -1,41 +1,92 @@
 version: 2
 updates:
-  # GitHub Actions
+  # GitHub Actions - keep frequent for security
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: monthly  # Reduced from daily
     commit-message:
       prefix: ⬆
+    # Group all action updates into one PR
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
   # Python uv
   - package-ecosystem: uv
     directory: /backend
     schedule:
-      interval: weekly
+      interval: monthly  # Reduced from weekly
     commit-message:
       prefix: ⬆
+    # Group updates by type
+    groups:
+      # Security updates get their own PR
+      python-security:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+      # All other updates grouped together
+      python-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+      python-dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    # Only create PRs for security and minor updates, ignore patch for non-security
+    open-pull-requests-limit: 3
+
   # npm
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
+      interval: monthly  # Reduced from weekly
     commit-message:
       prefix: ⬆
     ignore:
       - dependency-name: "@hey-api/openapi-ts"
+    # Group all npm updates
+    groups:
+      npm-production:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-development:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 3
+
   # Docker
   - package-ecosystem: docker
     directories:
       - /backend
       - /frontend
     schedule:
-      interval: weekly
+      interval: monthly  # Reduced from weekly
     commit-message:
       prefix: ⬆
+    # Group all docker updates
+    groups:
+      docker-images:
+        patterns:
+          - "*"
+
   # Docker Compose
   - package-ecosystem: docker-compose
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly  # Reduced from weekly
     commit-message:
       prefix: ⬆
+    # Group all docker-compose updates
+    groups:
+      docker-compose:
+        patterns:
+          - "*"
