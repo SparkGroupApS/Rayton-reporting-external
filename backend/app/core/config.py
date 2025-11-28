@@ -1,20 +1,18 @@
 import secrets
 import warnings
-from typing import Annotated, Any, Literal, Optional, Union
-from ssl import SSLContext
+from typing import Annotated, Any, Literal
 
+from fastapi_mqtt import MQTTConfig  # <-- Import the real config
 from pydantic import (
     AnyUrl,
     BeforeValidator,
     EmailStr,
     HttpUrl,
-    BaseModel,
     computed_field,
     model_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
-from fastapi_mqtt import FastMQTT, MQTTConfig  # <-- Import the real config
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -38,7 +36,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
-    GITHUB_WEBHOOK_SECRET: str 
+    TIMEZONE: str = "UTC"  # Default to UTC if not set
+    GITHUB_WEBHOOK_SECRET: str
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
         []
@@ -58,7 +57,7 @@ class Settings(BaseSettings):
     SITE_MARIADB_USER: str
     SITE_MARIADB_PASSWORD: str = ""
     SITE_MARIADB_DB: str = ""
-    
+
     DATA_MARIADB_SERVER: str  # Or MYSQL_SERVER if you prefer
     DATA_MARIADB_PORT: int = 3306  # Default MySQL/MariaDB port
     DATA_MARIADB_USER: str
@@ -68,9 +67,9 @@ class Settings(BaseSettings):
     # MQTT Settings
     MQTT_BROKER: str
     MQTT_PORT: int = 1883
-    MQTT_USERNAME: Optional[str] = None
-    MQTT_PASSWORD: Optional[str] = None
-    MQTT_CLIENT_ID: Optional[str] = None
+    MQTT_USERNAME: str | None = None
+    MQTT_PASSWORD: str | None = None
+    MQTT_CLIENT_ID: str | None = None
     MQTT_KEEPALIVE: int = 60
     MQTT_VERSION: int = 4  # Add this as a configurable setting
 

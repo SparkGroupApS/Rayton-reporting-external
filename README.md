@@ -35,3 +35,40 @@ alembic upgrade head
 ./runserver.ps1  # Windows
 # OR
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+###2. Frontend Setup
+
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start the dev server (runs on port 5173)
+npm run dev
+
+
+📦 Production Deployment
+The production environment runs on a Linux (Ubuntu) server using Nginx as a reverse proxy and PM2 to manage application processes.
+
+Backend Port: 8010 (Proxied via Nginx)
+
+Frontend: Static files served by Nginx (Built via npm run build)
+
+Quick Deploy
+SSH into the production server and run the deployment script:
+
+Bash
+
+# Switch to application user
+sudo su - webapp
+
+# Run deploy script (pulls code, updates backend, rebuilds frontend, restarts PM2)
+./deploy.sh
+Manual Update
+git pull origin main
+
+Backend: cd backend && uv sync
+
+Frontend: cd frontend && npm install && npm run build
+
+Restart: pm2 restart all

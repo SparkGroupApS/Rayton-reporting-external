@@ -6,16 +6,16 @@ import uuid
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 from enum import StrEnum
-
-#import pytz
 from typing import Any, Literal
 
+import pytz
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import *
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.config import settings
 from app.core.db import get_data_async_session
 from app.models import (
     HistoricalDataGroupedResponse,
@@ -35,7 +35,7 @@ class ExportGranularity(StrEnum):
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/historical-data", tags=["historical-data"])
-
+APP_TZ = pytz.timezone(settings.TIMEZONE)
 
 async def get_plant_id_for_tenant(tenant_id: uuid.UUID, session: SessionDep) -> int:
     """Looks up the plant_id stored directly on the Tenant record."""
@@ -63,14 +63,15 @@ async def read_historical_details(
     start: datetime | None = Query(None, description="Start timestamp"),
     end: datetime | None = Query(None, description="End timestamp"),
     aggregate_by: Literal["hour", "day", "month", "year"] | None = Query(
-        None, description="Aggregation level: hour (raw data), day, month, year (deltas)"
+        None,
+        description="Aggregation level: hour (raw data), day, month, year (deltas)",
     ),
 ) -> Any:
     """
     Fetch historical data.
     - If aggregate_by is 'hour', it returns raw data points.
     - Otherwise, it calculates the DELTA (difference between consecutive readings).
-    
+
     Frontend Time Range to Aggregation Mapping:
     - Day view: hour (raw data points)
     - Week/Month view: day (daily deltas)
@@ -84,7 +85,7 @@ async def read_historical_details(
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized for this tenant"
+            detail="Not authorized for this tenant",
         )
 
     # 2. Lookup plant_id
@@ -93,30 +94,33 @@ async def read_historical_details(
     # Branch for raw data (Day view) vs aggregated data (Week, Month, etc.)
     if aggregate_by == "hour" or aggregate_by is None:
         # Query for raw, non-aggregated data points
-        query = select(
-            PlcDataHistorical.DATA_ID,
-            PlcDataHistorical.TIMESTAMP,
-            PlcDataHistorical.DATA,
-            TextList.TEXT_L1,
-            TextList.TEXT_L2,
-        ).join(
-            TextList,
-            and_(
-                col(PlcDataHistorical.DATA_ID) == col(TextList.DATA_ID),
-                col(TextList.CLASS_ID) == 0,
-            ),
-            isouter=True,
-        ).where(
-            col(PlcDataHistorical.PLANT_ID) == target_plant_id
-        ).where(
-            col(PlcDataHistorical.DATA_ID).in_(data_ids)
+        query = (
+            select(
+                PlcDataHistorical.DATA_ID,
+                PlcDataHistorical.TIMESTAMP,
+                PlcDataHistorical.DATA,
+                TextList.TEXT_L1,
+                TextList.TEXT_L2,
+            )
+            .join(
+                TextList,
+                and_(
+                    col(PlcDataHistorical.DATA_ID) == col(TextList.DATA_ID),
+                    col(TextList.CLASS_ID) == 0,
+                ),
+                isouter=True,
+            )
+            .where(col(PlcDataHistorical.PLANT_ID) == target_plant_id)
+            .where(col(PlcDataHistorical.DATA_ID).in_(data_ids))
         )
         if start:
             query = query.where(col(PlcDataHistorical.TIMESTAMP) >= start)
         if end:
             query = query.where(col(PlcDataHistorical.TIMESTAMP) <= end)
 
-        query = query.order_by(PlcDataHistorical.DATA_ID.asc(), PlcDataHistorical.TIMESTAMP.asc())
+        query = query.order_by(
+            PlcDataHistorical.DATA_ID.asc(), PlcDataHistorical.TIMESTAMP.asc()
+        )
 
         results = await data_session.exec(query)
         rows = results.all()
@@ -126,11 +130,19 @@ async def read_historical_details(
         for data_id, timestamp, value, label, label_local in rows:
             if data_id not in grouped_data:
                 series_name = label_local or label or f"Data ID {data_id}"
-                grouped_data[data_id] = TimeSeriesData(data_id=data_id, name=series_name, data=[])
+                grouped_data[data_id] = TimeSeriesData(
+                    data_id=data_id, name=series_name, data=[]
+                )
+            if timestamp.tzinfo is None:
+                localized_dt = APP_TZ.localize(timestamp)
+            else:
+                localized_dt = timestamp.astimezone(APP_TZ)
 
-            timestamp_ms = int(timestamp.timestamp() * 1000)
+            timestamp_ms = int(localized_dt.timestamp() * 1000)
             grouped_data[data_id].data.append(
-                TimeSeriesPoint(x=timestamp_ms, y=round(value, 3) if value is not None else 0)
+                TimeSeriesPoint(
+                    x=timestamp_ms, y=round(value, 3) if value is not None else 0
+                )
             )
 
         series_list = list(grouped_data.values())
@@ -144,12 +156,12 @@ async def read_historical_details(
     elif aggregate_by == "month":
         bucket_expr = func.concat(
             func.year(PlcDataHistorical.TIMESTAMP),
-            '-',
-            func.lpad(func.month(PlcDataHistorical.TIMESTAMP), 2, '0')
+            "-",
+            func.lpad(func.month(PlcDataHistorical.TIMESTAMP), 2, "0"),
         )
     elif aggregate_by == "year":
         bucket_expr = func.cast(func.year(PlcDataHistorical.TIMESTAMP), type_=str)
-    else: # Should not happen due to the check above, but as a fallback
+    else:  # Should not happen due to the check above, but as a fallback
         bucket_expr = func.date(PlcDataHistorical.TIMESTAMP)
 
     # 4. STEP 1: Query ONLY the numerical data (no JOIN with TextList)
@@ -159,6 +171,7 @@ async def read_historical_details(
         extended_start = start - timedelta(days=1)
 
     import time as time_module
+
     query_start = time_module.time()
 
     # OPTIMIZATION: First, find which DATA_IDs actually have data in the time range
@@ -167,7 +180,9 @@ async def read_historical_details(
         and_(
             col(PlcDataHistorical.PLANT_ID) == target_plant_id,
             col(PlcDataHistorical.DATA_ID).between(100, 199),
-            col(PlcDataHistorical.TIMESTAMP) >= extended_start if extended_start else True,
+            col(PlcDataHistorical.TIMESTAMP) >= extended_start
+            if extended_start
+            else True,
             col(PlcDataHistorical.TIMESTAMP) <= end if end else True,
         )
     )
@@ -182,34 +197,44 @@ async def read_historical_details(
         logger.info(f"No data found, query took {query_time:.3f}s")
         return HistoricalDataGroupedResponse(series=[])
     # Main aggregation query
-    query = select(
-        PlcDataHistorical.DATA_ID,
-        bucket_expr.label("bucket"),
-        func.max(PlcDataHistorical.TIMESTAMP).label("latest_ts"),
-        func.max(PlcDataHistorical.DATA).label("value"),
-    ).where(
-        and_(
-            col(PlcDataHistorical.PLANT_ID) == target_plant_id,
-            col(PlcDataHistorical.DATA_ID).in_(active_data_ids),  # Only query IDs with actual data
-            col(PlcDataHistorical.TIMESTAMP) >= extended_start if extended_start else True,
-            col(PlcDataHistorical.TIMESTAMP) <= end if end else True,
+    query = (
+        select(
+            PlcDataHistorical.DATA_ID,
+            bucket_expr.label("bucket"),
+            func.max(PlcDataHistorical.TIMESTAMP).label("latest_ts"),
+            func.max(PlcDataHistorical.DATA).label("value"),
         )
-    ).group_by(
-        PlcDataHistorical.DATA_ID, "bucket"
-    ).order_by(
-        PlcDataHistorical.DATA_ID.asc(), "bucket"
+        .where(
+            and_(
+                col(PlcDataHistorical.PLANT_ID) == target_plant_id,
+                col(PlcDataHistorical.DATA_ID).in_(
+                    active_data_ids
+                ),  # Only query IDs with actual data
+                col(PlcDataHistorical.TIMESTAMP) >= extended_start
+                if extended_start
+                else True,
+                col(PlcDataHistorical.TIMESTAMP) <= end if end else True,
+            )
+        )
+        .group_by(PlcDataHistorical.DATA_ID, "bucket")
+        .order_by(PlcDataHistorical.DATA_ID.asc(), "bucket")
     )
 
     # Log the generated SQL for debugging
     from sqlalchemy.dialects import mysql
-    compiled_query = query.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True})
+
+    compiled_query = query.compile(
+        dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}
+    )
     logger.info(f"Generated SQL: {compiled_query}")
 
     results = await data_session.exec(query)
     rows = results.all()
 
     query_time = time_module.time() - query_start
-    logger.info(f"Main aggregation query took {query_time:.3f}s, returned {len(rows)} rows")
+    logger.info(
+        f"Main aggregation query took {query_time:.3f}s, returned {len(rows)} rows"
+    )
 
     # 5. STEP 2: Collect unique DATA_IDs and fetch labels separately
     label_start = time_module.time()
@@ -218,7 +243,9 @@ async def read_historical_details(
 
     for data_id, bucket, latest_ts, value in rows:
         unique_data_ids.add(data_id)
-        by_id[data_id].append({"bucket": bucket, "timestamp": latest_ts, "value": value})
+        by_id[data_id].append(
+            {"bucket": bucket, "timestamp": latest_ts, "value": value}
+        )
 
     # Fetch labels for all unique DATA_IDs in a single, simple query
     id_metadata = {}
@@ -238,7 +265,9 @@ async def read_historical_details(
             id_metadata[data_id] = {"label": label, "label_local": label_local}
 
     label_time = time_module.time() - label_start
-    logger.info(f"Label query took {label_time:.3f}s for {len(unique_data_ids)} unique IDs")
+    logger.info(
+        f"Label query took {label_time:.3f}s for {len(unique_data_ids)} unique IDs"
+    )
 
     # 6. Calculate deltas and build response
     grouped_data: dict[int, TimeSeriesData] = {}
@@ -247,10 +276,14 @@ async def read_historical_details(
         entries.sort(key=lambda x: x["bucket"])
 
         metadata = id_metadata.get(data_id, {})
-        series_name = metadata.get("label_local") or metadata.get("label") or f"Data ID {data_id}"
+        series_name = (
+            metadata.get("label_local") or metadata.get("label") or f"Data ID {data_id}"
+        )
 
         if data_id not in grouped_data:
-            grouped_data[data_id] = TimeSeriesData(data_id=data_id, name=series_name, data=[])
+            grouped_data[data_id] = TimeSeriesData(
+                data_id=data_id, name=series_name, data=[]
+            )
 
         # Process all entries to calculate deltas, but only include results within the original requested date range
         # Also handle the case where the first entry in the requested range doesn't have a previous value
@@ -265,7 +298,7 @@ async def read_historical_details(
                 if curr_datetime.date() < start.date():
                     include_in_result = False
             elif start and isinstance(curr["bucket"], str) and aggregate_by == "month":
-                year, month = curr["bucket"].split('-')
+                year, month = curr["bucket"].split("-")
                 curr_datetime = datetime(int(year), int(month), 1)
                 start_month = datetime(start.year, start.month, 1)
                 if curr_datetime < start_month:
@@ -280,14 +313,19 @@ async def read_historical_details(
                     timestamp_dt = datetime.combine(curr["bucket"], time.min)
                 elif isinstance(curr["bucket"], str):
                     if aggregate_by == "month":
-                        year, month = curr["bucket"].split('-')
+                        year, month = curr["bucket"].split("-")
                         timestamp_dt = datetime(int(year), int(month), 1)
-                    else: # year
+                    else:  # year
                         timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                 else:
                     timestamp_dt = curr["timestamp"]
 
-                timestamp_ms = int(timestamp_dt.timestamp() * 1000)
+                if timestamp_dt.tzinfo is None:
+                    localized_dt = APP_TZ.localize(timestamp_dt)
+                else:
+                    localized_dt = timestamp_dt.astimezone(APP_TZ)
+
+                timestamp_ms = int(localized_dt.timestamp() * 1000)
 
                 grouped_data[data_id].data.append(
                     TimeSeriesPoint(x=timestamp_ms, y=round(delta, 3))
@@ -300,9 +338,13 @@ async def read_historical_details(
             for i, entry in enumerate(entries):
                 if isinstance(entry["bucket"], date):
                     entry_datetime = datetime.combine(entry["bucket"], time.min)
-                    is_in_range = start.date() <= entry_datetime.date() <= end.date() if end else start.date() <= entry_datetime.date()
+                    is_in_range = (
+                        start.date() <= entry_datetime.date() <= end.date()
+                        if end
+                        else start.date() <= entry_datetime.date()
+                    )
                 elif isinstance(entry["bucket"], str) and aggregate_by == "month":
-                    year, month = entry["bucket"].split('-')
+                    year, month = entry["bucket"].split("-")
                     entry_datetime = datetime(int(year), int(month), 1)
                     start_month = datetime(start.year, start.month, 1)
                     end_month = datetime(end.year, end.month, 1) if end else start_month
@@ -322,7 +364,17 @@ async def read_historical_details(
                     # We would need to handle it differently - but for delta calculation, we need a reference point
                     pass
                 # If the first entry in requested range is not the first in entries (i > 0), then it will be handled by the main loop
-                elif is_in_range and i > 0 and i < len(entries) and entries[i-1]["bucket"] < (start.date() if isinstance(entries[i]["bucket"], date) else entries[i]["bucket"]):
+                elif (
+                    is_in_range
+                    and i > 0
+                    and i < len(entries)
+                    and entries[i - 1]["bucket"]
+                    < (
+                        start.date()
+                        if isinstance(entries[i]["bucket"], date)
+                        else entries[i]["bucket"]
+                    )
+                ):
                     # Handle case where the entry is in range but the previous one was before the requested range
                     # In this case, we calculate delta from the previous entry even if it's outside the range
                     prev = entries[i - 1]
@@ -333,14 +385,19 @@ async def read_historical_details(
                         timestamp_dt = datetime.combine(curr["bucket"], time.min)
                     elif isinstance(curr["bucket"], str):
                         if aggregate_by == "month":
-                            year, month = curr["bucket"].split('-')
+                            year, month = curr["bucket"].split("-")
                             timestamp_dt = datetime(int(year), int(month), 1)
-                        else: # year
+                        else:  # year
                             timestamp_dt = datetime(int(curr["bucket"]), 1, 1)
                     else:
                         timestamp_dt = curr["timestamp"]
 
-                    timestamp_ms = int(timestamp_dt.timestamp() * 1000)
+                    if timestamp_dt.tzinfo is None:
+                        localized_dt = APP_TZ.localize(timestamp_dt)
+                    else:
+                        localized_dt = timestamp_dt.astimezone(APP_TZ)
+
+                    timestamp_ms = int(localized_dt.timestamp() * 1000)
 
                     grouped_data[data_id].data.append(
                         TimeSeriesPoint(x=timestamp_ms, y=round(delta, 3))
@@ -356,7 +413,7 @@ async def export_historical_data(
     primary_session: SessionDep,
     tenant_id: uuid.UUID = Query(..., description="Tenant ID for plant lookup"),
     # --- ADDED data_ids ---
-    #data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
+    # data_ids: list[int] = Query(..., description="List of DATA_IDs to fetch"),
     start: datetime | None = Query(None, description="Start timestamp (local time)"),
     end: datetime | None = Query(None, description="End timestamp (local time)"),
     export_granularity: ExportGranularity = Query(
@@ -384,13 +441,14 @@ async def export_historical_data(
     # if not data_ids:
     #     raise HTTPException(status_code=400, detail="No data_ids provided.")
     if start and end and start >= end:
-        raise HTTPException(status_code=400, detail="Start datetime must be before end datetime.")
+        raise HTTPException(
+            status_code=400, detail="Start datetime must be before end datetime."
+        )
 
     # 4. Granularity Check
     if export_granularity != ExportGranularity.hourly:
         raise HTTPException(
-            status_code=400,
-            detail="Only 'hourly' granularity is supported."
+            status_code=400, detail="Only 'hourly' granularity is supported."
         )
 
     # 5. Extend time range for baseline (one hour before start)
@@ -401,27 +459,29 @@ async def export_historical_data(
     if end:
         # Округляємо до початку години і додаємо 1 годину.
         # (2025-11-10 23:59:59 -> 2025-11-10 23:00:00 -> 2025-11-11 00:00:00)
-        adjusted_end = end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        adjusted_end = end.replace(minute=0, second=0, microsecond=0) + timedelta(
+            hours=1
+        )
         logger.info(f"Original end='{end}', adjusted end for query='{adjusted_end}'")
     # -------------------------------------------------------------------
 
-    query_end = adjusted_end or datetime.now() # Використовуємо скориговану дату кінця
+    query_end = adjusted_end or datetime.now()  # Використовуємо скориговану дату кінця
 
     # 6. MariaDB CTE: closest reading to :00:00 per hour
     # MODIFIED: Replaced hardcoded DATA_ID range with dynamic DATA_ID IN :data_ids
     cte_sql = text("""
         WITH hour_boundaries AS (
-            SELECT 
+            SELECT
                 DATA_ID,
                 DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00') AS hour_bucket_str,
                 TIMESTAMP,
                 DATA,
-                ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+                ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP,
                     STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
                 )) AS seconds_to_boundary,
                 ROW_NUMBER() OVER (
                     PARTITION BY DATA_ID, DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00')
-                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP, 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, TIMESTAMP,
                         STR_TO_DATE(DATE_FORMAT(TIMESTAMP, '%Y-%m-%d %H:00:00'), '%Y-%m-%d %H:%i:%s')
                     ))
                 ) AS rn
@@ -432,7 +492,7 @@ async def export_historical_data(
               AND TIMESTAMP <= :query_end
         ),
         closest_readings AS (
-            SELECT 
+            SELECT
                 DATA_ID,
                 hour_bucket_str,
                 DATA,
@@ -440,33 +500,33 @@ async def export_historical_data(
             FROM hour_boundaries
             WHERE rn = 1
         )
-        SELECT 
+        SELECT
             cr.DATA_ID,
             cr.hour_bucket_str AS bucket_local,
             (cr.DATA - cr.prev_data) AS hourly_delta
         FROM closest_readings cr
         WHERE cr.prev_data IS NOT NULL
-          
+
           AND STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') > :start
           AND (:end IS NULL OR STR_TO_DATE(cr.hour_bucket_str, '%Y-%m-%d %H:%i:%s') <= :end)
         ORDER BY cr.DATA_ID, cr.hour_bucket_str
     """)
-#-- Змінено з >= на > (строго більше), щоб виключити 'Годину 24' попереднього дня
-#          -- Використовуємо :adjusted_end, щоб включити 'Годину 24' останнього дня
+    # -- Змінено з >= на > (строго більше), щоб виключити 'Годину 24' попереднього дня
+    #          -- Використовуємо :adjusted_end, щоб включити 'Годину 24' останнього дня
     try:
         result = await data_session.execute(
             cte_sql,
             {
                 "plant_id": target_plant_id,
-                #"data_ids": tuple(data_ids), # Pass data_ids as a tuple
+                # "data_ids": tuple(data_ids), # Pass data_ids as a tuple
                 "extended_start": extended_start,
                 "query_end": query_end,
                 "start": start,
                 "end": adjusted_end,
-            }
+            },
         )
         rows = result.fetchall()
-        #logger.debug(f"Fetched {len(rows)} hourly delta rows for data_ids: {data_ids}.")
+        # logger.debug(f"Fetched {len(rows)} hourly delta rows for data_ids: {data_ids}.")
     except Exception as e:
         logger.error(f"Database error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch export data.")
@@ -476,8 +536,9 @@ async def export_historical_data(
     label_map = {}
     if data_ids_in_result:
         label_result = await data_session.exec(
-            select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2)
-            .where(TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0)
+            select(TextList.DATA_ID, TextList.TEXT_L1, TextList.TEXT_L2).where(
+                TextList.DATA_ID.in_(data_ids_in_result), TextList.CLASS_ID == 0
+            )
         )
         label_map = {
             r.DATA_ID: {"label": r.TEXT_L1, "label_local": r.TEXT_L2}
@@ -501,7 +562,7 @@ async def export_historical_data(
 
         # Parse local time string (naive)
         try:
-            local_naive_dt = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
+            local_native_dt = datetime.strptime(hour_str, "%Y-%m-%d %H:%M:%S")
         except ValueError as e:
             logger.warning(f"Invalid timestamp format: {hour_str} — {e}")
             continue
@@ -509,7 +570,7 @@ async def export_historical_data(
         # --- SIMPLIFIED timestamp conversion ---
         # Convert naive local datetime directly to a POSIX timestamp (seconds),
         # then multiply by 1000 for milliseconds.
-        timestamp_ms = int(local_naive_dt.timestamp() * 1000)
+        timestamp_ms = int(local_native_dt.timestamp() * 1000)
 
         # Initialize series if not exists
         if data_id not in grouped_data:
@@ -520,9 +581,7 @@ async def export_historical_data(
                 or f"Data ID {data_id}"
             )
             grouped_data[data_id] = TimeSeriesData(
-                data_id=data_id,
-                name=series_name,
-                data=[]
+                data_id=data_id, name=series_name, data=[]
             )
 
         # Append point
@@ -535,7 +594,7 @@ async def export_historical_data(
 
     logger.info(
         f"Export ready: {sum(len(s.data) for s in series_list)} points "
-        #f"across {len(series_list)} series for data_ids: {data_ids}."
+        # f"across {len(series_list)} series for data_ids: {data_ids}."
     )
 
     return HistoricalDataGroupedResponse(series=series_list)

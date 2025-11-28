@@ -599,7 +599,10 @@ const EnergyTrendChart = ({
   const dataCount = transformedEnergyData?.chartData.length || 0;
 
   // 2. Determine if we are on mobile
-  const isMobile = useBreakpointValue({ base: true, md: false }, { ssr: false });
+  const isMobile = useBreakpointValue(
+    { base: true, md: false },
+    { ssr: false }
+  );
 
   // 3. Calculate Dynamic Padding
   const dynamicXAxisPadding = useMemo(() => {
@@ -627,11 +630,11 @@ const EnergyTrendChart = ({
   const chartSpacing = useBreakpointValue(
     {
       base: { barGap: 0, barCategoryGap: '15%' }, // Mobile: Tight packing to make bars thicker
-      md: { barGap: 4, barCategoryGap: '20%' },   // Desktop: Standard breathing room
+      md: { barGap: 4, barCategoryGap: '20%' }, // Desktop: Standard breathing room
     },
     { ssr: false }
   );
-///////////////////End Adpotive UI tweaks/////////////////////
+  ///////////////////End Adpotive UI tweaks/////////////////////
 
   // Define the time range collection for the Select component
   const timeRangeCollection = createListCollection({
