@@ -78,7 +78,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
 
   // Static items available to all users
   const staticItems: SidebarItem[] = [
-    { icon: FiSettings, title: "User Settings", path: "/settings" },
+    // { icon: FiSettings, title: "User Settings", path: "/settings" },
   ]
 
   // Admin-only items
