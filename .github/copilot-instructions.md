@@ -55,3 +55,34 @@ Questions for you / next steps
 - Do you want this file to include command snippets for Windows PowerShell workflows (e.g., `runserver.ps1`) explicitly? If yes I will add a short Windows dev checklist.
 
 References: `README.md`, `development.md`, `deployment.md`, `backend/README.md`, `docker-compose.yml`, `backend/app/main.py`, `backend/app/core/config.py`, `frontend/package.json`, `.github/workflows/`.
+
+## LLMs & AI Agents (Optional)
+- The repo supports a `llms.txt` manifest (repo root or `docs/`) to make documentation available to LLM tools.
+- Place `llms.txt` (or `llms-full.txt`, `llms-components.txt`, `llms-styling.txt`, `llms-theming.txt`, `llms-v3-migration.txt`) under the repo root or `docs/`.
+- Cursor: Use @Docs or register the `llms` files in the Cursor UI.
+- Windstatic / Windsurfer: Reference `llms.txt` in `.windsurfrules`.
+- ChatGPT/Claude: Use a retrieval plugin (vector store) to index the contents of `llms.txt` for better retrieval-augmented responses.
+- Keep them up-to-date with a scheduled GitHub Action (optional) that re-fetches from `https://chakra-ui.com/`.
+
+## Copilot / AI Editing Preferences
+- Scope: Prefer small changes and one goal per PR.
+- Tests: Include unit tests for backend changes in `backend/tests/` and ensure frontend tests & E2E are stable.
+- OpenAPI changes: Update backend models → generate OpenAPI → `./scripts/generate-client.sh` → update frontend client.
+- Security: NEVER include secrets or `.env` in repo; use secrets and env vars in CI.
+- If unsure, add a PR description summarizing the goal; the assistant should request a follow-up review step when touching migrations or public API changes.
+
+## Quick Windows dev checklist
+- Backend (PS):
+  ```powershell
+  cd backend
+  uv sync
+  .\.venv\Scripts\Activate.ps1 # if using venv
+  uv run pytest
+  uvicorn app.main:app --reload
+  ```
+-Frontend (PS):
+  ```powershell
+  cd frontend
+  npm install
+  npm run dev
+  ```
