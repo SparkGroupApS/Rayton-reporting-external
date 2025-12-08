@@ -91,6 +91,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   const { mutate: bulkUpdateSchedule, isPending: isSaving } = useBulkUpdateSchedule({ tenantId, date });
 
   const [localData, setLocalData] = useState<ScheduleRow[]>([]);
+  const [originalData, setOriginalData] = useState<ScheduleRow[]>([]); // Store original API response
 
  const [invalidRows, setInvalidRows] = useState<number[]>([]);
   const [newRow, setNewRow] = useState(createNewScheduleRowTemplate());
@@ -111,10 +112,12 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
         end_time: null,
       }));
       setLocalData(cleanedData);
+      setOriginalData(cleanedData); // Store original data for reference
       const invalidIds = validateRows(cleanedData);
       setInvalidRows(invalidIds);
     } else {
       setLocalData([]);
+      setOriginalData([]);
       setInvalidRows([]);
     }
     setNewRow(createNewScheduleRowTemplate());
@@ -391,16 +394,35 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
         end_time: null,
       }));
 
-    const defaultRowValues = createNewScheduleRowTemplate();
+    // Use the first record from original data as template for filler records
+    const originalTemplate = originalData.length > 0 ? originalData[0] : null;
     while (dataToSave.length < SCHEDULE_TABLE_MAX_ROWS) {
-      dataToSave.push({
-        ...defaultRowValues,
-        id: -(Date.now() + dataToSave.length),
-        rec_no: dataToSave.length + 1,
-        updated_at: new Date().toISOString(),
-        end_time: null,
-        updated_by: "",
-      });
+      const fillerRecord = originalTemplate
+        ? {
+            ...originalTemplate, // Use original values as template
+            id: -(Date.now() + dataToSave.length),
+            rec_no: dataToSave.length + 1,
+            start_time: "00:00:00", // Default for unused records
+            charge_from_grid: false, // Default for unused records
+            allow_to_sell: false, // Default for unused records
+            charge_power: 0, // Default for unused records
+            charge_limit: 100, // Default for unused records
+            discharge_power: 0, // Default for unused records
+            // Preserve original values that should remain consistent across records
+            source: originalTemplate.source, // Preserve the original source value (e.g., 5)
+            updated_at: new Date().toISOString(),
+            end_time: null,
+            updated_by: "", // Will be updated by the server
+          }
+        : {
+            ...createNewScheduleRowTemplate(),
+            id: -(Date.now() + dataToSave.length),
+            rec_no: dataToSave.length + 1,
+            updated_at: new Date().toISOString(),
+            end_time: null,
+            updated_by: "",
+          };
+      dataToSave.push(fillerRecord);
     }
 
     setCommandStatus({ status: 'sending', message: 'Sending command...' });

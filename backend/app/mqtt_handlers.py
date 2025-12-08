@@ -1,14 +1,17 @@
 # app/mqtt_handlers.py
 import logging
+
 from fastapi_mqtt import FastMQTT, MQTTConfig
-from app.core.config import settings
 from pydantic import ValidationError
+
+# Import WebSocket manager to broadcast updates
+from app.core.config import settings
 
 # Import the response model from our new central file
 from app.models import MqttResponsePayload
 
-# Import WebSocket manager to broadcast updates
-from app.api.routes.ws import manager
+# Import MQTT command tracker for better monitoring
+from app.mqtt_logger import log_mqtt_command_response
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +29,11 @@ def connect(client, flags, rc, properties):
     logger.info(f"🟢 MQTT CONNECTED! RC={rc}")
     if rc == 0:
         logger.info("✅ Connection successful!")
-        
+
         # --- Subscribe to the new response topics ---
         mqtt.client.subscribe(SCHEDULE_RESPONSE_TOPIC)
         logger.info(f"📡 Subscribed to {SCHEDULE_RESPONSE_TOPIC}")
-        
+
         mqtt.client.subscribe(ACTION_RESPONSE_TOPIC)
         logger.info(f"📡 Subscribed to {ACTION_RESPONSE_TOPIC}")
 
@@ -53,38 +56,32 @@ async def handle_schedule_response(client, topic, payload, qos, properties):
     try:
         # 1. Parse the response payload
         response_data = MqttResponsePayload.model_validate_json(payload)
-        
+
         # 2. Log the correlated command
         logger.info(f"✅ SCHEDULE ACK received for MsgID: {response_data.message_id} "
                     f"-> Status: {response_data.status.upper()}")
-        
+
         if response_data.status == "error":
-            logger.warning(f"⚠️ Device reported ERROR for MsgID {response_data.message_id}: {response_data.error}")
+            # Enhanced error handling with specific error code interpretation
+            error_detail = response_data.error
+            error_message = f"Device reported ERROR for MsgID {response_data.message_id}: {error_detail}"
 
-        # 3. Create a message to broadcast to connected WebSocket clients
-        message = {
-            "type": "command_response",
-            "command_type": "schedule",
-            "message_id": response_data.message_id,
-            "status": response_data.status,
-            "error": response_data.error if response_data.status == "error" else None
-        }
-        
-        # Broadcast to the tenant that originated this message
-        await manager.broadcast_to_message_originator(message, response_data.message_id)
+            # Interpret specific error codes if they are integers
+            if isinstance(error_detail, int):
+                if error_detail == -1:
+                    error_message += " (General error or command not recognized)"
+                elif error_detail == -2:
+                    error_message += " (Invalid schedule format or parameters)"
+                elif error_detail == -3:
+                    error_message += " (Device busy or unable to process)"
+                # Add more specific error code interpretations as needed
 
-        # 4. TODO: Update command status in the database
-        # Example:
-        # await db.execute(
-        #     "UPDATE command_log SET status = :status, error = :error "
-        #     "WHERE message_id = :message_id",
-        #     values={
-        #         "status": response_data.status,
-        #         "error": response_data.error,
-        #         "message_id": response_data.message_id
-        #     }
-        # )
-        # await db.commit()
+            logger.warning(f"⚠️ {error_message}")
+
+        # Use the new MQTT logger to track the command response
+        # Convert error to string if it's an integer
+        error_str = str(response_data.error) if response_data.error is not None else None
+        await log_mqtt_command_response(response_data.message_id, response_data.status, error_str, "schedule")
 
     except ValidationError as e:
         logger.error(f"❌ Invalid ACK payload on {topic}: {payload.decode()}. Error: {e}")
@@ -99,29 +96,32 @@ async def handle_action_response(client, topic, payload, qos, properties):
     try:
         # 1. Parse the response payload
         response_data = MqttResponsePayload.model_validate_json(payload)
-        
+
         # 2. Log the correlated command
         logger.info(f"✅ ACTION ACK received for MsgID: {response_data.message_id} "
                     f"-> Status: {response_data.status.upper()}")
 
         if response_data.status == "error":
-            logger.warning(f"⚠️ Device reported ERROR for MsgID {response_data.message_id}: {response_data.error}")
+            # Enhanced error handling with specific error code interpretation
+            error_detail = response_data.error
+            error_message = f"Device reported ERROR for MsgID {response_data.message_id}: {error_detail}"
 
-        # Create a message to broadcast to connected WebSocket clients
-        message = {
-            "type": "command_response",
-            "command_type": "action",
-            "message_id": response_data.message_id,
-            "status": response_data.status,
-            "error": response_data.error if response_data.status == "error" else None
-        }
-        
-        # Broadcast to the tenant that originated this message
-        await manager.broadcast_to_message_originator(message, response_data.message_id)
+            # Interpret specific error codes if they are integers
+            if isinstance(error_detail, int):
+                if error_detail == -1:
+                    error_message += " (General error or command not recognized)"
+                elif error_detail == -2:
+                    error_message += " (Invalid action parameters)"
+                elif error_detail == -3:
+                    error_message += " (Device busy or unable to process)"
+                # Add more specific error code interpretations as needed
 
-        # 3. TODO: Update command status in the database
-        # (Same logic as in handle_schedule_response)
-        # await update_command_status_in_db(response_data)
+            logger.warning(f"⚠️ {error_message}")
+
+        # Use the new MQTT logger to track the command response
+        # Convert error to string if it's an integer
+        error_str = str(response_data.error) if response_data.error is not None else None
+        await log_mqtt_command_response(response_data.message_id, response_data.status, error_str, "action")
 
     except ValidationError as e:
         logger.error(f"❌ Invalid ACK payload on {topic}: {payload.decode()}. Error: {e}")
@@ -136,25 +136,32 @@ async def handle_plc_settings_response(client, topic, payload, qos, properties):
     try:
         # 1. Parse the response payload
         response_data = MqttResponsePayload.model_validate_json(payload)
-        
+
         # 2. Log the correlated command
         logger.info(f"✅ PLC SETTINGS ACK received for MsgID: {response_data.message_id} "
                     f"-> Status: {response_data.status.upper()}")
-        
-        if response_data.status == "error":
-            logger.warning(f"⚠️ Device reported ERROR for MsgID {response_data.message_id}: {response_data.error}")
 
-        # 3. Create a message to broadcast to connected WebSocket clients
-        message = {
-            "type": "command_response",
-            "command_type": "plc_settings",
-            "message_id": response_data.message_id,
-            "status": response_data.status,
-            "error": response_data.error if response_data.status == "error" else None
-        }
-        
-        # Broadcast to the tenant that originated this message
-        await manager.broadcast_to_message_originator(message, response_data.message_id)
+        if response_data.status == "error":
+            # Enhanced error handling with specific error code interpretation
+            error_detail = response_data.error
+            error_message = f"Device reported ERROR for MsgID {response_data.message_id}: {error_detail}"
+
+            # Interpret specific error codes if they are integers
+            if isinstance(error_detail, int):
+                if error_detail == -1:
+                    error_message += " (General error or command not recognized)"
+                elif error_detail == -2:
+                    error_message += " (Invalid settings format or parameters)"
+                elif error_detail == -3:
+                    error_message += " (Device busy or unable to process)"
+                # Add more specific error code interpretations as needed
+
+            logger.warning(f"⚠️ {error_message}")
+
+        # Use the new MQTT logger to track the command response
+        # Convert error to string if it's an integer
+        error_str = str(response_data.error) if response_data.error is not None else None
+        await log_mqtt_command_response(response_data.message_id, response_data.status, error_str, "plc_settings")
 
     except ValidationError as e:
         logger.error(f"❌ Invalid ACK payload on {topic}: {payload.decode()}. Error: {e}")

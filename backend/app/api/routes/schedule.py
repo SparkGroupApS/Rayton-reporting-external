@@ -16,13 +16,16 @@ from app.api.routes.ws import manager
 # Use the correct dependency for your external data session
 from app.core.db import get_data_async_session
 from app.models import (
-    #RebootPayload,  # This needs to be defined in mqtt_models now
+    #RebootPayload, # This needs to be defined in mqtt_models now
     CommandResponse,
     Schedule,
     ScheduleMqttPayload,
     ScheduleRow,
     Tenant,
 )
+
+# Import MQTT command tracker for better monitoring
+from app.mqtt_logger import command_tracker
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
@@ -64,7 +67,7 @@ async def read_schedule(
 ):
     # ... (Permission check) ...
     if not current_user.is_superuser and current_user.tenant_id != tenant_id:
-        raise HTTPException(...)
+        raise HTTPException(status_code=403, detail="Not authorized for this tenant")
 
     # ... (Lookup plant_id) ...
     plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
@@ -74,10 +77,10 @@ async def read_schedule(
         select(Schedule)
         .where(Schedule.PLANT_ID == plant_id)
         .where(Schedule.DATE == date)
-        .order_by(Schedule.REC_NO)
+        .order_by(Schedule.REC_NO)  # type: ignore
     )
     schedule_rows_db_result = await data_session.exec(query)
-    db_rows: list[Schedule] = schedule_rows_db_result.all()
+    db_rows = schedule_rows_db_result.all()
 
     # --- FIX: Explicit Manual Conversion ---
     response_rows: list[ScheduleRow] = []
@@ -157,6 +160,15 @@ async def bulk_update_schedule(
         # Register the message-tenant mapping before publishing
         manager.register_message_tenant_mapping(schedule_payload.message_id, str(tenant_id))
 
+        # Register command with the MQTT logger for tracking
+        command_tracker.register_command(
+            message_id=schedule_payload.message_id,
+            command_type="schedule",
+            tenant_id=str(tenant_id),
+            plant_id=plant_id,
+            payload=schedule_payload.model_dump()
+        )
+
         # 3c. Publish the JSON of the schedule payload
         mqtt_client.publish(
             topic,
@@ -179,7 +191,11 @@ async def bulk_update_schedule(
 def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRow]:
     def time_key(row: ScheduleRow):
         try:
-            return datetime.time.fromisoformat(row.start_time)
+            # Handle case where start_time might already be a time object
+            if isinstance(row.start_time, datetime.time):
+                return row.start_time
+            else:
+                return datetime.time.fromisoformat(str(row.start_time))
         except (ValueError, TypeError):
             # Handle potential invalid time strings or None
             return datetime.time.min  # Sort invalid/missing times first
