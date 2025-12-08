@@ -108,7 +108,7 @@ function Dashboard() {
   } = useDashboardData(effectivePlantId)
 
   // Configuration for chart data IDs
-  const energyDataIds = [1, 2, 3, 4, 5]
+  const energyDataIds = [1, 2, 3, 4, 5, 6]
   const socDataId = 10
 
   // Loading state
