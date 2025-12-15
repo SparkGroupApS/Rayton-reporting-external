@@ -99,13 +99,9 @@ const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: Sch
 
   useEffect(() => {
     if (serverData) {
-      const cleanedData = serverData.map((row) => ({
-        ...row,
-        end_time: null,
-      }));
-      setLocalData(cleanedData);
-      setOriginalData(cleanedData); // Store original data for reference
-      const invalidIds = validateRows(cleanedData);
+      setLocalData(serverData);
+      setOriginalData(serverData); // Store original data for reference
+      const invalidIds = validateRows(serverData);
       setInvalidRows(invalidIds);
     } else {
       setLocalData([]);
@@ -376,69 +372,12 @@ const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: Sch
       return;
     }
 
-    // Keep data in rec_no ascending order instead of sorting by start_time
+    // Keep data in rec_no ascending order and ensure proper sequence
     const orderedData = [...localData].sort((a, b) => a.rec_no - b.rec_no);
-    const activeData = orderedData
-      .filter((row) => row.rec_no === 1 || row.start_time !== "00:00:00")
-      .map((row, index) => ({
-        ...row,
-        rec_no: index + 1,
-      }));
-
-    // Preserve original records by extending with original data up to SCHEDULE_TABLE_MAX_ROWS
-    const dataToSave = [];
-
-    // Add active records first
-    for (let i = 0; i < activeData.length && i < SCHEDULE_TABLE_MAX_ROWS; i++) {
-      dataToSave.push(activeData[i]);
-    }
-
-    // Fill remaining slots with original records (preserving their IDs)
-    for (let i = dataToSave.length; i < SCHEDULE_TABLE_MAX_ROWS; i++) {
-      if (i < originalData.length) {
-        // Use the original record for this position, updating only necessary fields
-        const originalRecord = originalData[i];
-        dataToSave.push({
-          ...originalRecord,
-          rec_no: i + 1,
-          start_time: "00:00:00",
-          charge_from_grid: false,
-          allow_to_sell: false,
-          charge_power: 0,
-          discharge_power: 0,
-          updated_at: new Date().toISOString(),
-          updated_by: "",
-        });
-      } else {
-        // If we don't have enough original records, create a new one with a negative ID
-        // Use the first record from original data as template for filler records
-        const originalTemplate = originalData.length > 0 ? originalData[0] : null;
-        const fillerRecord: ScheduleRow = originalTemplate
-          ? {
-              ...originalTemplate, // Use original values as template
-              id: -(Date.now() + dataToSave.length),
-              rec_no: i + 1,
-              start_time: "00:00:00", // Default for unused records
-              charge_from_grid: false, // Default for unused records
-              allow_to_sell: false, // Default for unused records
-              charge_power: 0, // Default for unused records
-              charge_limit: 10, // Default for unused records
-              discharge_power: 0, // Default for unused records
-              // Preserve original values that should remain consistent across records
-              source: originalTemplate.source, // Preserve the original source value (e.g., 5)
-              updated_at: new Date().toISOString(),
-              updated_by: "", // Will be updated by the server
-            }
-          : {
-              ...createNewScheduleRowTemplate(),
-              id: -(Date.now() + dataToSave.length),
-              rec_no: i + 1,
-              updated_at: new Date().toISOString(),
-              updated_by: "",
-            };
-        dataToSave.push(fillerRecord);
-      }
-    }
+    const dataToSave = orderedData.map((row, index) => ({
+      ...row,
+      rec_no: index + 1, // Ensure rec_no is sequential from 1 to N
+    }));
 
     setCommandStatus({ status: 'sending', message: 'Sending command...' });
 
