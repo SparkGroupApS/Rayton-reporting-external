@@ -405,7 +405,6 @@ const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: Sch
           charge_from_grid: false,
           allow_to_sell: false,
           charge_power: 0,
-          charge_limit: 100,
           discharge_power: 0,
           updated_at: new Date().toISOString(),
           updated_by: "",

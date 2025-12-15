@@ -137,7 +137,9 @@ async def bulk_update_schedule(
          raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this tenant")
 
     plant_id = await get_plant_id_for_tenant(tenant_id, primary_session)
-    rows_to_save = sort_schedule_rows_by_start_time(schedule_rows_in)
+    # Preserve the original order of schedule rows as sent by the frontend
+    # Do not sort by start_time as this disrupts the rec_no sequence expected by the device
+    rows_to_save = schedule_rows_in
 
     # --- 3. PUBLISH TO MQTT (Using Option 1: Sub-topic) ---
     try:
@@ -187,20 +189,7 @@ async def bulk_update_schedule(
         raise HTTPException(status_code=500, detail="Failed to publish to MQTT")
 
 
-# --- Helper function to sort rows by start time ---
-def sort_schedule_rows_by_start_time(rows: list[ScheduleRow]) -> list[ScheduleRow]:
-    def time_key(row: ScheduleRow):
-        try:
-            # Handle case where start_time might already be a time object
-            if isinstance(row.start_time, datetime.time):
-                return row.start_time
-            else:
-                return datetime.time.fromisoformat(str(row.start_time))
-        except (ValueError, TypeError):
-            # Handle potential invalid time strings or None
-            return datetime.time.min  # Sort invalid/missing times first
 
-    return sorted(rows, key=time_key)
 
 
 # --- UPDATED: Example endpoint for sending OTHER commands ---
