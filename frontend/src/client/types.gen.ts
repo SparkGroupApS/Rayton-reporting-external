@@ -95,6 +95,7 @@ export type PlcDataControlExtendedRow = {
     plant_id: number;
     control_type: number;
     data_id: number;
+    data_id_txt: number;
     data: (number | null);
     updated_at: (string | null);
     updated_by: (string | null);

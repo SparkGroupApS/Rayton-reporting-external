@@ -410,6 +410,10 @@ export const PlcDataControlExtendedRowSchema = {
             type: 'integer',
             title: 'Data Id'
         },
+        data_id_txt: {
+            type: 'integer',
+            title: 'Data Id Txt'
+        },
         data: {
             anyOf: [
                 {
@@ -486,7 +490,7 @@ export const PlcDataControlExtendedRowSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'plant_id', 'control_type', 'data_id', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text', 'input_type'],
+    required: ['id', 'plant_id', 'control_type', 'data_id', 'data_id_txt', 'data', 'updated_at', 'updated_by', 'device_text', 'data_text', 'input_type'],
     title: 'PlcDataControlExtendedRow'
 } as const;
 
