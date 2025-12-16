@@ -31,6 +31,7 @@ class PlcDataControlExtendedRow(BaseModel):
     plant_id: int
     control_type: int  # Renamed from device_id to control_type
     data_id: int
+    data_id_txt: int
     data: float | None
     updated_at: datetime.datetime | None
     updated_by: str | None
@@ -53,12 +54,12 @@ async def get_device_text(
 
 # Helper function to get data text and check for CHILD_CLASS_ID from TEXT_LIST table
 async def get_data_info(
-    data_session: AsyncSession, data_id: int
+    data_session: AsyncSession, data_id_txt: int
 ) -> tuple[str | None, str | None, int | None, dict[str, str] | None]:
     # First, get the main entry for this DATA_ID to check if it has CHILD_CLASS_ID
     stmt = (
         select(TextList)
-        .where(TextList.DATA_ID == data_id, TextList.CLASS_ID == 140)
+        .where(TextList.DATA_ID == data_id_txt, TextList.CLASS_ID == 140)
         .limit(1)
     )  # Get any entry for this DATA_ID to check CHILD_CLASS_ID
     result = await data_session.exec(stmt)
@@ -88,7 +89,7 @@ async def get_data_info(
     else:
         # No CHILD_CLASS_ID, so it's a regular entry
         stmt = select(TextList.TEXT_L2).where(
-            TextList.DATA_ID == data_id, TextList.CLASS_ID == 140
+            TextList.DATA_ID == data_id_txt, TextList.CLASS_ID == 140
         )
         result = await data_session.exec(stmt)
         data_text = result.first()
@@ -181,6 +182,7 @@ async def get_plc_control(
                 "plant_id": db_row.PLANT_ID,
                 "control_type": db_row.CONTROL_TYPE,
                 "data_id": db_row.DATA_ID,
+                "data_id_txt": db_row.DATA_ID_TXT,
                 "data": db_row.DATA,
                 "updated_at": db_row.UPDATED_AT,
                 "updated_by": db_row.UPDATED_BY,

@@ -526,6 +526,9 @@ class PlcDataControls(SQLModel, table=True, metadata=external_metadata):
     DATA_ID: int = Field(
         nullable=False, sa_column_kwargs={"name": "DATA_ID"}
     )  # Part of unique key
+    DATA_ID_TXT: int = Field(
+        nullable=False, sa_column_kwargs={"name": "DATA_ID_TXT"}
+    )  # Part of unique key
     DATA: float | None = Field(default=None, sa_column_kwargs={"name": "DATA"})
     UPDATED_AT: datetime.datetime | None = Field(
         default=None, sa_column_kwargs={"name": "UPDATED_AT"}
