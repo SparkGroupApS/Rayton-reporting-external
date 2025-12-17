@@ -463,6 +463,7 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
       {/* 1st block - Statuses (control_type = 145, 2, 3) */}
       {statusData.length > 0 && (
         <Box borderWidth="1px" borderRadius="lg" p={4} bg="gray.50">
+          <Heading size="md" mb={4}>Статус</Heading>
           <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
             {statusData.map((row) => (
               <DataList.Item key={row.id} pt="4">
@@ -471,8 +472,9 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
                   textOverflow="ellipsis"
                   overflow="hidden"
                   fontSize={{ base: 'xs', sm: 'sm' }}
+
                 >
-                  {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id})
+                  {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id}):
                 </DataList.ItemLabel>
                 <DataList.ItemValue>
                   <Field.Root>
@@ -492,8 +494,8 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
                             case 145:
                               return (
                                 <Flex alignItems="center" justifyContent="space-between" gap={2} w="100%">
-                                  <Text flex="1" wordBreak="break-word">
-                                    {row.data === 1 ? "ON" : "OFF"}
+                                  <Text flex="1" wordBreak="break-word"  >
+                                    {row.data === 1 ? "On" : "Off"}
                                   </Text>
                                   <Switch.Root
                                     checked={row.data === 1}
@@ -510,19 +512,23 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
                             // Read-only text for control_type 2 and 3
                             case 2:
                             case 3:
+                              // Look up the text from textlist_entries if available
+                              const displayText = row.textlist_entries && row.data !== null && row.data !== undefined
+                                ? row.textlist_entries[row.data.toString()] || row.data.toString()
+                                : row.data !== null && row.data !== undefined
+                                  ? row.data.toString()
+                                  : 'N/A';
+
                               return (
                                 <Text
                                   w="100%"
                                   wordBreak="break-word"
-                                  bg="gray.50"
-
-                                  borderRadius="md"
-                                  border="1px solid"
-                                  borderColor="gray.200"
+                                  //bg="gray.50"
+                                  //borderRadius="md"
+                                  //border="1px solid"
+                                  //borderColor="gray.200"
                                 >
-                                  {row.data !== null && row.data !== undefined
-                                    ? row.data.toString()
-                                    : 'N/A'}
+                                  {displayText}
                                 </Text>
                               );
 
@@ -555,7 +561,7 @@ const PLCControl = ({ tenantId }: PLCControlProps) => {
       {/* 2nd block - Controlling (control_type = 1, 146, 141, 142, 'Save' button) */}
       {(controlData.length > 0 || true) && (
         <Box borderWidth="1px" borderRadius="lg" p={4} bg="gray.50">
-          <Heading size="md" mb={4}>Controlling</Heading>
+          <Heading size="md" mb={4}>Керування</Heading>
           <SimpleGrid
             columns={{ base: 1, sm: 1, md: 2, lg: 3, xl: 3 }}
             gap={{ base: '2', sm: '2', md: '3', lg: '4', xl: '4' }}
