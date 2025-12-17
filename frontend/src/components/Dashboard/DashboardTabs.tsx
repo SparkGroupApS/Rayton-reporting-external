@@ -240,7 +240,7 @@ const DashboardTabs = ({
             socDataId={socDataId} // <-- Use the prop
           />
 
-            <EnergyFlowDiagram
+            {/* <EnergyFlowDiagram
               // You need to wire these up to your actual data source
               // Example using mocked or derived data:
               pvPower={12.5}
@@ -248,7 +248,7 @@ const DashboardTabs = ({
               loadPower={7.3}
               batteryPower={0.0}
               soc={85}
-            />
+            /> */}
 
           {/* <ItemsSection
             items={dashboardData?.items}
