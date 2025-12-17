@@ -54,12 +54,12 @@ async def get_device_text(
 
 # Helper function to get data text and check for CHILD_CLASS_ID from TEXT_LIST table
 async def get_data_info(
-    data_session: AsyncSession, data_id_txt: int
+    data_session: AsyncSession, data_id: int
 ) -> tuple[str | None, str | None, int | None, dict[str, str] | None]:
     # First, get the main entry for this DATA_ID to check if it has CHILD_CLASS_ID
     stmt = (
         select(TextList)
-        .where(TextList.DATA_ID == data_id_txt, TextList.CLASS_ID == 140)
+        .where(TextList.DATA_ID == data_id, TextList.CLASS_ID == 140)
         .limit(1)
     )  # Get any entry for this DATA_ID to check CHILD_CLASS_ID
     result = await data_session.exec(stmt)
@@ -89,7 +89,7 @@ async def get_data_info(
     else:
         # No CHILD_CLASS_ID, so it's a regular entry
         stmt = select(TextList.TEXT_L2).where(
-            TextList.DATA_ID == data_id_txt, TextList.CLASS_ID == 140
+            TextList.DATA_ID == data_id, TextList.CLASS_ID == 140
         )
         result = await data_session.exec(stmt)
         data_text = result.first()
@@ -160,7 +160,7 @@ async def get_plc_control(
             device_text = await get_device_text(
                 data_session, db_row.PLANT_ID, db_row.CONTROL_TYPE
             )
-            data_info = await get_data_info(data_session, db_row.DATA_ID)
+            data_info = await get_data_info(data_session, db_row.DATA_ID_TXT)
             data_text, _, child_class_id, textlist_entries = data_info
 
             # Determine the input type based on the presence of child_class_id and other factors
