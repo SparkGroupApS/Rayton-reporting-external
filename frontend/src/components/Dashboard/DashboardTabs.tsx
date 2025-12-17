@@ -295,6 +295,7 @@ const DashboardTabs = ({
             tabType="plccontrol"
             tenantId={selectedTenant}
             plantId={plantId}
+            isActive={activeTab === 'control'}
           />
         </Tabs.Content>
       )}
