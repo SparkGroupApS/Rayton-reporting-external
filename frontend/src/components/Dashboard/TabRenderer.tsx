@@ -6,13 +6,14 @@ import ESS_v3 from "./ESS_v3";
 import ESSTabAdvanced from "./ESSTabVariations/ESSTab_advanced";
 import ESSTabBasic from "./ESSTabVariations/ESSTab_basic";
 import PLCControl from "./PLCControl";
+import PLCDataSettingsTable from "./PLCDataSettingsTable";
 import ScheduleTab from "./ScheduleTabVariations/ScheduleTab";
-import ScheduleTabFull from "./ScheduleTabVariations/ScheduleTab_full";
+import ScheduleTab_woSell from "./ScheduleTabVariations/ScheduleTab_woSell";
 import ScheduleTabLight from "./ScheduleTabVariations/ScheduleTab_light";
 import Smartlogger from "./Smartlogger";
 
 interface TabRendererProps {
-  tabType: 'schedule' | 'ess' | 'smartlogger' | 'plccontrol';
+  tabType: 'schedule' | 'ess' | 'smartlogger' | 'plccontrol' | 'settings';
   tenantId: string;
   plantId?: string | number;
   isActive?: boolean;
@@ -48,6 +49,7 @@ const TabRenderer = ({ tabType, tenantId, plantId, isActive }: TabRendererProps)
     ess?: string;
     smartlogger?: string;
     plccontrol?: string;
+    settings?: string;
     [key: string]: string | undefined;
   }
 
@@ -77,8 +79,8 @@ const renderComponent = (componentType: string, tenantId: string, isActive?: boo
       return <ScheduleTab tenantId={tenantId} />;
     case 'ScheduleTab_light':
       return <ScheduleTabLight tenantId={tenantId} />;
-    case 'ScheduleTab_full':
-      return <ScheduleTabFull tenantId={tenantId} />;
+    case 'ScheduleTab_woSell':
+      return <ScheduleTab_woSell tenantId={tenantId} />;
     case 'ESSTab_basic':
       return <ESSTabBasic tenantId={tenantId} />;
     case 'ESSTab_advanced':
@@ -92,6 +94,8 @@ const renderComponent = (componentType: string, tenantId: string, isActive?: boo
     case 'PLCControl':
       // Pass isActive prop here
       return <PLCControl tenantId={tenantId} isActive={isActive} />;
+    case 'PLCDataSettingsTable':
+      return <PLCDataSettingsTable tenantId={tenantId} />;
     default:
       // If the component type is not recognized, return a default
       return <ScheduleTab tenantId={tenantId} />;
@@ -111,6 +115,8 @@ const renderDefaultTab = (tabType: string, tenantId: string, isActive?: boolean)
     case 'plccontrol':
       // isActive is now available as an argument
       return <PLCControl tenantId={tenantId} isActive={isActive} />;
+    case 'settings':
+      return <PLCDataSettingsTable tenantId={tenantId} />;
     default:
       return <ScheduleTab tenantId={tenantId} />;
   }
@@ -127,6 +133,8 @@ const getDefaultComponent = (tabType: string) => {
       return 'Smartlogger';
     case 'plccontrol':
       return 'PLCControl';
+    case 'settings':
+      return 'PLCDataSettingsTable';
     default:
       return 'ScheduleTab_default';
   }
