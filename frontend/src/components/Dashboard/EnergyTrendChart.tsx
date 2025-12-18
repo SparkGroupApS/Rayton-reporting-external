@@ -218,13 +218,13 @@ const EnergyTrendChart = ({
   const [timeRange, setTimeRange] = useState<TimeRange>('1D');
   const [isSocCombined, setIsSocCombined] = useState(false);
   const [useCurrentPeriod, setUseCurrentPeriod] = useState(false);
-   const [activeSeries, setActiveSeries] = useState<string[]>([]);
+  const [activeSeries, setActiveSeries] = useState<string[]>([]);
 
   const handleLegendClick = (dataKey: string) => {
     if (activeSeries.includes(dataKey)) {
-      setActiveSeries(activeSeries.filter(el => el !== dataKey));
+      setActiveSeries(activeSeries.filter((el) => el !== dataKey));
     } else {
-      setActiveSeries(prev => [...prev, dataKey]);
+      setActiveSeries((prev) => [...prev, dataKey]);
     }
   };
 
@@ -1028,12 +1028,15 @@ const EnergyTrendChart = ({
                               <Flex
                                 as="ul"
                                 direction="row"
+                                wrap="wrap"
+                                justifyContent="center"
                                 overflowX={{ base: 'auto', md: 'visible' }}
                                 overflowY="hidden"
                                 py={2}
                                 px={{ base: 2, md: 0 }}
                                 gap={{ base: 2, md: 3 }}
                                 listStyleType="none"
+                                maxWidth="100%"
                                 css={{
                                   '&::-webkit-scrollbar': {
                                     display: 'none',
@@ -1053,8 +1056,17 @@ const EnergyTrendChart = ({
                                     flex="0 0 auto"
                                     whiteSpace="nowrap"
                                     cursor="pointer"
-                                    onClick={() => entry.value && handleLegendClick(entry.value)}
-                                    opacity={entry.value ? (activeSeries.includes(entry.value) ? 1 : 0.5) : 1}
+                                    onClick={() =>
+                                      entry.value &&
+                                      handleLegendClick(entry.value)
+                                    }
+                                    opacity={
+                                      entry.value
+                                        ? activeSeries.includes(entry.value)
+                                          ? 1
+                                          : 0.5
+                                        : 1
+                                    }
                                   >
                                     <Box
                                       width={{ base: '8px', md: '10px' }}
@@ -1169,12 +1181,15 @@ const EnergyTrendChart = ({
                                 <Flex
                                   as="ul"
                                   direction="row"
+                                  wrap="wrap"
+                                  justifyContent="center"
                                   overflowX={{ base: 'auto', md: 'visible' }}
                                   overflowY="hidden"
                                   py={2}
                                   px={{ base: 2, md: 0 }}
                                   gap={{ base: 2, md: 3 }}
                                   listStyleType="none"
+                                  maxWidth="100%"
                                   css={{
                                     '&::-webkit-scrollbar': {
                                       display: 'none',
@@ -1194,8 +1209,17 @@ const EnergyTrendChart = ({
                                       flex="0 0 auto"
                                       whiteSpace="nowrap"
                                       cursor="pointer"
-                                      onClick={() => entry.value && handleLegendClick(entry.value)}
-                                      opacity={entry.value ? (activeSeries.includes(entry.value) ? 1 : 0.5) : 1}
+                                      onClick={() =>
+                                        entry.value &&
+                                        handleLegendClick(entry.value)
+                                      }
+                                      opacity={
+                                        entry.value
+                                          ? activeSeries.includes(entry.value)
+                                            ? 1
+                                            : 0.5
+                                          : 1
+                                      }
                                     >
                                       <Box
                                         width={{ base: '8px', md: '10px' }}
@@ -1318,12 +1342,15 @@ const EnergyTrendChart = ({
                                 <Flex
                                   as="ul"
                                   direction="row"
+                                  wrap="wrap"
+                                  justifyContent="center"
                                   overflowX={{ base: 'auto', md: 'visible' }}
                                   overflowY="hidden"
                                   py={2}
                                   px={{ base: 2, md: 0 }}
                                   gap={{ base: 2, md: 3 }}
                                   listStyleType="none"
+                                  maxWidth="100%"
                                   css={{
                                     '&::-webkit-scrollbar': {
                                       display: 'none',
@@ -1343,8 +1370,17 @@ const EnergyTrendChart = ({
                                       flex="0 0 auto"
                                       whiteSpace="nowrap"
                                       cursor="pointer"
-                                      onClick={() => entry.value && handleLegendClick(entry.value)}
-                                      opacity={entry.value ? (activeSeries.includes(entry.value) ? 1 : 0.5) : 1}
+                                      onClick={() =>
+                                        entry.value &&
+                                        handleLegendClick(entry.value)
+                                      }
+                                      opacity={
+                                        entry.value
+                                          ? activeSeries.includes(entry.value)
+                                            ? 1
+                                            : 0.5
+                                          : 1
+                                      }
                                     >
                                       <Box
                                         width={{ base: '8px', md: '10px' }}
@@ -1431,12 +1467,15 @@ const EnergyTrendChart = ({
                         <Flex
                           as="ul"
                           direction="row"
+                          wrap="wrap"
+                          justifyContent="center"
                           overflowX={{ base: 'auto', md: 'visible' }}
                           overflowY="hidden"
                           py={2}
                           px={{ base: 2, md: 0 }}
                           gap={{ base: 2, md: 3 }}
                           listStyleType="none"
+                          maxWidth="100%"
                           css={{
                             '&::-webkit-scrollbar': {
                               display: 'none',
@@ -1456,8 +1495,16 @@ const EnergyTrendChart = ({
                               flex="0 0 auto"
                               whiteSpace="nowrap"
                               cursor="pointer"
-                              onClick={() => entry.value && handleLegendClick(entry.value)}
-                              opacity={entry.value ? (activeSeries.includes(entry.value) ? 1 : 0.5) : 1}
+                              onClick={() =>
+                                entry.value && handleLegendClick(entry.value)
+                              }
+                              opacity={
+                                entry.value
+                                  ? activeSeries.includes(entry.value)
+                                    ? 1
+                                    : 0.5
+                                  : 1
+                              }
                             >
                               <Box
                                 width={{ base: '8px', md: '10px' }}

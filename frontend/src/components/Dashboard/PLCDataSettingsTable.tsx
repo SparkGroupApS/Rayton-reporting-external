@@ -363,7 +363,7 @@ const PLCDataSettingsTable = ({ tenantId }: PLCDataSettingsTableProps) => {
           <Card.Root key={row.id} variant="outline" size="sm">
             <Card.Header pb={2}>
               <Heading size="sm" whiteSpace="normal" textOverflow="ellipsis" overflow="hidden" fontSize={{ base: "xs", sm: "sm" }}>
-                {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id})
+                {row.data_text || `Data ${row.data_id}`}  {/* (ID: {row.data_id}) */}
               </Heading>
             </Card.Header>
             <Card.Body pt={0}>
