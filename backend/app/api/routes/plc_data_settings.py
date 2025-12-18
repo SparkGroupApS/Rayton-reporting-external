@@ -24,6 +24,9 @@ from app.models import (
     TextList,
 )
 
+# Import the command tracker
+from app.mqtt_logger import command_tracker
+
 
 # Extended response model that includes text values from related tables
 class PlcDataSettingsExtendedRow(BaseModel):
@@ -35,7 +38,7 @@ class PlcDataSettingsExtendedRow(BaseModel):
     updated_at: datetime.datetime | None
     updated_by: str | None
     device_text: str | None  # TEXT_L2 from PLANT_CONFIG
-    data_text: str | None  # TEXT_L2 from TEXT_LIST where CLASS_ID = 130
+    data_text: str | None # TEXT_L2 from TEXT_LIST where CLASS_ID = 130
     input_type: str  # "number", "textlist", or "boolean"
     textlist_entries: dict[str, str] | None = None  # Only for textlist input_type
 
@@ -284,6 +287,16 @@ async def update_plc_data_settings(
         # Register the message-tenant mapping before publishing
         manager.register_message_tenant_mapping(
             plc_settings_payload.message_id, str(tenant_id)
+        )
+
+        # Register command in the tracker with a 30-second timeout
+        command_tracker.register_command(
+            plc_settings_payload.message_id,
+            "plc_settings",
+            str(tenant_id),
+            plant_id,
+            plc_settings_payload.model_dump(),
+            timeout_seconds=30
         )
 
         # Publish the JSON of the PLC settings payload

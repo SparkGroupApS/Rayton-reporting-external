@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 
 import { CgSpinner } from 'react-icons/cg';
-import { FaCheckCircle, FaTimesCircle, FaUndo } from 'react-icons/fa';
+import { FaCheckCircle, FaCheck, FaTimes, FaTimesCircle, FaUndo } from 'react-icons/fa';
 
 import type {
   CommandResponse,
@@ -139,6 +139,36 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
             messageId: messageId, // Store the message ID for this control
           },
         }));
+
+        // Set a timeout to handle the case where no response is received from MQTT
+        if (commandTimeoutTimers.current[controlRow.id]) {
+          clearTimeout(commandTimeoutTimers.current[controlRow.id]);
+        }
+
+        commandTimeoutTimers.current[controlRow.id] = setTimeout(() => {
+          setControlStatus((prev) => {
+            const currentStatus = prev[controlRow.id];
+            // Only update to failed if we're still in 'sent' status (waiting for MQTT response)
+            if (currentStatus && currentStatus.status === 'sent') {
+              return {
+                ...prev,
+                [controlRow.id]: {
+                  status: 'failed',
+                  message: 'Timeout: No response from device',
+                  messageId: messageId,
+                },
+              };
+            }
+            return prev;
+          });
+
+          // Show toast notification about the timeout
+          toaster.create({
+            title: 'Command Timeout',
+            description: `No response received from device for command ${messageId}`,
+            type: 'error',
+          });
+        }, COMMAND_TIMEOUT_DURATION);
       }
     } else {
       // If response doesn't have message_id, just show success
@@ -231,6 +261,11 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
   const ongoingRequests = useRef<Set<number>>(new Set());
   // Track debounce timers for each control ID
   const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
+  // Track command timeout timers for each control ID
+  const commandTimeoutTimers = useRef<Record<number, NodeJS.Timeout>>({});
+
+  // Define timeout duration (e.g., 10 seconds)
+  const COMMAND_TIMEOUT_DURATION = 10000; // 10 seconds
 
   const handleChange = (id: number, value: string | boolean | number) => {
     // Clear any existing debounce timer for this control
@@ -410,6 +445,12 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
 
                 for (const [id, status] of Object.entries(prev)) {
                   if (status.messageId === data.message_id) {
+                    // Clear the timeout for this specific control since we received a response
+                    if (commandTimeoutTimers.current[parseInt(id)]) {
+                      clearTimeout(commandTimeoutTimers.current[parseInt(id)]);
+                      delete commandTimeoutTimers.current[parseInt(id)];
+                    }
+
                     if (data.status === 'ok' || data.status === 'success') {
                       updatedStatus[parseInt(id)] = {
                         status: 'confirmation_received',
@@ -511,6 +552,13 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
           clearTimeout(timer);
         }
       });
+
+      // Clear any remaining command timeout timers to prevent memory leaks
+      Object.values(commandTimeoutTimers.current).forEach(timer => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      });
     };
   }, [tenantId]);
 
@@ -525,7 +573,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
     });
   };
 
-  // Handle button click for control_type 141 (state button)
+  // Handle button click for control_type 141 (send 1 always)
   const handleStateButtonClick = (id: number) => {
     // Clear any existing debounce timer for this control
     if (debounceTimers.current[id]) {
@@ -537,8 +585,8 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
       setLocalData((prev) => {
         return prev.map((row) => {
           if (row.id === id) {
-            // Toggle between 0 and 1
-            const newValue = row.data === 1 ? 0 : 1;
+            // Always send 1 regardless of current state
+            const newValue = 1;
             const isModified = newValue !== row.originalData;
             const updatedRow = { ...row, data: newValue, isModified };
 
@@ -681,7 +729,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                   overflow="hidden"
                   fontSize={{ base: 'xs', sm: 'sm' }}
                 >
-                  {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id}):
+                  {row.data_text || `Data ${row.data_id}`}: {/* (ID: {row.data_id}) */}
                 </DataList.ItemLabel>
                 <DataList.ItemValue>
                   <Field.Root>
@@ -729,7 +777,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                           }
                         })()}
                       </Flex>
-                      {row.isModified && (
+                      {/* {row.isModified && (
                         <Icon
                           as={FaUndo}
                           boxSize={4}
@@ -740,7 +788,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                           alignSelf="flex-start"
                           mt={{ base: 2, md: 0 }}
                         />
-                      )}
+                      )} */}
                     </Flex>
                   </Field.Root>
                 </DataList.ItemValue>
@@ -756,24 +804,18 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
           <Heading size="md" mb={4}>
             Керування
           </Heading>
-          <SimpleGrid
-            columns={{ base: 1, sm: 1, md: 2, lg: 3, xl: 3 }}
-            gap={{ base: '2', sm: '2', md: '3', lg: '4', xl: '4' }}
-          >
+          <DataList.Root orientation="vertical" divideY="1px" maxW="md">
             {controlData.map((row) => (
-              <Card.Root key={row.id} variant="outline" size="sm">
-                <Card.Header pb={2}>
-                  <Heading
-                    size="sm"
-                    whiteSpace="normal"
-                    textOverflow="ellipsis"
-                    overflow="hidden"
-                    fontSize={{ base: 'xs', sm: 'sm' }}
-                  >
-                    {row.data_text || `Data ${row.data_id}`} (ID: {row.data_id})
-                  </Heading>
-                </Card.Header>
-                <Card.Body pt={0}>
+              <DataList.Item key={row.id} pt="4">
+                <DataList.ItemLabel
+                  whiteSpace="normal"
+                  textOverflow="ellipsis"
+                  overflow="hidden"
+                  fontSize={{ base: 'xs', sm: 'sm' }}
+                >
+                  {row.data_text || `Data ${row.data_id}`}: {/* (ID: {row.data_id}) */}
+                </DataList.ItemLabel>
+                <DataList.ItemValue>
                   <Field.Root>
                     <Flex
                       alignItems="center"
@@ -813,6 +855,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                                       )
                                     )}
                                   </NativeSelect.Field>
+                                  <NativeSelect.Indicator />
                                 </NativeSelect.Root>
                               ) : (
                                 <Text
@@ -838,7 +881,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                                   w="100%"
                                 >
                                   <Text flex="1" wordBreak="break-word">
-                                    {row.data === 1 ? 'ON' : 'OFF'}
+                                    {row.data === 1 ? 'Так' : 'Ні'}
                                   </Text>
                                   <Switch.Root
                                     checked={row.data === 1}
@@ -854,46 +897,57 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                                 </Flex>
                               );
 
-                            // Button with 2 states (0-grey, 1-red) for control_type 141
+                            // Button with send 1 always for control_type 141
                             case 141:
+                              // Determine the status of this control
+                              const currentStatus = controlStatus[row.id]?.status || 'idle';
+                              // Show 'ОБРАНО' when sending/sent (until confirmation) and 'ОБРАТИ' otherwise
+                              const isPressedState = currentStatus === 'sending' || currentStatus === 'sent';
+
                               return (
                                 <Button
                                   w="100%"
-                                  colorScheme={row.data === 1 ? 'red' : 'gray'}
+                                  bg={isPressedState ? 'green.500' : 'gray.300'}
+                                  color={isPressedState ? 'white' : 'black'}
                                   onClick={() => handleStateButtonClick(row.id)}
-                                  variant={row.data === 1 ? 'solid' : 'outline'}
                                 >
-                                  {row.data === 1 ? 'ON' : 'OFF'}
+                                  {isPressedState ? 'ОБРАНО' : 'ОБРАТИ'}
                                 </Button>
                               );
 
                             // Two buttons for control_type 142 (left button = 1, right button = 0)
                             case 142:
+                              // Determine the status of this control
+                              const currentStatus142 = controlStatus[row.id]?.status || 'idle';
+                              // Show active state when the button's value matches the current data (for normal state) or when sending/sent (for communication state)
+                              const isStartActive = row.data === 1;
+                              const isStopActive = row.data === 0;
+                              const isInCommunication = currentStatus142 === 'sending' || currentStatus142 === 'sent';
+
+                              const isStartPressedState = isStartActive || isInCommunication;
+                              const isStopPressedState = isStopActive || isInCommunication;
+
                               return (
                                 <Flex w="100%" gap={2}>
                                   <Button
                                     flex="1"
-                                    colorScheme="blue"
+                                    bg={isStartPressedState ? 'green.500' : 'green.200'}
+                                    color={isStartPressedState ? 'white' : 'black'}
                                     onClick={() =>
                                       handleDualButtonClick(row.id, 1)
                                     }
-                                    variant={
-                                      row.data === 1 ? 'solid' : 'outline'
-                                    }
                                   >
-                                    ON (1)
+                                    <FaCheck /> СТАРТ
                                   </Button>
                                   <Button
                                     flex="1"
-                                    colorScheme="gray"
+                                    bg={isStopPressedState ? 'red.500' : 'red.200'}
+                                    color={isStopPressedState ? 'white' : 'black'}
                                     onClick={() =>
                                       handleDualButtonClick(row.id, 0)
                                     }
-                                    variant={
-                                      row.data === 0 ? 'solid' : 'outline'
-                                    }
                                   >
-                                    OFF (0)
+                                   <FaTimes />  СТОП
                                   </Button>
                                 </Flex>
                               );
@@ -930,7 +984,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                         })()}
                       </Flex>
                       <Flex gap={2} alignItems="center">
-                        {row.isModified && (
+                        {/* {row.isModified && (
                           <Icon
                             as={FaUndo}
                             boxSize={4}
@@ -941,7 +995,7 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                             alignSelf="flex-start"
                             mt={{ base: 2, md: 0 }}
                           />
-                        )}
+                        )} */}
                         <CommandStatusDisplay
                           status={controlStatus[row.id]?.status || 'idle'}
                           message={controlStatus[row.id]?.message}
@@ -949,10 +1003,10 @@ const PLCControl = ({ tenantId, isActive }: PLCControlProps) => {
                       </Flex>
                     </Flex>
                   </Field.Root>
-                </Card.Body>
-              </Card.Root>
+                </DataList.ItemValue>
+              </DataList.Item>
             ))}
-          </SimpleGrid>
+          </DataList.Root>
         </Box>
       )}
     </VStack>

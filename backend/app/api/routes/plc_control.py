@@ -24,6 +24,9 @@ from app.models import (
     TextList,
 )
 
+# Import the command tracker
+from app.mqtt_logger import command_tracker
+
 
 # Extended response model that includes text values from related tables
 class PlcDataControlExtendedRow(BaseModel):
@@ -286,6 +289,16 @@ async def update_plc_control(
         # Register the message-tenant mapping before publishing
         manager.register_message_tenant_mapping(
             plc_control_payload.message_id, str(tenant_id)
+        )
+
+        # Register command in the tracker with a 30-second timeout
+        command_tracker.register_command(
+            plc_control_payload.message_id,
+            "plc_control",
+            str(tenant_id),
+            plant_id,
+            plc_control_payload.model_dump(),
+            timeout_seconds=30
         )
 
         # Publish the JSON of the PLC control payload
