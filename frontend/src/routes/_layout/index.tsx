@@ -108,8 +108,8 @@ function Dashboard() {
   } = useDashboardData(effectivePlantId)
 
   // Configuration for chart data IDs
-  const energyDataIds = [1, 2, 3, 4, 5]
-  const socDataId = 10
+  //const energyDataIds = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  //const socDataId = 10
 
   // Loading state
   if (
@@ -136,7 +136,7 @@ function Dashboard() {
   return (
     <Container maxW="full" py={4}>
       {/* Render tabs with plantId and tenantId */}
-      <DashboardTabs
+      {/* <DashboardTabs
         isLoadingDashboard={isLoadingDashboard}
         dashboardData={dashboardData}
         error={error}
@@ -145,7 +145,7 @@ function Dashboard() {
         socDataId={socDataId}
         initialTab={tab || "main"} // Pass the tab from URL search params
         plantId={effectivePlantId} // Pass plantId for tab configuration
-      />
+      /> */}
     </Container>
   )
 }

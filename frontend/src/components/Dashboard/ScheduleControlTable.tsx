@@ -91,6 +91,7 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
   const { mutate: bulkUpdateSchedule, isPending: isSaving } = useBulkUpdateSchedule({ tenantId, date });
 
   const [localData, setLocalData] = useState<ScheduleRow[]>([]);
+  const [originalData, setOriginalData] = useState<ScheduleRow[]>([]); // Store original API response
 
  const [invalidRows, setInvalidRows] = useState<number[]>([]);
   const [newRow, setNewRow] = useState(createNewScheduleRowTemplate());
@@ -106,15 +107,13 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
 
   useEffect(() => {
     if (serverData) {
-      const cleanedData = serverData.map((row) => ({
-        ...row,
-        end_time: null,
-      }));
-      setLocalData(cleanedData);
-      const invalidIds = validateRows(cleanedData);
+      setLocalData(serverData);
+      setOriginalData(serverData); // Store original data for reference
+      const invalidIds = validateRows(serverData);
       setInvalidRows(invalidIds);
     } else {
       setLocalData([]);
+      setOriginalData([]);
       setInvalidRows([]);
     }
     setNewRow(createNewScheduleRowTemplate());
@@ -381,27 +380,12 @@ const ScheduleControlTable = ({ tenantId, date, onScheduleDataChange }: Schedule
       return;
     }
 
-    // Keep data in rec_no ascending order instead of sorting by start_time
+    // Keep data in rec_no ascending order and ensure proper sequence
     const orderedData = [...localData].sort((a, b) => a.rec_no - b.rec_no);
-    const dataToSave = orderedData
-      .filter((row) => row.rec_no === 1 || row.start_time !== "00:00:00")
-      .map((row, index) => ({
-        ...row,
-        rec_no: index + 1,
-        end_time: null,
-      }));
-
-    const defaultRowValues = createNewScheduleRowTemplate();
-    while (dataToSave.length < SCHEDULE_TABLE_MAX_ROWS) {
-      dataToSave.push({
-        ...defaultRowValues,
-        id: -(Date.now() + dataToSave.length),
-        rec_no: dataToSave.length + 1,
-        updated_at: new Date().toISOString(),
-        end_time: null,
-        updated_by: "",
-      });
-    }
+    const dataToSave = orderedData.map((row, index) => ({
+      ...row,
+      rec_no: index + 1, // Ensure rec_no is sequential from 1 to N
+    }));
 
     setCommandStatus({ status: 'sending', message: 'Sending command...' });
 

@@ -1,29 +1,37 @@
-// src/components/Dashboard/ScheduleControlTable_light.tsx
+// src/components/Dashboard/ScheduleControlTable_woSell.tsx
+
+// Task Progress: [x] Analyze requirements
+//                [x] Read ScheduleControlTable.tsx to understand current sorting implementation
+//                [x] Identify sorting logic to modify
+//                [x] Implement changes to disable live sorting
+//                [x] Ensure rec_no ascending order is maintained
+//                [ ] Test the implementation
+//                [ ] Verify results
 
 import {
   Box,
   Button,
   Flex,
-  Icon,
   Spinner,
   Table, // This is now the main namespace
   Text,
   VStack,
+  Icon, // Import the Chakra Icon wrapper
 } from "@chakra-ui/react";
 // --- NEW: Import icons from react-icons ---
-import { CgSpinner } from "react-icons/cg";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { CgSpinner } from "react-icons/cg";
 // --- END NEW ---
-import type { CommandResponse, ScheduleRow } from "@/client";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import type { ApiError, ScheduleRow, CommandResponse } from "@/client";
 import { toaster } from "@/components/ui/toaster";
 import { useBulkUpdateSchedule, useGetSchedule } from "@/hooks/useScheduleQueries";
 import { useQueryClient } from "@tanstack/react-query"; // <-- Add queryClient import
-import { useEffect, useMemo, useRef, useState } from "react";
-import { SCHEDULE_TABLE_MAX_ROWS } from "./ScheduleControlTable/constants";
-//import RowForm from "./ScheduleControlTable/RowForm";
-import RowFormLight from "./ScheduleControlTable/RowForm_light";
+import RowForm_woSell from "./ScheduleControlTable/RowForm_woSell";
+import AddRowForm from "./ScheduleControlTable/AddRowForm";
+import { validateRows, timeToMinutes, createNewScheduleRowTemplate } from "./ScheduleControlTable/validation";
 import type { ScheduleControlTableProps, ScheduleDisplayRow } from "./ScheduleControlTable/types";
-import { createNewScheduleRowTemplate, timeToMinutes, validateRows } from "./ScheduleControlTable/validation";
+import { SCHEDULE_TABLE_MAX_ROWS } from "./ScheduleControlTable/constants";
 
 // --- NEW: A small component to display command status with icons ---
 const CommandStatusDisplay = ({ status, message }: { status: 'idle' | 'sending' | 'success' | 'failed', message?: string }) => {
@@ -68,7 +76,7 @@ const CommandStatusDisplay = ({ status, message }: { status: 'idle' | 'sending' 
 // --- END NEW COMPONENT ---
 
 
-const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: ScheduleControlTableProps) => {
+const ScheduleControlTable_woSell = ({ tenantId, date, onScheduleDataChange }: ScheduleControlTableProps) => {
   const queryClient = useQueryClient(); // <-- Get query client instance
   // ... (all other code remains the same) ...
   // ... (useGetSchedule, useBulkUpdateSchedule, localData, etc) ...
@@ -447,18 +455,19 @@ const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: Sch
           {/* ... (Table.Header remains the same) ... */}
           <Table.Header bg="gray.100">
             <Table.Row>
-              <Table.ColumnHeader>Rec</Table.ColumnHeader>
-              <Table.ColumnHeader>Start</Table.ColumnHeader>
-              <Table.ColumnHeader>End</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">OffGrid</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Charge Power</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Charge Limit</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Discharge Power</Table.ColumnHeader>
+              <Table.ColumnHeader>#</Table.ColumnHeader>
+              <Table.ColumnHeader>Початок</Table.ColumnHeader>
+              <Table.ColumnHeader>Кінець</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="end">З мережі</Table.ColumnHeader>
+              {/* <Table.ColumnHeader textAlign="end">Продаж</Table.ColumnHeader> */}
+              <Table.ColumnHeader textAlign="end">Заряд</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="end">Ліміт заряду</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="end">Розряд</Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {displayData.map((row) => ( //filteredDisplayData
-              <RowFormLight key={row.id} row={row} invalidRows={invalidRows} handleChange={handleChange} />
+              <RowForm_woSell key={row.id} row={row} invalidRows={invalidRows} handleChange={handleChange} />
             ))}
 
             {/* {nextRecNoDisplay <= SCHEDULE_TABLE_MAX_ROWS && (
@@ -493,4 +502,4 @@ const ScheduleControlTableLight = ({ tenantId, date, onScheduleDataChange }: Sch
   );
 };
 
-export default ScheduleControlTableLight;
+export default ScheduleControlTable_woSell;

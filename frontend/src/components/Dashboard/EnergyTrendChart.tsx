@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { useBreakpointValue } from '@chakra-ui/react';
 import { Button } from '@/components/ui/button';
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import ChartExportMenu from './ChartExportMenu';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import {
@@ -218,6 +218,15 @@ const EnergyTrendChart = ({
   const [timeRange, setTimeRange] = useState<TimeRange>('1D');
   const [isSocCombined, setIsSocCombined] = useState(false);
   const [useCurrentPeriod, setUseCurrentPeriod] = useState(false);
+  const [activeSeries, setActiveSeries] = useState<string[]>([]);
+
+  const handleLegendClick = (dataKey: string) => {
+    if (activeSeries.includes(dataKey)) {
+      setActiveSeries(activeSeries.filter((el) => el !== dataKey));
+    } else {
+      setActiveSeries((prev) => [...prev, dataKey]);
+    }
+  };
 
   // Calculate date range and aggregation level based on time range
   // Time Range to Aggregation Mapping:
@@ -330,6 +339,14 @@ const EnergyTrendChart = ({
       enabled: !!tenantId && timeRange === '1D',
     }
   );
+
+  // Initialize activeSeries with all series names when data changes
+  useEffect(() => {
+    const allSeriesNames = new Set<string>();
+    energyApiResponse?.series?.forEach((s) => allSeriesNames.add(s.name));
+    socApiResponse?.series?.forEach((s) => allSeriesNames.add(s.name));
+    setActiveSeries(Array.from(allSeriesNames));
+  }, [energyApiResponse, socApiResponse]);
 
   const handleTimeRangeChange = (newRange: TimeRange) => {
     setTimeRange(newRange);
@@ -1011,12 +1028,15 @@ const EnergyTrendChart = ({
                               <Flex
                                 as="ul"
                                 direction="row"
+                                wrap="wrap"
+                                justifyContent="center"
                                 overflowX={{ base: 'auto', md: 'visible' }}
                                 overflowY="hidden"
                                 py={2}
                                 px={{ base: 2, md: 0 }}
                                 gap={{ base: 2, md: 3 }}
                                 listStyleType="none"
+                                maxWidth="100%"
                                 css={{
                                   '&::-webkit-scrollbar': {
                                     display: 'none',
@@ -1035,6 +1055,18 @@ const EnergyTrendChart = ({
                                     px={2}
                                     flex="0 0 auto"
                                     whiteSpace="nowrap"
+                                    cursor="pointer"
+                                    onClick={() =>
+                                      entry.value &&
+                                      handleLegendClick(entry.value)
+                                    }
+                                    opacity={
+                                      entry.value
+                                        ? activeSeries.includes(entry.value)
+                                          ? 1
+                                          : 0.5
+                                        : 1
+                                    }
                                   >
                                     <Box
                                       width={{ base: '8px', md: '10px' }}
@@ -1062,6 +1094,7 @@ const EnergyTrendChart = ({
                               strokeWidth={2}
                               connectNulls={true}
                               isAnimationActive={false}
+                              hide={!activeSeries.includes(series.name)}
                             />
                           )
                         )}
@@ -1148,12 +1181,15 @@ const EnergyTrendChart = ({
                                 <Flex
                                   as="ul"
                                   direction="row"
+                                  wrap="wrap"
+                                  justifyContent="center"
                                   overflowX={{ base: 'auto', md: 'visible' }}
                                   overflowY="hidden"
                                   py={2}
                                   px={{ base: 2, md: 0 }}
                                   gap={{ base: 2, md: 3 }}
                                   listStyleType="none"
+                                  maxWidth="100%"
                                   css={{
                                     '&::-webkit-scrollbar': {
                                       display: 'none',
@@ -1172,6 +1208,18 @@ const EnergyTrendChart = ({
                                       px={2}
                                       flex="0 0 auto"
                                       whiteSpace="nowrap"
+                                      cursor="pointer"
+                                      onClick={() =>
+                                        entry.value &&
+                                        handleLegendClick(entry.value)
+                                      }
+                                      opacity={
+                                        entry.value
+                                          ? activeSeries.includes(entry.value)
+                                            ? 1
+                                            : 0.5
+                                          : 1
+                                      }
                                     >
                                       <Box
                                         width={{ base: '8px', md: '10px' }}
@@ -1199,6 +1247,7 @@ const EnergyTrendChart = ({
                                 strokeWidth={2}
                                 connectNulls={true}
                                 isAnimationActive={false}
+                                hide={!activeSeries.includes(series.name)}
                               />
                             )
                           )}
@@ -1293,12 +1342,15 @@ const EnergyTrendChart = ({
                                 <Flex
                                   as="ul"
                                   direction="row"
+                                  wrap="wrap"
+                                  justifyContent="center"
                                   overflowX={{ base: 'auto', md: 'visible' }}
                                   overflowY="hidden"
                                   py={2}
                                   px={{ base: 2, md: 0 }}
                                   gap={{ base: 2, md: 3 }}
                                   listStyleType="none"
+                                  maxWidth="100%"
                                   css={{
                                     '&::-webkit-scrollbar': {
                                       display: 'none',
@@ -1317,6 +1369,18 @@ const EnergyTrendChart = ({
                                       px={2}
                                       flex="0 0 auto"
                                       whiteSpace="nowrap"
+                                      cursor="pointer"
+                                      onClick={() =>
+                                        entry.value &&
+                                        handleLegendClick(entry.value)
+                                      }
+                                      opacity={
+                                        entry.value
+                                          ? activeSeries.includes(entry.value)
+                                            ? 1
+                                            : 0.5
+                                          : 1
+                                      }
                                     >
                                       <Box
                                         width={{ base: '8px', md: '10px' }}
@@ -1344,6 +1408,7 @@ const EnergyTrendChart = ({
                                 strokeWidth={2}
                                 connectNulls={true}
                                 isAnimationActive={false}
+                                hide={!activeSeries.includes(series.name)}
                               />
                             )
                           )}
@@ -1402,12 +1467,15 @@ const EnergyTrendChart = ({
                         <Flex
                           as="ul"
                           direction="row"
+                          wrap="wrap"
+                          justifyContent="center"
                           overflowX={{ base: 'auto', md: 'visible' }}
                           overflowY="hidden"
                           py={2}
                           px={{ base: 2, md: 0 }}
                           gap={{ base: 2, md: 3 }}
                           listStyleType="none"
+                          maxWidth="100%"
                           css={{
                             '&::-webkit-scrollbar': {
                               display: 'none',
@@ -1426,6 +1494,17 @@ const EnergyTrendChart = ({
                               px={2}
                               flex="0 0 auto"
                               whiteSpace="nowrap"
+                              cursor="pointer"
+                              onClick={() =>
+                                entry.value && handleLegendClick(entry.value)
+                              }
+                              opacity={
+                                entry.value
+                                  ? activeSeries.includes(entry.value)
+                                    ? 1
+                                    : 0.5
+                                  : 1
+                              }
                             >
                               <Box
                                 width={{ base: '8px', md: '10px' }}
@@ -1451,6 +1530,7 @@ const EnergyTrendChart = ({
                       // This ensures that when you only have 2 days, the bars
                       // don't become 500px wide blocks.
                       maxBarSize={50}
+                      hide={!activeSeries.includes(series.name)}
                     />
                   ))}
                 </BarChart>

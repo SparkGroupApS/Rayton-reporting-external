@@ -49,12 +49,13 @@ const DashboardTabs = ({
     plantId ? Number(plantId) : null
   );
 
-  // Define the type for tab configuration
+   // Define the type for tab configuration
   interface TabConfig {
     schedule?: string;
     ess?: string;
     smartlogger?: string;
     plccontrol?: string;
+    settings?: string;
     [key: string]: string | undefined;
   }
 
@@ -94,7 +95,7 @@ const DashboardTabs = ({
       !isTabVisible(activeTab)
     ) {
       // Find the first visible configurable tab as default
-      const firstVisibleTab = ['schedule', 'smdata', 'essdata', 'control'].find(
+      const firstVisibleTab = ['schedule', 'smdata', 'essdata', 'control', 'settings'].find(
         (tab) =>
           isTabVisible(
             tab === 'smdata'
@@ -103,6 +104,8 @@ const DashboardTabs = ({
                 ? 'ess'
                 : tab === 'control'
                   ? 'plcontrol'
+                  : tab === 'settings'
+                  ? 'settings'
                   : tab
           )
       );
@@ -113,6 +116,7 @@ const DashboardTabs = ({
           smartlogger: 'smdata',
           ess: 'essdata',
           plccontrol: 'control',
+          settings: 'settings',
         };
         const mappedTab = tabMap[firstVisibleTab] || firstVisibleTab;
         setActiveTab(mappedTab);
@@ -207,13 +211,15 @@ const DashboardTabs = ({
             Керування
           </Tabs.Trigger>
         )}
-        <Tabs.Trigger
-          value="settings"
-          onClick={() => handleTabChange('settings')}
-          minW="fit-content"
-        >
-          Налаштування
-        </Tabs.Trigger>
+        {isTabVisible('settings') && (
+          <Tabs.Trigger
+            value="settings"
+            onClick={() => handleTabChange('settings')}
+            minW="fit-content"
+          >
+            Налаштування
+          </Tabs.Trigger>
+        )}
         {/* Add more tabs as needed */}
       </Tabs.List>
 
@@ -240,7 +246,7 @@ const DashboardTabs = ({
             socDataId={socDataId} // <-- Use the prop
           />
 
-            <EnergyFlowDiagram
+            {/* <EnergyFlowDiagram
               // You need to wire these up to your actual data source
               // Example using mocked or derived data:
               pvPower={12.5}
@@ -248,7 +254,7 @@ const DashboardTabs = ({
               loadPower={7.3}
               batteryPower={0.0}
               soc={85}
-            />
+            /> */}
 
           {/* <ItemsSection
             items={dashboardData?.items}
@@ -295,14 +301,20 @@ const DashboardTabs = ({
             tabType="plccontrol"
             tenantId={selectedTenant}
             plantId={plantId}
+            isActive={activeTab === 'control'}
           />
         </Tabs.Content>
       )}
 
-      <Tabs.Content value="settings">
-        <PLCDataSettingsTable tenantId={selectedTenant} />
-        {/* <p>Control content will go here!</p> */}
-      </Tabs.Content>
+      {isTabVisible('settings') && (
+        <Tabs.Content value="settings">
+          <TabRenderer
+            tabType="settings"
+            tenantId={selectedTenant}
+            plantId={plantId}
+          />
+        </Tabs.Content>
+      )}
     </Tabs.Root>
   );
 };

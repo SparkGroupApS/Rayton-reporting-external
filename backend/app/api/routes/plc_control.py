@@ -24,6 +24,9 @@ from app.models import (
     TextList,
 )
 
+# Import the command tracker
+from app.mqtt_logger import command_tracker
+
 
 # Extended response model that includes text values from related tables
 class PlcDataControlExtendedRow(BaseModel):
@@ -31,6 +34,7 @@ class PlcDataControlExtendedRow(BaseModel):
     plant_id: int
     control_type: int  # Renamed from device_id to control_type
     data_id: int
+    data_id_txt: int
     data: float | None
     updated_at: datetime.datetime | None
     updated_by: str | None
@@ -159,7 +163,7 @@ async def get_plc_control(
             device_text = await get_device_text(
                 data_session, db_row.PLANT_ID, db_row.CONTROL_TYPE
             )
-            data_info = await get_data_info(data_session, db_row.DATA_ID)
+            data_info = await get_data_info(data_session, db_row.DATA_ID_TXT)
             data_text, _, child_class_id, textlist_entries = data_info
 
             # Determine the input type based on the presence of child_class_id and other factors
@@ -181,6 +185,7 @@ async def get_plc_control(
                 "plant_id": db_row.PLANT_ID,
                 "control_type": db_row.CONTROL_TYPE,
                 "data_id": db_row.DATA_ID,
+                "data_id_txt": db_row.DATA_ID_TXT,
                 "data": db_row.DATA,
                 "updated_at": db_row.UPDATED_AT,
                 "updated_by": db_row.UPDATED_BY,
@@ -284,6 +289,16 @@ async def update_plc_control(
         # Register the message-tenant mapping before publishing
         manager.register_message_tenant_mapping(
             plc_control_payload.message_id, str(tenant_id)
+        )
+
+        # Register command in the tracker with a 30-second timeout
+        command_tracker.register_command(
+            plc_control_payload.message_id,
+            "plc_control",
+            str(tenant_id),
+            plant_id,
+            plc_control_payload.model_dump(),
+            timeout_seconds=30
         )
 
         # Publish the JSON of the PLC control payload
