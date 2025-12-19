@@ -17,7 +17,31 @@ export default defineConfig({
     }),
     react(),
   ],
-// --- ADD THIS BLOCK ---
+
+  // Build optimization
+  build: {
+    // Suppress the warning for now (or increase if needed)
+    //chunkSizeWarningLimit: 1000,
+
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split Recharts into its own chunk (likely the biggest dependency)
+          'recharts': ['recharts'],
+
+          // Split React libraries
+          //'react-vendor': ['react', 'react-dom'],
+
+          // Split Chakra UI
+          'chakra-vendor': ['@chakra-ui/react'],
+
+          // Split TanStack libraries (Router + Query)
+          'tanstack-vendor': ['@tanstack/react-router', '@tanstack/react-query'],
+        },
+      },
+    },
+  },
+
   server: {
     proxy: {
       // This proxies all requests starting with /api/v1
@@ -27,12 +51,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true
       },
-	// --- ADD THIS BLOCK ---
       '/webhook-pull-a8d9f': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       }
-      // ----------------------
     }
   }
 })
