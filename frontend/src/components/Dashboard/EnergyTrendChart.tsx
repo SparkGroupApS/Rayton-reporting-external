@@ -1004,8 +1004,12 @@ const EnergyTrendChart = ({
                             padding: tooltipPadding,
                             borderRadius: '4px',
                           }}
-                          formatter={(value: number, name: string) => {
-                            // Determine if this is SOC data (contains percentage) or energy data (kWh)
+                          formatter={(
+                            value: number | undefined,
+                            name: string | undefined
+                          ) => {
+                            if (value === undefined || name === undefined)
+                              return ['', ''];
                             const isSocData =
                               name.toLowerCase().includes('soc') ||
                               name.toLowerCase().includes('state') ||
@@ -1166,10 +1170,14 @@ const EnergyTrendChart = ({
                               padding: tooltipPadding,
                               borderRadius: '4px',
                             }}
-                            formatter={(value: number, name: string) => [
-                              `${value.toFixed(2)} kWh`,
-                              name,
-                            ]}
+                            formatter={(
+                              value: number | undefined,
+                              name: string | undefined
+                            ) => {
+                              if (value === undefined || name === undefined)
+                                return ['', ''];
+                              return [`${value.toFixed(2)} kWh`, name];
+                            }}
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
@@ -1327,10 +1335,14 @@ const EnergyTrendChart = ({
                               padding: tooltipPadding,
                               borderRadius: '4px',
                             }}
-                            formatter={(value: number, name: string) => [
-                              `${value.toFixed(1)} %`,
-                              name,
-                            ]}
+                            formatter={(
+                              value: number | undefined,
+                              name: string | undefined
+                            ) => {
+                              if (value === undefined || name === undefined)
+                                return ['', ''];
+                              return [`${value.toFixed(1)} %`, name];
+                            }}
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
@@ -1457,7 +1469,9 @@ const EnergyTrendChart = ({
                       padding: tooltipPadding,
                       borderRadius: '4px',
                     }}
-                    formatter={(value: number) => `${value.toFixed(2)} kWh`}
+                    formatter={(value: number | undefined) =>
+                      value !== undefined ? `${value.toFixed(2)} kWh` : ''
+                    }
                     labelFormatter={(label) => formatXAxis(label as number)}
                   />
                   <Legend
