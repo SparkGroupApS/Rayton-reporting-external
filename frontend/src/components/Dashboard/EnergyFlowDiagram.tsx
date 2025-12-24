@@ -16,14 +16,11 @@ import React, { memo, useMemo } from 'react';
 
 
 // --- Types ---
+import type { RealtimeDataResponse } from '@/client';
+
 interface EnergyFlowProps {
-  pvPower?: number; // kW
-  gridPower?: number; // kW (positive = import, negative = export)
-  loadPower?: number; // kW
-  batteryPower?: number; // kW (positive = charge, negative = discharge)
-  generatorPower?: number; // kW (positive = generating)
-  soc?: number; // %
   isLoading?: boolean;
+  data?: RealtimeDataResponse; // RealtimeDataResponse from the API
 }
 
 interface DeviceNodeProps {
@@ -143,21 +140,24 @@ const FlowLine = ({
 };
 
 const EnergyFlowDiagramComponent = ({
-  pvPower = 0,
-  gridPower = 0,
-  loadPower = 0,
-  batteryPower = 0,
-  generatorPower = 0,
-  soc = 0,
   isLoading = false,
+  data,
 }: EnergyFlowProps) => {
-  // Validate inputs
-  const validatedPvPower = isNaN(pvPower) ? 0 : pvPower;
-  const validatedGridPower = isNaN(gridPower) ? 0 : gridPower;
-  const validatedLoadPower = isNaN(loadPower) ? 0 : loadPower;
-  const validatedBatteryPower = isNaN(batteryPower) ? 0 : batteryPower;
-  const validatedGeneratorPower = isNaN(generatorPower) ? 0 : generatorPower;
-  const validatedSoc = isNaN(soc) ? 0 : soc;
+  // Extract values from the API response
+  const extractedPvPower = data?.values?.find((item: any) => item.data_id === 2)?.value;
+  const extractedGridPower = data?.values?.find((item: any) => item.data_id === 1)?.value;
+  const extractedLoadPower = data?.values?.find((item: any) => item.data_id === 4)?.value;
+  const extractedBatteryPower = data?.values?.find((item: any) => item.data_id === 3)?.value;
+  const extractedSoc = data?.values?.find((item: any) => item.data_id === 10)?.value;
+  const extractedGeneratorPower = data?.values?.find((item: any) => item.data_id === 5)?.value || 0; // Assuming generator power has ID 5 or default to 0
+
+   // Convert string values to numbers and validate
+  const validatedPvPower = extractedPvPower !== undefined && extractedPvPower !== null ? (isNaN(parseFloat(String(extractedPvPower))) ? 0 : parseFloat(String(extractedPvPower))) : 0;
+  const validatedGridPower = extractedGridPower !== undefined && extractedGridPower !== null ? (isNaN(parseFloat(String(extractedGridPower))) ? 0 : parseFloat(String(extractedGridPower))) : 0;
+  const validatedLoadPower = extractedLoadPower !== undefined && extractedLoadPower !== null ? (isNaN(parseFloat(String(extractedLoadPower))) ? 0 : parseFloat(String(extractedLoadPower))) : 0;
+  const validatedBatteryPower = extractedBatteryPower !== undefined && extractedBatteryPower !== null ? (isNaN(parseFloat(String(extractedBatteryPower))) ? 0 : parseFloat(String(extractedBatteryPower))) : 0;
+  const validatedSoc = extractedSoc !== undefined && extractedSoc !== null ? (isNaN(parseFloat(String(extractedSoc))) ? 0 : parseFloat(String(extractedSoc))) : 0;
+  const validatedGeneratorPower = extractedGeneratorPower !== undefined && extractedGeneratorPower !== null ? (isNaN(parseFloat(String(extractedGeneratorPower))) ? 0 : parseFloat(String(extractedGeneratorPower))) : 0;
 
   const orange = useToken('colors', ['orange.400']);
   const blue = useToken('colors', ['blue.500']);
