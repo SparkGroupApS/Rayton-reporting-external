@@ -1,9 +1,9 @@
 // frontend/src/components/Common/SidebarItems.tsx
-import { Box, Flex, Icon, Separator, Spinner, Text } from "@chakra-ui/react"
+import { Box, Flex, Icon, Input, Separator, Spinner, Text } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
-import { useMemo } from "react"
-import { FaBuilding, FaSolarPanel } from "react-icons/fa"
+import { useMemo, useState } from "react"
+import { FaBuilding, FaSearch, FaSolarPanel } from "react-icons/fa"
 import { FiSettings, FiUsers } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
@@ -24,6 +24,9 @@ interface SidebarItem {
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+
+  // State for search functionality
+  const [searchTerm, setSearchTerm] = useState("")
 
   // Check if user is privileged
   const isPrivilegedUser =
@@ -75,6 +78,18 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
     }
     return []
   }, [isPrivilegedUser, tenantsData, userTenant])
+
+  // Filter plant items based on search term
+  const filteredPlantItems = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return plantItems;
+    }
+
+    const term = searchTerm.toLowerCase();
+    return plantItems.filter(item =>
+      item.title.toLowerCase().includes(term)
+    );
+  }, [plantItems, searchTerm]);
 
   // Static items available to all users
   const staticItems: SidebarItem[] = [
@@ -151,8 +166,34 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         {/* Separator after Admin Items */}
         {adminItems.length > 0 && plantItems.length > 0 && <Separator my={2} />}
 
-        {/* Render Plant Items */}
-        {plantItems.map(({ icon, title, path }) => (
+        {/* Search Input for Plant Items */}
+        {plantItems.length > 0 && (
+          <Box px={2} py={2} position="relative">
+            <Input
+              placeholder="Пошук станції..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="sm"
+              variant="outline"
+              ps="40px"
+            />
+            <Icon
+              as={FaSearch}
+              position="absolute"
+              left="12px"
+              top="50%"
+              transform="translateY(-50%)"
+              color="gray.500"
+              pointerEvents="none"
+            />
+          </Box>
+        )}
+
+        {/* Separator after Search Input */}
+        {plantItems.length > 0 && searchTerm && <Separator my={2} />}
+
+        {/* Render Filtered Plant Items */}
+        {filteredPlantItems.map(({ icon, title, path }) => (
           <RouterLink key={path} to={path} onClick={onClose}>
              {({ isActive }: { isActive: boolean }) => (
               <Flex
@@ -176,7 +217,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         ))}
 
         {/* Separator after Plant Items */}
-        {plantItems.length > 0 && staticItems.length > 0 && <Separator my={2} />}
+        {filteredPlantItems.length > 0 && staticItems.length > 0 && <Separator my={2} />}
 
         {/* Render Static Items */}
         {staticItems.map(({ icon, title, path }) => (

@@ -59,9 +59,11 @@ async def read_realtime_latest(
     data_session: AsyncSession = Depends(get_data_async_session),
     tenant_id: uuid.UUID = Query(..., description="Tenant ID to fetch data for"),
     device_ids: list[int] = Query(..., description="List of DEVICE_IDs to fetch"),
+    data_ids: list[int] = Query([], description="List of DATA_IDs to filter by (optional)"),
 ) -> Any:
     """
     Fetch the latest realtime data points for given DEVICE_IDs and tenant.
+    Optionally filter by specific DATA_IDs.
     """
 
     # 1. Permission Check
@@ -79,9 +81,13 @@ async def read_realtime_latest(
         )
         .where(PlcDataRealtime.PLANT_ID == target_plant_id)
         .where(PlcDataRealtime.DEVICE_ID.in_(device_ids))
-        .group_by(PlcDataRealtime.DATA_ID)
-        .subquery()
     )
+
+    # Add DATA_ID filter if provided
+    if data_ids:
+        subquery = subquery.where(PlcDataRealtime.DATA_ID.in_(data_ids))
+
+    subquery = subquery.group_by(PlcDataRealtime.DATA_ID).subquery()
 
     TextListChild = aliased(TextList)
 
@@ -157,6 +163,10 @@ async def read_realtime_latest(
             PlcDataRealtime.DATA_ID.asc()
         )
     )
+
+    # Add DATA_ID filter to the main query if provided
+    if data_ids:
+        statement = statement.where(PlcDataRealtime.DATA_ID.in_(data_ids))
 
 
     # Выполняем

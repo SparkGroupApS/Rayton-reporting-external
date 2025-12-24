@@ -550,9 +550,11 @@ export class RealtimeDataService {
     /**
      * Read Realtime Latest
      * Fetch the latest realtime data points for given DEVICE_IDs and tenant.
+     * Optionally filter by specific DATA_IDs.
      * @param data The data for the request.
      * @param data.tenantId Tenant ID to fetch data for
      * @param data.deviceIds List of DEVICE_IDs to fetch
+     * @param data.dataIds List of DATA_IDs to filter by (optional)
      * @returns RealtimeDataResponse Successful Response
      * @throws ApiError
      */
@@ -562,7 +564,8 @@ export class RealtimeDataService {
             url: '/api/v1/realtime-data/latest',
             query: {
                 tenant_id: data.tenantId,
-                device_ids: data.deviceIds
+                device_ids: data.deviceIds,
+                data_ids: data.dataIds
             },
             errors: {
                 422: 'Validation Error'
