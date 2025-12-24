@@ -88,11 +88,34 @@ const hslToHex = (h: number, s: number, l: number) => {
 };
 
 // Best for variable counts: Golden angle distribution
-const makePalette = (n: number) => {
-  const goldenAngle = 137.508; // degrees - maximizes spacing
-  return Array.from({ length: n }, (_, i) =>
-    hslToHex((i * goldenAngle) % 360, 70, 52)
-  );
+// const makePalette = (n: number) => {
+//   const goldenAngle = 137.508; // degrees - maximizes spacing
+//   return Array.from({ length: n }, (_, i) =>
+//     hslToHex((i * goldenAngle) % 360, 70, 52)
+//   );
+// };
+
+const makePalette = (n: number): string[] => {
+  // Tableau 10 — optimized for distinguishability & colorblind safety
+  const tableau10 = [
+    '#4E79A7', // blue
+    '#F28E2B', // orange
+    '#E15759', // red
+    '#76B7B2', // teal
+    '#59A14F', // green
+    '#000000', // yellow
+    '#B07AA1', // purple
+    '#FF9DA7', // pink
+    '#9C755F', // brown
+    '#BAB0AC', // gray
+  ];
+
+  if (n <= tableau10.length) {
+    return tableau10.slice(0, n);
+  }
+
+  // Fallback: cycle or interpolate if n > 10 (not needed for your 4–8 range)
+  return Array.from({ length: n }, (_, i) => tableau10[i % tableau10.length]);
 };
 
 // Alternative: Offset start angle to avoid red at position 0
