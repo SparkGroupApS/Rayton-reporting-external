@@ -86,12 +86,33 @@ const hslToHex = (h: number, s: number, l: number) => {
       .padStart(2, '0');
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 };
-const makePalette = (n: number) =>
-  Array.from({ length: n }, (_, i) =>
-    hslToHex((i * 360) / Math.max(1, n), 70, 52)
+
+// Best for variable counts: Golden angle distribution
+const makePalette = (n: number) => {
+  const goldenAngle = 137.508; // degrees - maximizes spacing
+  return Array.from({ length: n }, (_, i) =>
+    hslToHex((i * goldenAngle) % 360, 70, 52)
   );
-//more pastel
-//const makePalette = (n: number) => Array.from({ length: n }, (_, i) => hslToHex((i * 360) / Math.max(1, n), 55, 70)); //If you want an even subtler look, you can tweak to s = 35, l = 78.
+};
+
+// Alternative: Offset start angle to avoid red at position 0
+const makePaletteOffset = (n: number) => {
+  const goldenAngle = 137.508;
+  const startOffset = 25; // Start at orange instead of red
+  return Array.from({ length: n }, (_, i) =>
+    hslToHex((i * goldenAngle + startOffset) % 360, 70, 52)
+  );
+};
+
+// Option 3: Vary saturation and lightness for more distinction
+const makePaletteDynamic = (n: number) => {
+  return Array.from({ length: n }, (_, i) => {
+    const hue = (i * 360) / n;
+    const saturation = 60 + (i % 3) * 10; // Vary: 60, 70, 80
+    const lightness = 45 + (i % 2) * 14; // Vary: 45, 59
+    return hslToHex(hue, saturation, lightness);
+  });
+};
 
 const toLocalDateString = (date: Date) => {
   const year = date.getFullYear();
@@ -166,8 +187,9 @@ const transformApiData = (
     return {
       name: name,
       color: color,
+      dataId: s.data_id, // Store the data_id for sorting purposes
     };
-  });
+ });
 
   for (const series of apiResponse.series) {
     for (const point of series.data) {
@@ -226,6 +248,45 @@ const EnergyTrendChart = ({
     } else {
       setActiveSeries((prev) => [...prev, dataKey]);
     }
+  };
+
+  // Function to sort legend items according to the desired order: 4, 3, 1, 2, 5 (and then others)
+  const sortLegendItems = (payload: readonly any[]) => {
+    if (!payload || payload.length === 0) return payload;
+
+    // Define the desired order of dataIds
+    const desiredOrder = [4, 3, 1, 2, 6, 5];
+
+    // Create a copy of the payload to avoid mutating the original
+    const sortedPayload = [...payload];
+
+    // Sort based on the desired order
+    sortedPayload.sort((a, b) => {
+      // Get the dataId from the original data series
+      const aDataId = energyApiResponse?.series?.find(s => s.name === a.value)?.data_id ||
+                      socApiResponse?.series?.find(s => s.name === a.value)?.data_id;
+      const bDataId = energyApiResponse?.series?.find(s => s.name === b.value)?.data_id ||
+                      socApiResponse?.series?.find(s => s.name === b.value)?.data_id;
+
+      const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
+      const bIndex = bDataId !== undefined ? desiredOrder.indexOf(bDataId) : -1;
+
+      // If both items are in the desired order, sort by their position in the desired order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+
+      // If only 'a' is in the desired order, it comes first
+      if (aIndex !== -1) return -1;
+
+      // If only 'b' is in the desired order, it comes first
+      if (bIndex !== -1) return 1;
+
+      // If neither is in the desired order, maintain their original order (or sort alphabetically)
+      return 0;
+    });
+
+    return sortedPayload;
   };
 
   // Calculate date range and aggregation level based on time range
@@ -411,6 +472,7 @@ const EnergyTrendChart = ({
       color:
         consistentColorMap[s.name] ||
         makePalette(energyApiResponse.series.length)[i],
+      dataId: s.data_id, // Store the data_id for sorting purposes
     }));
 
     for (const series of energyApiResponse.series) {
@@ -461,6 +523,7 @@ const EnergyTrendChart = ({
       color:
         consistentColorMap[s.name] ||
         makePalette(socApiResponse.series.length)[i],
+      dataId: s.data_id, // Store the data_id for sorting purposes
     }));
 
     for (const series of socApiResponse.series) {
@@ -488,6 +551,7 @@ const EnergyTrendChart = ({
       color:
         consistentColorMap[s.name] ||
         makePalette(combinedSeriesResponse.series.length)[i],
+      dataId: s.data_id, // Store the data_id for sorting purposes
     }));
 
     for (const series of combinedSeriesResponse.series) {
@@ -1024,10 +1088,24 @@ const EnergyTrendChart = ({
                           labelFormatter={(label: number) =>
                             new Date(label).toLocaleString()
                           }
+                          itemSorter={(a: any) => {
+                            // Get the dataId from the original data series
+                            const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                            socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+
+                            // Define the desired order of dataIds
+                            const desiredOrder = [4, 3, 1, 2, 5];
+
+                            const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
+
+                            // Return the sort index for proper ordering
+                            return aIndex !== -1 ? aIndex : desiredOrder.length;
+                          }}
                         />
                         <Legend
                           content={(props) => {
                             const { payload } = props;
+                            const sortedPayload = sortLegendItems(payload || []);
                             return (
                               <Flex
                                 as="ul"
@@ -1049,7 +1127,7 @@ const EnergyTrendChart = ({
                                   msOverflowStyle: 'none',
                                 }}
                               >
-                                {payload?.map((entry, index) => (
+                                {sortedPayload?.map((entry, index) => (
                                   <Flex
                                     key={`item-${index}`}
                                     as="li"
@@ -1181,10 +1259,24 @@ const EnergyTrendChart = ({
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
+                            itemSorter={(a: any) => {
+                              // Get the dataId from the original data series
+                              const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                              socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+
+                              // Define the desired order of dataIds
+                              const desiredOrder = [4, 3, 1, 2, 5];
+
+                              const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
+
+                              // Return the sort index for proper ordering
+                              return aIndex !== -1 ? aIndex : desiredOrder.length;
+                            }}
                           />
                           <Legend
                             content={(props) => {
                               const { payload } = props;
+                              const sortedPayload = sortLegendItems(payload || []);
                               return (
                                 <Flex
                                   as="ul"
@@ -1206,7 +1298,7 @@ const EnergyTrendChart = ({
                                     msOverflowStyle: 'none',
                                   }}
                                 >
-                                  {payload?.map((entry, index) => (
+                                  {sortedPayload?.map((entry, index) => (
                                     <Flex
                                       key={`item-${index}`}
                                       as="li"
@@ -1346,10 +1438,24 @@ const EnergyTrendChart = ({
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
+                            itemSorter={(a: any) => {
+                              // Get the dataId from the original data series
+                              const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                              socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+
+                              // Define the desired order of dataIds
+                              const desiredOrder = [4, 3, 1, 2, 5];
+
+                              const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
+
+                              // Return the sort index for proper ordering
+                              return aIndex !== -1 ? aIndex : desiredOrder.length;
+                            }}
                           />
                           <Legend
                             content={(props) => {
                               const { payload } = props;
+                              const sortedPayload = sortLegendItems(payload || []);
                               return (
                                 <Flex
                                   as="ul"
@@ -1371,7 +1477,7 @@ const EnergyTrendChart = ({
                                     msOverflowStyle: 'none',
                                   }}
                                 >
-                                  {payload?.map((entry, index) => (
+                                  {sortedPayload?.map((entry, index) => (
                                     <Flex
                                       key={`item-${index}`}
                                       as="li"
@@ -1473,10 +1579,24 @@ const EnergyTrendChart = ({
                       value !== undefined ? `${value.toFixed(2)} kWh` : ''
                     }
                     labelFormatter={(label) => formatXAxis(label as number)}
+                    itemSorter={(a: any) => {
+                      // Get the dataId from the original data series
+                      const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                      socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+
+                      // Define the desired order of dataIds
+                      const desiredOrder = [4, 3, 1, 2, 5];
+
+                      const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
+
+                      // Return the sort index for proper ordering
+                      return aIndex !== -1 ? aIndex : desiredOrder.length;
+                    }}
                   />
                   <Legend
                     content={(props) => {
                       const { payload } = props;
+                      const sortedPayload = sortLegendItems(payload || []);
                       return (
                         <Flex
                           as="ul"
@@ -1498,7 +1618,7 @@ const EnergyTrendChart = ({
                             msOverflowStyle: 'none',
                           }}
                         >
-                          {payload?.map((entry, index) => (
+                          {sortedPayload?.map((entry, index) => (
                             <Flex
                               key={`item-${index}`}
                               as="li"
