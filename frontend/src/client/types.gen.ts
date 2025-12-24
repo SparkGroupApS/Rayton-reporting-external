@@ -476,6 +476,10 @@ export type PrivateCreateUserWithNewTenantResponse = (UserPublic);
 
 export type RealtimeDataReadRealtimeLatestData = {
     /**
+     * List of DATA_IDs to filter by (optional)
+     */
+    dataIds?: Array<number>;
+    /**
      * List of DEVICE_IDs to fetch
      */
     deviceIds: Array<number>;

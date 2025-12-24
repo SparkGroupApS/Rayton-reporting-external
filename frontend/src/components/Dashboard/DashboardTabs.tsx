@@ -10,6 +10,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { usePlant } from '@/hooks/usePlantQueries';
+import { useGetEnergyFlowData } from '@/hooks/useDeviceDataQueries';
 import EnergyTrendChart from './EnergyTrendChart';
 import { EnergyFlowDiagram } from './EnergyFlowDiagram';
 import ItemsSection from './ItemsSection';
@@ -43,6 +44,9 @@ const DashboardTabs = ({
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const navigate = useNavigate();
+
+  // Fetch energy flow data
+  const { data: energyFlowData, isLoading: isEnergyFlowLoading } = useGetEnergyFlowData(selectedTenant);
 
   // Fetch plant configuration to determine which tabs should be visible
   const { data: plantData, isLoading: isPlantLoading } = usePlant(
@@ -246,15 +250,10 @@ const DashboardTabs = ({
             socDataId={socDataId} // <-- Use the prop
           />
 
-            {/* <EnergyFlowDiagram
-              // You need to wire these up to your actual data source
-              // Example using mocked or derived data:
-              pvPower={12.5}
-              gridPower={-5.2} // Negative = Exporting
-              loadPower={7.3}
-              batteryPower={0.0}
-              soc={85}
-            /> */}
+          <EnergyFlowDiagram
+            data={energyFlowData}
+            isLoading={isEnergyFlowLoading}
+          />
 
           {/* <ItemsSection
             items={dashboardData?.items}
