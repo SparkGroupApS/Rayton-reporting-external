@@ -250,10 +250,10 @@ const DashboardTabs = ({
             socDataId={socDataId} // <-- Use the prop
           />
 
-          <EnergyFlowDiagram
+          {/* <EnergyFlowDiagram
             data={energyFlowData}
             isLoading={isEnergyFlowLoading}
-          />
+          /> */}
 
           {/* <ItemsSection
             items={dashboardData?.items}

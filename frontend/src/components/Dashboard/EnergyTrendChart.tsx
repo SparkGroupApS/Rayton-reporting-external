@@ -250,12 +250,12 @@ const EnergyTrendChart = ({
     }
   };
 
-  // Function to sort legend items according to the desired order: 4, 3, 1, 2, 5 (and then others)
+  // Define the desired order of dataIds as a shared constant
+  const desiredOrder = [4, 3, 1, 2, 6, 5];
+
+  // Function to sort legend items according to the desired order: 4, 3, 1, 2, 6, 5 (and then others)
   const sortLegendItems = (payload: readonly any[]) => {
     if (!payload || payload.length === 0) return payload;
-
-    // Define the desired order of dataIds
-    const desiredOrder = [4, 3, 1, 2, 6, 5];
 
     // Create a copy of the payload to avoid mutating the original
     const sortedPayload = [...payload];
@@ -1093,9 +1093,6 @@ const EnergyTrendChart = ({
                             const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
                                             socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
 
-                            // Define the desired order of dataIds
-                            const desiredOrder = [4, 3, 1, 2, 5];
-
                             const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
 
                             // Return the sort index for proper ordering
@@ -1259,19 +1256,16 @@ const EnergyTrendChart = ({
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
-                            itemSorter={(a: any) => {
-                              // Get the dataId from the original data series
-                              const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
-                                              socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+                          itemSorter={(a: any) => {
+                            // Get the dataId from the original data series
+                            const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                            socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
 
-                              // Define the desired order of dataIds
-                              const desiredOrder = [4, 3, 1, 2, 5];
+                            const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
 
-                              const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
-
-                              // Return the sort index for proper ordering
-                              return aIndex !== -1 ? aIndex : desiredOrder.length;
-                            }}
+                            // Return the sort index for proper ordering
+                            return aIndex !== -1 ? aIndex : desiredOrder.length;
+                          }}
                           />
                           <Legend
                             content={(props) => {
@@ -1438,19 +1432,16 @@ const EnergyTrendChart = ({
                             labelFormatter={(label: number) =>
                               new Date(label).toLocaleString()
                             }
-                            itemSorter={(a: any) => {
-                              // Get the dataId from the original data series
-                              const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
-                                              socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
+                          itemSorter={(a: any) => {
+                            // Get the dataId from the original data series
+                            const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
+                                            socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
 
-                              // Define the desired order of dataIds
-                              const desiredOrder = [4, 3, 1, 2, 5];
+                            const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
 
-                              const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
-
-                              // Return the sort index for proper ordering
-                              return aIndex !== -1 ? aIndex : desiredOrder.length;
-                            }}
+                            // Return the sort index for proper ordering
+                            return aIndex !== -1 ? aIndex : desiredOrder.length;
+                          }}
                           />
                           <Legend
                             content={(props) => {
@@ -1583,9 +1574,6 @@ const EnergyTrendChart = ({
                       // Get the dataId from the original data series
                       const aDataId = energyApiResponse?.series?.find(s => s.name === a.name)?.data_id ||
                                       socApiResponse?.series?.find(s => s.name === a.name)?.data_id;
-
-                      // Define the desired order of dataIds
-                      const desiredOrder = [4, 3, 1, 2, 5];
 
                       const aIndex = aDataId !== undefined ? desiredOrder.indexOf(aDataId) : -1;
 
