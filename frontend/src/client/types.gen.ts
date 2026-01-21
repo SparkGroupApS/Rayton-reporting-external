@@ -124,9 +124,9 @@ export type PlcDataSettingsExtendedRow = {
 };
 
 export type PlcDataSettingsUpdate = {
-    id: number;
-    data?: (number | null);
-    updated_by?: (string | null);
+    ID: number;
+    DATA?: (number | null);
+    UPDATED_BY?: (string | null);
 };
 
 export type PrivateUserCreateInput = {
@@ -154,17 +154,17 @@ export type RevenueData = {
 };
 
 export type ScheduleRow = {
-    rec_no: number;
-    start_time: string;
-    charge_from_grid: boolean;
-    allow_to_sell: boolean;
-    charge_power: number;
-    charge_limit: number;
-    discharge_power: number;
-    source: number;
-    id: number;
-    updated_at: string;
-    updated_by: string;
+    REC_NO: number;
+    START_TIME: string;
+    CHARGE_FROM_GRID: boolean;
+    ALLOW_TO_SELL: boolean;
+    CHARGE_POWER: number;
+    CHARGE_LIMIT: number;
+    DISCHARGE_POWER: number;
+    SOURCE: number;
+    ID: number;
+    UPDATED_AT: string;
+    UPDATED_BY: string;
 };
 
 export type TenantCreate = {
