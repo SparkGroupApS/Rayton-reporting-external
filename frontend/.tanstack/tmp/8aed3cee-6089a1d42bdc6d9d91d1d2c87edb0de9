@@ -1,0 +1,237 @@
+import { Badge, Container, Flex, Table, Stack, NativeSelect, Heading } from "@chakra-ui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate, Outlet } from "@tanstack/react-router";
+import { z } from "zod";
+import { useState } from "react"; // Added useState
+
+import { type UserPublic, UsersService, TenantPublic } from "@/client"; // Added TenantPublic
+import AddUser from "@/components/Admin/AddUser";
+import { UserActionsMenu } from "@/components/Common/UserActionsMenu";
+import PendingUsers from "@/components/Pending/PendingUsers";
+import {
+  PaginationItems,
+  PaginationNextTrigger,
+  PaginationPrevTrigger,
+  PaginationRoot,
+} from "@/components/ui/pagination.tsx";
+
+// Import tenant hooks to fetch tenants for filtering dropdown
+import { useTenants } from "@/hooks/useTenantQueries"; // Adjust path if needed
+
+// Add tenant filter options to search schema
+const usersSearchSchema = z.object({
+  page: z.number().int().positive().catch(1),
+  // Add tenant filters (optional strings, backend expects UUID string or null)
+  filterTenantId: z.string().optional(), 
+  filterAllTenants: z.enum(['true', 'false']).catch('false').transform(v => v === 'true'), // Boolean stored as string in URL
+});
+
+const PER_PAGE = 5;
+
+// Update query options to include tenant filters
+function getUsersQueryOptions({ 
+    page, 
+    tenantId, 
+    allTenants 
+}: { 
+    page: number; 
+    tenantId?: string | null; // UUID string or null
+    allTenants?: boolean; 
+}) {
+  const queryParams = { 
+    skip: (page - 1) * PER_PAGE, 
+    limit: PER_PAGE,
+    tenant_id: tenantId || undefined, // Pass tenant_id if provided
+    all_tenants: allTenants || undefined, // Pass all_tenants if true
+  };
+  
+  return {
+    queryFn: () => UsersService.readUsers(queryParams),
+    // Query key needs to include filters to ensure correct caching
+    queryKey: ["users", { page, tenantId: tenantId ?? "own", allTenants }], 
+  };
+}
+
+export const Route = createFileRoute('/_layout/_admin/')({ 
+  component: AdminUsersPage, 
+  validateSearch: (search) => usersSearchSchema.parse(search),
+});
+
+
+function UsersTable() {
+  const queryClient = useQueryClient();
+  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"]);
+  const navigate = useNavigate({ from: Route.fullPath });
+  
+  // Get search params including filters
+  const { page, filterTenantId, filterAllTenants } = Route.useSearch();
+
+  // Fetch users based on current filters
+  const { data, isLoading, isPlaceholderData, error } = useQuery({
+    ...getUsersQueryOptions({ 
+        page, 
+        tenantId: filterAllTenants ? null : (filterTenantId ?? currentUser?.tenant_id), // Default to current user's tenant if no filter specified and not 'all'
+        allTenants: filterAllTenants 
+    }),
+    placeholderData: (prevData) => prevData,
+    enabled: !!currentUser?.is_superuser, // Only enable if current user is loaded and is superuser
+  });
+
+  // Fetch tenants for the filter dropdown
+  const { data: tenantsData } = useTenants(); // Assumes useTenants fetches all tenants for superuser
+
+  const setPage = (newPage: number) => {
+    navigate({ search: (prev) => ({ ...prev, page: newPage }) });
+  };
+
+  // Function to update tenant filters in URL search params
+  const handleFilterChange = (tenantId: string | null, allTenants: boolean) => {
+    navigate({ 
+      search: (prev) => ({ 
+        ...prev, 
+        page: 1, // Reset page on filter change
+        filterTenantId: tenantId ?? undefined, // Remove from URL if null
+        filterAllTenants: allTenants, // Pass boolean directly instead of string
+      }),
+      replace: true
+    });
+  };
+
+  const users = data?.data.slice(0, PER_PAGE) ?? [];
+  const count = data?.count ?? 0;
+
+  // Render loading state or error
+  if (!currentUser?.is_superuser) {
+      return <div>Access Denied. Only superusers can manage users.</div>; // Basic auth check
+  }
+  if (isLoading) return <PendingUsers />;
+  if (error) return <div>Error loading users: {error.message}</div>;
+
+  // Determine current filter description
+  let filterDescription = "Own Tenant Users";
+  if (filterAllTenants) {
+      filterDescription = "All Tenants Users";
+  } else if (filterTenantId) {
+      const selectedTenantName = tenantsData?.data.find(t => t.id === filterTenantId)?.name;
+      filterDescription = selectedTenantName ? `Tenant: ${selectedTenantName}` : `Tenant ID: ${filterTenantId}`;
+  }
+
+
+  return (
+    <>
+      {/* Filter Controls */}
+      <Stack
+        direction={{base: "column", md: "row"}}
+        gap={4}
+        my={4}
+        align="center"
+      >
+        <Heading size="md" mr={4}>Currently Viewing: {filterDescription}</Heading>
+
+        {/* === CORRECTED NativeSelect Usage === */}
+        <NativeSelect.Root
+          // Remove value and onChange from Root
+          maxWidth="300px"
+        >
+          {/* Add value and onChange to Field */}
+          <NativeSelect.Field
+            placeholder="Filter by Tenant"
+            value={filterAllTenants ? "__all__" : (filterTenantId ?? "__own__")} // value is here
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {          // onChange is here
+              const value = e.target.value;
+              if (value === "__all__") {
+                handleFilterChange(null, true);
+              } else if (value === "__own__") {
+                handleFilterChange(null, false);
+              } else {
+                handleFilterChange(value, false);
+              }
+            }}
+          >
+            <option value="__own__">My Tenant</option>
+            <option value="__all__">All Tenants</option>
+            {tenantsData?.data.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
+        {/* ================================== */}
+
+      </Stack>
+      
+      {/* Users Table */}
+      <Table.Root size={{ base: "sm", md: "md" }}>
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader w="sm">Full name</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Email</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Tenant</Table.ColumnHeader> {/* ADDED Tenant Column */}
+            <Table.ColumnHeader w="sm">Role</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {users?.map((user) => (
+            <Table.Row key={user.id} opacity={isPlaceholderData ? 0.5 : 1}>
+              <Table.Cell color={!user.full_name ? "gray" : "inherit"}>
+                {user.full_name || "N/A"}
+                {currentUser?.id === user.id && (
+                  <Badge ml="1" colorScheme="teal">
+                    You
+                  </Badge>
+                )}
+              </Table.Cell>
+              <Table.Cell truncate maxW="sm">{user.email}</Table.Cell>
+              {/* Show Tenant Info - fetch tenant name if needed, or just ID */}
+              <Table.Cell>
+                {/* Find tenant name from fetched tenantsData for better display */}
+                {tenantsData?.data.find(t => t.id === user.tenant_id)?.name ?? user.tenant_id.substring(0, 8)} 
+              </Table.Cell>
+              <Table.Cell>{user.is_superuser ? "Superuser" : "User"}</Table.Cell>
+              <Table.Cell>{user.is_active ? "Active" : "Inactive"}</Table.Cell>
+              <Table.Cell>
+                <UserActionsMenu
+                  user={user}
+                  disabled={currentUser?.id === user.id}
+                />
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+      
+      {/* Pagination */}
+      <Flex justifyContent="flex-end" mt={4}>
+        <PaginationRoot
+          count={count}
+          pageSize={PER_PAGE}
+          page={page} // Ensure current page is passed to pagination
+          onPageChange={({ page: newPage }) => setPage(newPage)} // Correct handler name
+        >
+          <Flex>
+            <PaginationPrevTrigger />
+            <PaginationItems />
+            <PaginationNextTrigger />
+          </Flex>
+        </PaginationRoot>
+      </Flex>
+    </>
+  );
+}
+
+// The component that renders the user management UI
+function AdminUsersPage() { 
+  return (
+    // No need for an extra Container if _admin.tsx provides one
+    <>
+      <Heading size="lg" pt={12}>
+        Users Management
+      </Heading>
+      {/* Outlet is NOT needed here */}
+      <AddUser />
+      <UsersTable />
+    </>
+  )
+}
